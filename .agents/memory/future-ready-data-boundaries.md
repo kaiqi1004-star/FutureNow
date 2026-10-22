@@ -1,0 +1,12 @@
+---
+name: FutureReady MY data boundaries
+description: Evidence and communication rules for the FutureReady MY workforce-data project.
+---
+
+Treat the uploaded job records as a small sample, not a measure of national hiring demand. Do not invent job fields, salary values, dates, statistics, or source URLs. Do not claim the broad CSV datasets measure software or mechanical engineering demand unless their contents establish that. Keep unknown wage currency/period and person-count scales explicit, and do not compare aggregate CSV wages to monthly RM job salaries until the source metadata verifies the units.
+
+The user is a beginner and wants implementation explanations in simple terms.
+
+**Why:** The user's project brief explicitly set these evidence limits and asked for simple implementation explanations.
+
+**How to apply:** Preserve these constraints in new analysis, charts, transformations, labels, and explanations; use the uploaded files as the evidence source and state unknowns plainly.

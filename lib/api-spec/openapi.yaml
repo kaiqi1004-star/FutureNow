@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: futureReady
+    description: Read-only access to the supplied FutureReady MY datasets
 paths:
   /healthz:
     get:
@@ -24,6 +26,74 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /future-ready/overview:
+    get:
+      operationId: getFutureReadyOverview
+      tags: [futureReady]
+      summary: Get a verified summary of the supplied datasets
+      responses:
+        "200":
+          description: Dataset and job-record summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FutureReadyOverview"
+  /future-ready/jobs:
+    get:
+      operationId: getFutureReadyJobs
+      tags: [futureReady]
+      summary: List the supplied job records
+      responses:
+        "200":
+          description: Job records from the uploaded workbook
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobListing"
+  /future-ready/unemployment:
+    get:
+      operationId: getFutureReadyUnemployment
+      tags: [futureReady]
+      summary: Get monthly youth unemployment observations
+      responses:
+        "200":
+          description: Monthly observations for ages 15-24 and 15-30
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UnemploymentObservation"
+  /future-ready/wages:
+    get:
+      operationId: getFutureReadyWages
+      tags: [futureReady]
+      summary: Get annual wage observations by occupation or skill category
+      responses:
+        "200":
+          description: Wage observations from both annual CSV files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WageObservation"
+  /future-ready/underemployment:
+    get:
+      operationId: getFutureReadyUnderemployment
+      tags: [futureReady]
+      summary: Get quarterly skills-related underemployment observations
+      responses:
+        "200":
+          description: Observations grouped by measure and age
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UnderemploymentObservation"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +103,126 @@ components:
           type: string
       required:
         - status
+    SalaryRange:
+      type: object
+      properties:
+        sector:
+          type: string
+          enum: [software, mechanical]
+        disclosedCount:
+          type: integer
+        undisclosedCount:
+          type: integer
+        minimumMonthlyRm:
+          type: ["number", "null"]
+        maximumMonthlyRm:
+          type: ["number", "null"]
+      required: [sector, disclosedCount, undisclosedCount, minimumMonthlyRm, maximumMonthlyRm]
+    FutureReadyOverview:
+      type: object
+      properties:
+        totalJobs:
+          type: integer
+        softwareJobs:
+          type: integer
+        mechanicalJobs:
+          type: integer
+        disclosedSalaryCount:
+          type: integer
+        undisclosedSalaryCount:
+          type: integer
+        salaryRanges:
+          type: array
+          items:
+            $ref: "#/components/schemas/SalaryRange"
+        dataNotes:
+          type: array
+          items:
+            type: string
+      required: [totalJobs, softwareJobs, mechanicalJobs, disclosedSalaryCount, undisclosedSalaryCount, salaryRanges, dataNotes]
+    JobListing:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        company:
+          type: string
+        source:
+          type: string
+        industry:
+          type: string
+        education:
+          type: string
+        salaryMonthlyRm:
+          type: ["number", "null"]
+        experience:
+          type: string
+        technicalSkills:
+          type: array
+          items:
+            type: string
+        softSkills:
+          type: array
+          items:
+            type: string
+        sector:
+          type: string
+          enum: [software, mechanical]
+        location:
+          type: ["string", "null"]
+        postingDate:
+          type: ["string", "null"]
+        sourceUrl:
+          type: ["string", "null"]
+      required: [id, title, company, source, industry, education, salaryMonthlyRm, experience, technicalSkills, softSkills, sector, location, postingDate, sourceUrl]
+    UnemploymentObservation:
+      type: object
+      properties:
+        date:
+          type: string
+        unemployedAge15To24:
+          type: number
+        unemployedAge15To30:
+          type: number
+        rateAge15To24:
+          type: number
+        rateAge15To30:
+          type: number
+      required: [date, unemployedAge15To24, unemployedAge15To30, rateAge15To24, rateAge15To30]
+    WageObservation:
+      type: object
+      properties:
+        date:
+          type: string
+        sex:
+          type: string
+          enum: [both, male, female]
+        categoryType:
+          type: string
+          enum: [occupation, skill]
+        category:
+          type: string
+        recipients:
+          type: number
+        medianWage:
+          type: number
+        meanWage:
+          type: number
+      required: [date, sex, categoryType, category, recipients, medianWage, meanWage]
+    UnderemploymentObservation:
+      type: object
+      properties:
+        date:
+          type: string
+        measure:
+          type: string
+          enum: [rate, persons]
+        age:
+          type: string
+          enum: ["15-24", "25-34", "35-44", "45+", overall]
+        value:
+          type: number
+      required: [date, measure, age, value]
 

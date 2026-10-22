@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "FutureReady MY"
+description = "A Malaysian workforce data explorer for the SDC Future-Ready Workforce challenge. Explore a supplied sample of software and mechanical engineering job records alongside national employment, wage, and underemployment datasets, with clear source and comparability notes."
+version = "1.0.0"
+id = "artifacts/futureready-my"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19297
+
+[services.development]
+run = "pnpm --filter @workspace/futureready-my run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/futureready-my", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/futureready-my/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19297"
+BASE_PATH = "/"
