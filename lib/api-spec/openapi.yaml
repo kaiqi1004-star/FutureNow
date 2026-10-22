@@ -11,7 +11,7 @@ tags:
   - name: health
     description: Health operations
   - name: futureReady
-    description: Read-only access to the supplied FutureReady MY datasets
+    description: Read-only access to the supplied FutureNow datasets
 paths:
   /healthz:
     get:
@@ -52,6 +52,29 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/JobListing"
+  /future-ready/skill-gap:
+    post:
+      operationId: analyzeFutureReadySkillGap
+      tags: [futureReady]
+      summary: Compare user skills with one supplied job record
+      description: Calculates deterministic coverage from distinct listed technical and soft-skill requirements.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillGapInput"
+      responses:
+        "200":
+          description: Skill comparison and learning roadmap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkillGapAnalysis"
+        "400":
+          description: Invalid request or sector does not match the selected job
+        "404":
+          description: Job record not found
   /future-ready/unemployment:
     get:
       operationId: getFutureReadyUnemployment
@@ -177,6 +200,113 @@ components:
         sourceUrl:
           type: ["string", "null"]
       required: [id, title, company, source, industry, education, salaryMonthlyRm, experience, technicalSkills, softSkills, sector, location, postingDate, sourceUrl]
+    SkillGapInput:
+      type: object
+      properties:
+        sector:
+          type: string
+          enum: [software, mechanical]
+        jobId:
+          type: string
+          minLength: 1
+          maxLength: 80
+        currentSkills:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 120
+      required: [sector, jobId, currentSkills]
+    SkillGapSkill:
+      type: object
+      properties:
+        skill:
+          type: string
+        category:
+          type: string
+          enum: [technical, soft]
+        matchedBy:
+          type: ["string", "null"]
+      required: [skill, category, matchedBy]
+    SkillGapLearningResource:
+      type: object
+      properties:
+        title:
+          type: string
+        provider:
+          type: string
+        url:
+          type: string
+          format: uri
+        resourceType:
+          type: string
+          enum: [documentation, tutorial, learning-path]
+        costStatus:
+          type: string
+          enum: [free, paid, not-stated]
+        costNote:
+          type: string
+      required: [title, provider, url, resourceType, costStatus, costNote]
+    SkillGapRoadmapStep:
+      type: object
+      properties:
+        step:
+          type: integer
+          minimum: 1
+        skill:
+          type: string
+        category:
+          type: string
+          enum: [technical, soft]
+        estimatedHoursMin:
+          type: integer
+          minimum: 0
+        estimatedHoursMax:
+          type: integer
+          minimum: 0
+        learningResource:
+          anyOf:
+            - $ref: "#/components/schemas/SkillGapLearningResource"
+            - type: "null"
+      required: [step, skill, category, estimatedHoursMin, estimatedHoursMax, learningResource]
+    SkillGapAnalysis:
+      type: object
+      properties:
+        selectedJob:
+          $ref: "#/components/schemas/JobListing"
+        matchedSkills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillGapSkill"
+        missingSkills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillGapSkill"
+        unmatchedInputSkills:
+          type: array
+          items:
+            type: string
+        matchedCount:
+          type: integer
+          minimum: 0
+        requiredCount:
+          type: integer
+          minimum: 0
+        coveragePercent:
+          type: ["number", "null"]
+          minimum: 0
+          maximum: 100
+        coverageFormula:
+          type: string
+        roadmapNote:
+          type: string
+        estimateNote:
+          type: string
+        roadmap:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillGapRoadmapStep"
+      required: [selectedJob, matchedSkills, missingSkills, unmatchedInputSkills, matchedCount, requiredCount, coveragePercent, coverageFormula, roadmapNote, estimateNote, roadmap]
     UnemploymentObservation:
       type: object
       properties:

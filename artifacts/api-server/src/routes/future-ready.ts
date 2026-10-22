@@ -3,12 +3,15 @@ import path from "node:path";
 import Papa from "papaparse";
 import { Router, type IRouter } from "express";
 import {
+  AnalyzeFutureReadySkillGapBody,
+  AnalyzeFutureReadySkillGapResponse,
   GetFutureReadyJobsResponse,
   GetFutureReadyOverviewResponse,
   GetFutureReadyUnderemploymentResponse,
   GetFutureReadyUnemploymentResponse,
   GetFutureReadyWagesResponse,
 } from "@workspace/api-zod";
+import { calculateSkillGap } from "../lib/skill-gap";
 
 const router: IRouter = Router();
 const dataDirectory = path.resolve(process.cwd(), "data");
@@ -149,6 +152,35 @@ router.get("/future-ready/overview", (_req, res): void => {
 
 router.get("/future-ready/jobs", (_req, res): void => {
   res.json(GetFutureReadyJobsResponse.parse(loadJobs()));
+});
+
+router.post("/future-ready/skill-gap", (req, res): void => {
+  const parsed = AnalyzeFutureReadySkillGapBody.safeParse(req.body);
+  if (!parsed.success) {
+    req.log.warn(
+      { validationError: parsed.error.message },
+      "Rejected invalid skill gap request",
+    );
+    res.status(400).json({ error: "The skill comparison request is invalid." });
+    return;
+  }
+
+  const selectedJob = loadJobs().find((job) => job.id === parsed.data.jobId);
+  if (!selectedJob) {
+    res.status(404).json({ error: "The selected job record was not found." });
+    return;
+  }
+
+  if (selectedJob.sector !== parsed.data.sector) {
+    res.status(400).json({ error: "The selected job does not match the sector." });
+    return;
+  }
+
+  res.json(
+    AnalyzeFutureReadySkillGapResponse.parse(
+      calculateSkillGap(selectedJob, parsed.data.currentSkills),
+    ),
+  );
 });
 
 router.get("/future-ready/unemployment", (_req, res): void => {

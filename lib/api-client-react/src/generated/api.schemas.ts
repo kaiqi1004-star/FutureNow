@@ -66,6 +66,111 @@ export interface JobListing {
   sourceUrl: string | null;
 }
 
+export type SkillGapInputSector = typeof SkillGapInputSector[keyof typeof SkillGapInputSector];
+
+
+export const SkillGapInputSector = {
+  software: 'software',
+  mechanical: 'mechanical',
+} as const;
+
+export interface SkillGapInput {
+  sector: SkillGapInputSector;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  jobId: string;
+  /**
+     * @maxItems 100
+     * @items.maxLength 120
+     */
+  currentSkills: string[];
+}
+
+export type SkillGapSkillCategory = typeof SkillGapSkillCategory[keyof typeof SkillGapSkillCategory];
+
+
+export const SkillGapSkillCategory = {
+  technical: 'technical',
+  soft: 'soft',
+} as const;
+
+export interface SkillGapSkill {
+  skill: string;
+  category: SkillGapSkillCategory;
+  /** @nullable */
+  matchedBy: string | null;
+}
+
+export type SkillGapLearningResourceResourceType = typeof SkillGapLearningResourceResourceType[keyof typeof SkillGapLearningResourceResourceType];
+
+
+export const SkillGapLearningResourceResourceType = {
+  documentation: 'documentation',
+  tutorial: 'tutorial',
+  'learning-path': 'learning-path',
+} as const;
+
+export type SkillGapLearningResourceCostStatus = typeof SkillGapLearningResourceCostStatus[keyof typeof SkillGapLearningResourceCostStatus];
+
+
+export const SkillGapLearningResourceCostStatus = {
+  free: 'free',
+  paid: 'paid',
+  'not-stated': 'not-stated',
+} as const;
+
+export interface SkillGapLearningResource {
+  title: string;
+  provider: string;
+  url: string;
+  resourceType: SkillGapLearningResourceResourceType;
+  costStatus: SkillGapLearningResourceCostStatus;
+  costNote: string;
+}
+
+export type SkillGapRoadmapStepCategory = typeof SkillGapRoadmapStepCategory[keyof typeof SkillGapRoadmapStepCategory];
+
+
+export const SkillGapRoadmapStepCategory = {
+  technical: 'technical',
+  soft: 'soft',
+} as const;
+
+export interface SkillGapRoadmapStep {
+  /** @minimum 1 */
+  step: number;
+  skill: string;
+  category: SkillGapRoadmapStepCategory;
+  /** @minimum 0 */
+  estimatedHoursMin: number;
+  /** @minimum 0 */
+  estimatedHoursMax: number;
+  learningResource: SkillGapLearningResource | null;
+}
+
+export interface SkillGapAnalysis {
+  selectedJob: JobListing;
+  matchedSkills: SkillGapSkill[];
+  missingSkills: SkillGapSkill[];
+  unmatchedInputSkills: string[];
+  /** @minimum 0 */
+  matchedCount: number;
+  /** @minimum 0 */
+  requiredCount: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  coveragePercent: number | null;
+  coverageFormula: string;
+  roadmapNote: string;
+  estimateNote: string;
+  roadmap: SkillGapRoadmapStep[];
+}
+
 export interface UnemploymentObservation {
   date: string;
   unemployedAge15To24: number;

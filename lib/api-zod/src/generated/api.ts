@@ -60,6 +60,90 @@ export const GetFutureReadyJobsResponse = zod.array(GetFutureReadyJobsResponseIt
 
 
 /**
+ * Calculates deterministic coverage from distinct listed technical and soft-skill requirements.
+ * @summary Compare user skills with one supplied job record
+ */
+export const analyzeFutureReadySkillGapBodyJobIdMax = 80;
+
+export const analyzeFutureReadySkillGapBodyCurrentSkillsItemMax = 120;
+
+export const analyzeFutureReadySkillGapBodyCurrentSkillsMax = 100;
+
+
+
+export const AnalyzeFutureReadySkillGapBody = zod.object({
+  "sector": zod.enum(['software', 'mechanical']),
+  "jobId": zod.string().min(1).max(analyzeFutureReadySkillGapBodyJobIdMax),
+  "currentSkills": zod.array(zod.string().max(analyzeFutureReadySkillGapBodyCurrentSkillsItemMax)).max(analyzeFutureReadySkillGapBodyCurrentSkillsMax)
+})
+
+export const analyzeFutureReadySkillGapResponseMatchedCountMin = 0;
+
+export const analyzeFutureReadySkillGapResponseRequiredCountMin = 0;
+
+export const analyzeFutureReadySkillGapResponseCoveragePercentMin = 0;
+export const analyzeFutureReadySkillGapResponseCoveragePercentMax = 100;
+
+
+export const analyzeFutureReadySkillGapResponseRoadmapItemEstimatedHoursMinMin = 0;
+
+export const analyzeFutureReadySkillGapResponseRoadmapItemEstimatedHoursMaxMin = 0;
+
+
+
+export const AnalyzeFutureReadySkillGapResponse = zod.object({
+  "selectedJob": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "company": zod.string(),
+  "source": zod.string(),
+  "industry": zod.string(),
+  "education": zod.string(),
+  "salaryMonthlyRm": zod.number().nullable(),
+  "experience": zod.string(),
+  "technicalSkills": zod.array(zod.string()),
+  "softSkills": zod.array(zod.string()),
+  "sector": zod.enum(['software', 'mechanical']),
+  "location": zod.string().nullable(),
+  "postingDate": zod.string().nullable(),
+  "sourceUrl": zod.string().nullable()
+}),
+  "matchedSkills": zod.array(zod.object({
+  "skill": zod.string(),
+  "category": zod.enum(['technical', 'soft']),
+  "matchedBy": zod.string().nullable()
+})),
+  "missingSkills": zod.array(zod.object({
+  "skill": zod.string(),
+  "category": zod.enum(['technical', 'soft']),
+  "matchedBy": zod.string().nullable()
+})),
+  "unmatchedInputSkills": zod.array(zod.string()),
+  "matchedCount": zod.number().int().min(analyzeFutureReadySkillGapResponseMatchedCountMin),
+  "requiredCount": zod.number().int().min(analyzeFutureReadySkillGapResponseRequiredCountMin),
+  "coveragePercent": zod.number().min(analyzeFutureReadySkillGapResponseCoveragePercentMin).max(analyzeFutureReadySkillGapResponseCoveragePercentMax).nullable(),
+  "coverageFormula": zod.string(),
+  "roadmapNote": zod.string(),
+  "estimateNote": zod.string(),
+  "roadmap": zod.array(zod.object({
+  "step": zod.number().int().min(1),
+  "skill": zod.string(),
+  "category": zod.enum(['technical', 'soft']),
+  "estimatedHoursMin": zod.number().int().min(analyzeFutureReadySkillGapResponseRoadmapItemEstimatedHoursMinMin),
+  "estimatedHoursMax": zod.number().int().min(analyzeFutureReadySkillGapResponseRoadmapItemEstimatedHoursMaxMin),
+  "learningResource": zod.union([zod.object({
+  "title": zod.string(),
+  "provider": zod.string(),
+  "url": zod.string().url(),
+  "resourceType": zod.enum(['documentation', 'tutorial', 'learning-path']),
+  "costStatus": zod.enum(['free', 'paid', 'not-stated']),
+  "costNote": zod.string()
+}),zod.null()])
+}))
+})
+
+
+/**
  * @summary Get monthly youth unemployment observations
  */
 export const GetFutureReadyUnemploymentResponseItem = zod.object({

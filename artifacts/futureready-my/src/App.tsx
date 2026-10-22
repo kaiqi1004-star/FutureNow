@@ -26,6 +26,7 @@ import {
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import SkillGapPage from '@/pages/skill-gap';
 import NotFound from '@/pages/not-found';
 import './index.css';
 
@@ -81,21 +82,45 @@ function Shell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => typeof window !== 'undefined' && window.localStorage.getItem('futureready-my-theme') === 'dark');
   const refresh = useRefresh();
+  const pageDetails: Record<string, { title: string; description: string }> = {
+    '/': {
+      title: 'Overview',
+      description: 'Explore supplied job records and Malaysian labor-market context with FutureNow.',
+    },
+    '/jobs': {
+      title: 'Job Record Explorer',
+      description: 'Search the supplied software and mechanical job records in FutureNow.',
+    },
+    '/workforce-data': {
+      title: 'National Context',
+      description: 'Explore the supplied national unemployment, wage, and underemployment datasets in FutureNow.',
+    },
+    '/skill-gap': {
+      title: 'Skill Gap Navigator',
+      description: 'Compare your skills with requirements listed in real supplied job records with FutureNow.',
+    },
+  };
+  const currentPage = pageDetails[path] ?? { title: 'Page not found', description: 'This FutureNow page is not available.' };
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
     window.localStorage.setItem('futureready-my-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
+  useEffect(() => {
+    document.title = `${currentPage.title} | FutureNow`;
+    document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', currentPage.description);
+  }, [currentPage.title, currentPage.description]);
   const nav = [
     { href: '/', label: 'Overview', icon: Layers3 },
     { href: '/jobs', label: 'Job records', icon: BriefcaseBusiness },
     { href: '/workforce-data', label: 'National context', icon: ChartNoAxesCombined },
+    { href: '/skill-gap', label: 'Skill Gap Navigator', icon: GraduationCap },
   ];
   return (
     <div className="app-shell">
       <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true"><span /><span /><span /></div>
-          <div><div className="brand-name">FutureReady <b>MY</b></div><div className="brand-caption">WORKFORCE DATA EXPLORER</div></div>
+          <div><div className="brand-name">FutureNow</div><div className="brand-caption">WORKFORCE SKILLS NAVIGATOR</div></div>
           <button className="mobile-close" aria-label="Close navigation" data-testid="button-close-navigation" onClick={() => setMenuOpen(false)}><X size={18} /></button>
         </div>
         <div className="sidebar-kicker">CHALLENGE WORKSPACE</div>
@@ -115,7 +140,7 @@ function Shell({ children }: { children: ReactNode }) {
       <main className="main-shell">
         <header className="topbar">
           <button className="mobile-menu" aria-label="Open navigation" data-testid="button-open-navigation" onClick={() => setMenuOpen(true)}><Menu size={20} /></button>
-          <div className="breadcrumb"><span>SDC</span><span className="crumb-slash">/</span><span>Future-ready workforce</span><span className="crumb-slash">/</span><strong>{path === '/' ? 'Overview' : path === '/jobs' ? 'Job records' : 'National context'}</strong></div>
+          <div className="breadcrumb"><span>SDC</span><span className="crumb-slash">/</span><span>FutureNow</span><span className="crumb-slash">/</span><strong>{currentPage.title}</strong></div>
           <div className="topbar-actions">
             <div className="live-status"><span /> Supplied datasets</div>
             <button className="icon-button refresh-button" aria-label="Refresh all data" data-testid="button-refresh-data" onClick={refresh}><RefreshCw size={16} /><span>Refresh</span></button>
@@ -124,7 +149,7 @@ function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <div className="page-content">{children}</div>
-        <footer className="page-footer"><span>FutureReady MY <i>·</i> SDC challenge data explorer</span><span>Evidence first. Context always.</span></footer>
+        <footer className="page-footer"><span>FutureNow <i>·</i> SDC 2026 workforce explorer</span><span>Evidence first. Context always.</span></footer>
       </main>
     </div>
   );
@@ -310,7 +335,7 @@ function WorkforcePage() {
 
 function Router() {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route path="/skill-gap" component={SkillGapPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
 }
 
 function App() {

@@ -1,6 +1,6 @@
 ---
-name: FutureReady MY data boundaries
-description: Evidence and communication rules for the FutureReady MY workforce-data project.
+name: FutureNow data boundaries
+description: Evidence and communication rules for the FutureNow workforce-data project.
 ---
 
 Treat the uploaded job records as a small sample, not a measure of national hiring demand. Do not invent job fields, salary values, dates, statistics, or source URLs. Do not claim the broad CSV datasets measure software or mechanical engineering demand unless their contents establish that. Keep unknown wage currency/period and person-count scales explicit, and do not compare aggregate CSV wages to monthly RM job salaries until the source metadata verifies the units.
