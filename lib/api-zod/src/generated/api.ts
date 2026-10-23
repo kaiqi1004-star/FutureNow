@@ -67,6 +67,102 @@ export const GetFutureReadyJobsResponse = zod.array(GetFutureReadyJobsResponseIt
 
 
 /**
+ * Stateless deterministic skill coverage. No profile is stored and no hiring probability is predicted.
+ * @summary Rank supplied job records using explicitly saved profile skills
+ */
+export const matchFutureReadyRolesBodyCurrentSkillsItemMax = 100;
+
+export const matchFutureReadyRolesBodyCurrentSkillsMax = 150;
+
+
+
+export const MatchFutureReadyRolesBody = zod.object({
+  "currentSkills": zod.array(zod.string().max(matchFutureReadyRolesBodyCurrentSkillsItemMax)).max(matchFutureReadyRolesBodyCurrentSkillsMax)
+})
+
+export const MatchFutureReadyRolesResponse = zod.object({
+  "totalJobs": zod.number().int(),
+  "inputSkillCount": zod.number().int(),
+  "formula": zod.string(),
+  "scoringNotes": zod.array(zod.string()),
+  "sdgNotice": zod.string(),
+  "results": zod.array(zod.object({
+  "job": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "company": zod.string(),
+  "source": zod.string(),
+  "industry": zod.string(),
+  "education": zod.string(),
+  "salaryMonthlyRm": zod.number().nullable(),
+  "salaryText": zod.string().optional().describe('Original monthly RM salary cell, including disclosed ranges or Undisclosed. No midpoint is inferred.'),
+  "experience": zod.string(),
+  "technicalSkills": zod.array(zod.string()),
+  "softSkills": zod.array(zod.string()),
+  "sector": zod.enum(['software', 'mechanical', 'digital-marketing', 'human-resources', 'accounting-finance', 'data-analytics']).describe('Career category derived from the supplied job title; not the source Industry field.'),
+  "location": zod.string().nullable(),
+  "postingDate": zod.string().nullable(),
+  "sourceUrl": zod.string().nullable()
+}),
+  "matchedCount": zod.number().int(),
+  "requiredCount": zod.number().int(),
+  "score": zod.number().nullable(),
+  "matchedSkills": zod.array(zod.object({
+  "skill": zod.string(),
+  "category": zod.enum(['technical', 'soft']),
+  "matchedBy": zod.string().nullable(),
+  "sdg": zod.object({
+  "connections": zod.array(zod.object({
+  "goalNumber": zod.union([zod.literal(4),zod.literal(5),zod.literal(8),zod.literal(9),zod.literal(12)]),
+  "title": zod.string(),
+  "target": zod.string(),
+  "url": zod.string(),
+  "explanation": zod.string(),
+  "evidence": zod.string(),
+  "ruleId": zod.string()
+})),
+  "reviewRequired": zod.boolean(),
+  "reviewReason": zod.string().nullable()
+})
+})),
+  "skillGaps": zod.array(zod.object({
+  "skill": zod.string(),
+  "category": zod.enum(['technical', 'soft']),
+  "matchedBy": zod.string().nullable(),
+  "sdg": zod.object({
+  "connections": zod.array(zod.object({
+  "goalNumber": zod.union([zod.literal(4),zod.literal(5),zod.literal(8),zod.literal(9),zod.literal(12)]),
+  "title": zod.string(),
+  "target": zod.string(),
+  "url": zod.string(),
+  "explanation": zod.string(),
+  "evidence": zod.string(),
+  "ruleId": zod.string()
+})),
+  "reviewRequired": zod.boolean(),
+  "reviewReason": zod.string().nullable()
+})
+})),
+  "unmatchedProfileSkills": zod.array(zod.string()),
+  "roleSdg": zod.object({
+  "connections": zod.array(zod.object({
+  "goalNumber": zod.union([zod.literal(4),zod.literal(5),zod.literal(8),zod.literal(9),zod.literal(12)]),
+  "title": zod.string(),
+  "target": zod.string(),
+  "url": zod.string(),
+  "explanation": zod.string(),
+  "evidence": zod.string(),
+  "ruleId": zod.string()
+})),
+  "reviewRequired": zod.boolean(),
+  "reviewReason": zod.string().nullable()
+}),
+  "improvement": zod.string()
+}))
+})
+
+
+/**
  * Calculates deterministic coverage from distinct listed technical and soft-skill requirements.
  * @summary Compare user skills with one supplied job record
  */

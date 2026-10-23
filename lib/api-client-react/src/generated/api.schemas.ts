@@ -5,44 +5,56 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
+export interface RoleMatchInput {
+  /**
+     * @maxItems 150
+     * @items.maxLength 100
+     */
+  currentSkills: string[];
 }
 
-export type SalaryRangeSector = typeof SalaryRangeSector[keyof typeof SalaryRangeSector];
+export type SdgConnectionGoalNumber = typeof SdgConnectionGoalNumber[keyof typeof SdgConnectionGoalNumber];
 
 
-export const SalaryRangeSector = {
-  software: 'software',
-  mechanical: 'mechanical',
+export const SdgConnectionGoalNumber = {
+  NUMBER_4: 4,
+  NUMBER_5: 5,
+  NUMBER_8: 8,
+  NUMBER_9: 9,
+  NUMBER_12: 12,
 } as const;
 
-export interface SalaryRange {
-  sector: SalaryRangeSector;
-  disclosedCount: number;
-  undisclosedCount: number;
-  /** @nullable */
-  minimumMonthlyRm: number | null;
-  /** @nullable */
-  maximumMonthlyRm: number | null;
+export interface SdgConnection {
+  goalNumber: SdgConnectionGoalNumber;
+  title: string;
+  target: string;
+  url: string;
+  explanation: string;
+  evidence: string;
+  ruleId: string;
 }
 
-export interface CareerCategoryCount {
-  category: string;
-  count: number;
+export interface SdgAssessment {
+  connections: SdgConnection[];
+  reviewRequired: boolean;
+  /** @nullable */
+  reviewReason: string | null;
 }
 
-export interface FutureReadyOverview {
-  totalJobs: number;
-  softwareJobs: number;
-  mechanicalJobs: number;
-  distinctJobTitles: number;
-  careerCategoryCount: number;
-  careerCategories: CareerCategoryCount[];
-  disclosedSalaryCount: number;
-  undisclosedSalaryCount: number;
-  salaryRanges: SalaryRange[];
-  dataNotes: string[];
+export type RoleMatchSkillCategory = typeof RoleMatchSkillCategory[keyof typeof RoleMatchSkillCategory];
+
+
+export const RoleMatchSkillCategory = {
+  technical: 'technical',
+  soft: 'soft',
+} as const;
+
+export interface RoleMatchSkill {
+  skill: string;
+  category: RoleMatchSkillCategory;
+  /** @nullable */
+  matchedBy: string | null;
+  sdg: SdgAssessment;
 }
 
 /**
@@ -82,6 +94,68 @@ export interface JobListing {
   postingDate: string | null;
   /** @nullable */
   sourceUrl: string | null;
+}
+
+export interface RoleMatch {
+  job: JobListing;
+  matchedCount: number;
+  requiredCount: number;
+  /** @nullable */
+  score: number | null;
+  matchedSkills: RoleMatchSkill[];
+  skillGaps: RoleMatchSkill[];
+  unmatchedProfileSkills: string[];
+  roleSdg: SdgAssessment;
+  improvement: string;
+}
+
+export interface RoleMatchResults {
+  totalJobs: number;
+  inputSkillCount: number;
+  formula: string;
+  scoringNotes: string[];
+  sdgNotice: string;
+  results: RoleMatch[];
+}
+
+export interface HealthStatus {
+  status: string;
+}
+
+export type SalaryRangeSector = typeof SalaryRangeSector[keyof typeof SalaryRangeSector];
+
+
+export const SalaryRangeSector = {
+  software: 'software',
+  mechanical: 'mechanical',
+} as const;
+
+export interface SalaryRange {
+  sector: SalaryRangeSector;
+  disclosedCount: number;
+  undisclosedCount: number;
+  /** @nullable */
+  minimumMonthlyRm: number | null;
+  /** @nullable */
+  maximumMonthlyRm: number | null;
+}
+
+export interface CareerCategoryCount {
+  category: string;
+  count: number;
+}
+
+export interface FutureReadyOverview {
+  totalJobs: number;
+  softwareJobs: number;
+  mechanicalJobs: number;
+  distinctJobTitles: number;
+  careerCategoryCount: number;
+  careerCategories: CareerCategoryCount[];
+  disclosedSalaryCount: number;
+  undisclosedSalaryCount: number;
+  salaryRanges: SalaryRange[];
+  dataNotes: string[];
 }
 
 export type SkillGapInputSector = typeof SkillGapInputSector[keyof typeof SkillGapInputSector];

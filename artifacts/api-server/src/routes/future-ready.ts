@@ -5,6 +5,8 @@ import { Router, type IRouter } from "express";
 import {
   AnalyzeFutureReadySkillGapBody,
   AnalyzeFutureReadySkillGapResponse,
+  MatchFutureReadyRolesBody,
+  MatchFutureReadyRolesResponse,
   GetFutureReadyJobsResponse,
   GetFutureReadyOverviewResponse,
   GetFutureReadyUnderemploymentResponse,
@@ -13,6 +15,7 @@ import {
 } from "@workspace/api-zod";
 import { buildFutureReadyOverview } from "../lib/job-summary";
 import { calculateSkillGap } from "../lib/skill-gap";
+import { matchRoles } from "../lib/role-matching";
 
 const router: IRouter = Router();
 const dataDirectory = path.resolve(process.cwd(), "data");
@@ -121,6 +124,15 @@ router.get("/future-ready/overview", (_req, res): void => {
 
 router.get("/future-ready/jobs", (_req, res): void => {
   res.json(GetFutureReadyJobsResponse.parse(loadJobs()));
+});
+
+router.post("/future-ready/role-matches", (req, res): void => {
+  const parsed = MatchFutureReadyRolesBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Provide up to 150 saved skill names, each no longer than 100 characters." });
+    return;
+  }
+  res.json(MatchFutureReadyRolesResponse.parse(matchRoles(loadJobs(), parsed.data.currentSkills)));
 });
 
 router.post("/future-ready/skill-gap", (req, res): void => {

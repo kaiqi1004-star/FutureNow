@@ -16,3 +16,15 @@ Minimal, backward-compatible schema extensions are preferred over misclassifying
 **Why:** The user explicitly approved extending the original two-category, single-salary schema so the expanded workbook could be imported without losing source meaning.
 
 **How to apply:** Preserve raw salary text and source spelling, keep unknown fields unknown, and label derived category counts separately from record and distinct-title counts.
+
+Role matches must remain explainable estimates, not hiring probabilities or promises of job security. A missing profile skill means “not found in the profile,” not proven absence. Do not infer specific expertise from broad skill labels, free-text achievements, or self-rated proficiency.
+
+**Why:** The Feature 2 brief explicitly requires transparent, deterministic matching without fabricated skills or employment outcomes. Equal-weight listed-skill coverage was chosen because the source records do not support validated weighting of the broader profile fields.
+
+**How to apply:** Keep broader profile answers as context unless a future change supplies defensible evidence for scoring them. Preserve an auditable profile-term-to-source-requirement explanation.
+
+SDG connections must use real UN goal numbers and titles, remain conditional and indicative, and never imply official UN classification of jobs. Flag ambiguous or unsupported connections for review instead of assigning an unrelated goal to meet tag coverage.
+
+**Why:** The user's Feature 2 brief explicitly prioritises defensible mappings over indiscriminate goal tagging; job requirements alone do not establish real-world SDG outcomes.
+
+**How to apply:** Ground mappings in actual source skill or role evidence, supply official UN references and a contribution explanation, and retain review flags when evidence is insufficient.

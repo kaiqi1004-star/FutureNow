@@ -145,7 +145,7 @@ function ProfileSummary({ saved, onEdit }: { saved: SavedProfile; onEdit: (step:
   return <div className="sp-summary sp-fade" data-testid="profile-summary">
     <div className="sp-summary-head">
       <div><div className="sp-eyebrow">Saved profile</div><h2 ref={headRef} tabIndex={-1}>Your skills profile</h2><p>Saved {savedTime(saved.savedAt)} on this browser. Everything below restates your own answers; nothing has been verified or scored.</p></div>
-      <button type="button" className="sp-btn sp-btn-primary" onClick={() => onEdit(0)} data-testid="button-edit-profile"><Pencil size={15} />Edit profile</button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><Link href="/future-role-matching" className="sp-btn sp-btn-ghost" data-testid="link-future-role-matching">Find matching roles<ChevronRight size={15} /></Link><button type="button" className="sp-btn sp-btn-primary" onClick={() => onEdit(0)} data-testid="button-edit-profile"><Pencil size={15} />Edit profile</button></div>
     </div>
     <div className="sp-insight-grid">
       <section className="sp-insight sp-insight-green"><h3>Transferable strengths you reported</h3>
