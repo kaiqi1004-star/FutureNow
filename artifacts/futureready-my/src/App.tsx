@@ -133,7 +133,7 @@ function Shell({ children }: { children: ReactNode }) {
         </nav>
         <div className="sidebar-bottom">
           <div className="integrity-card"><ShieldCheck size={18} /><div><strong>Evidence, in context</strong><p>Job records and national indicators stay separate.</p></div></div>
-          <div className="sidebar-meta"><span>SDC FUTURE-READY WORKFORCE</span><span className="sidebar-version">MALAYSIA · DATA VIEW</span></div>
+          <div className="sidebar-meta"><span>FutureNow </span><span className="sidebar-version">MALAYSIA · DATA VIEW</span></div>
         </div>
       </aside>
       {menuOpen && <button aria-label="Close navigation overlay" className="nav-scrim" onClick={() => setMenuOpen(false)} />}
