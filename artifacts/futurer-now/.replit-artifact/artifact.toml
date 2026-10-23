@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
 title = "FutureNow"
-description = "A Malaysian job-skills navigator for early-career job seekers. Explore 24 supplied software and mechanical job records, compare listed requirements with your skills, and review separate national labor-market context. Scores are transparent skill coverage, not hiring predictions; source limits and salary disclosure are shown."
+description = "Build and save a browser-local skills profile, explore 24 supplied software and mechanical job records, compare listed requirements with your skills, and review separate national labour-market context. Profile insights are self-reported, not aptitude tests or hiring predictions. Four planned modules are clearly marked Coming Soon."
 version = "1.0.0"
 id = "artifacts/futureready-my"
 router = "path"
@@ -17,7 +17,7 @@ run = "pnpm --filter @workspace/futureready-my run dev"
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/futureready-my", "run", "build" ]
 serve = "static"
-publicDir = "artifacts/futureready-my/dist/public"
+publicDir = "artifacts/futurer-now/dist/public"
 
 [[services.production.rewrites]]
 from = "/*"

@@ -15,7 +15,7 @@ import {
 import type { JobListing } from '@workspace/api-client-react';
 import { Link, Route, Router as WouterRouter, Switch, useLocation } from 'wouter';
 import {
-  Activity, ArrowRight, BriefcaseBusiness, ChartNoAxesCombined, ChevronDown, ChevronLeft,
+  Activity, ArrowRight, Compass, Radar, Route as Route_, Telescope, UserRound, BriefcaseBusiness, ChartNoAxesCombined, ChevronDown, ChevronLeft,
   ChevronRight, CircleAlert, Database, Download, Filter, GraduationCap, Info, Layers3,
   Menu, Moon, Printer, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Sun, X,
 } from 'lucide-react';
@@ -27,6 +27,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import SkillGapPage from '@/pages/skill-gap';
+import SkillsProfilePage, { ComingSoonPage } from '@/pages/skills-profile';
 import NotFound from '@/pages/not-found';
 import './index.css';
 
@@ -80,7 +81,7 @@ function useRefresh() {
 function Shell({ children }: { children: ReactNode }) {
   const [path] = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isDark, setIsDark] = useState(() => typeof window !== 'undefined' && window.localStorage.getItem('futureready-my-theme') === 'dark');
+  const [isDark, setIsDark] = useState(() => { try { return typeof window !== 'undefined' && window.localStorage.getItem('futureready-my-theme') === 'dark'; } catch { return false; } });
   const refresh = useRefresh();
   const pageDetails: Record<string, { title: string; description: string }> = {
     '/': {
@@ -99,16 +100,43 @@ function Shell({ children }: { children: ReactNode }) {
       title: 'Skill Gap Navigator',
       description: 'Compare your skills with requirements listed in real supplied job records with FutureNow.',
     },
+    '/skills-profile': { title: 'Skills Profile', description: 'Build a skills profile with FutureNow. Saved only in this browser.' },
+    '/future-role-matching': { title: 'Future-Role Matching (Coming Soon)', description: 'Planned FutureNow module, not yet available.' },
+    '/reskilling-pathway': { title: 'Reskilling Pathway (Coming Soon)', description: 'Planned FutureNow module, not yet available.' },
+    '/market-intelligence': { title: 'AI & Job-Market Intelligence (Coming Soon)', description: 'Planned FutureNow module, not yet available.' },
+    '/scenario-planning': { title: 'Scenario Planning (Coming Soon)', description: 'Planned FutureNow module, not yet available.' },
   };
   const currentPage = pageDetails[path] ?? { title: 'Page not found', description: 'This FutureNow page is not available.' };
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
-    window.localStorage.setItem('futureready-my-theme', isDark ? 'dark' : 'light');
+    try { window.localStorage.setItem('futureready-my-theme', isDark ? 'dark' : 'light'); } catch { /* storage unavailable: theme kept in memory */ }
   }, [isDark]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+      if (e.key === 'Tab' && window.matchMedia('(max-width: 760px)').matches) {
+        const controls = [...document.querySelectorAll<HTMLElement>('.sidebar a[href], .sidebar button')].filter(el => el.getClientRects().length > 0 && getComputedStyle(el).display !== 'none');
+        const first = controls[0], last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    document.querySelector<HTMLElement>('.sidebar .mobile-close')?.focus();
+    return () => { window.removeEventListener('keydown', onKey); document.querySelector<HTMLElement>('.mobile-menu')?.focus(); };
+  }, [menuOpen]);
   useEffect(() => {
     document.title = `${currentPage.title} | FutureNow`;
     document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', currentPage.description);
   }, [currentPage.title, currentPage.description]);
+  const modules = [
+    { href: '/skills-profile', label: 'Skills Profile', icon: UserRound, soon: false },
+    { href: '/future-role-matching', label: 'Future-Role Matching', icon: Compass, soon: true },
+    { href: '/reskilling-pathway', label: 'Reskilling Pathway', icon: Route_, soon: true },
+    { href: '/market-intelligence', label: 'AI & Market Intelligence', icon: Radar, soon: true },
+    { href: '/scenario-planning', label: 'Scenario Planning', icon: Telescope, soon: true },
+  ];
   const nav = [
     { href: '/', label: 'Overview', icon: Layers3 },
     { href: '/jobs', label: 'Job records', icon: BriefcaseBusiness },
@@ -117,17 +145,25 @@ function Shell({ children }: { children: ReactNode }) {
   ];
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`}>
+      <aside className={`sidebar ${menuOpen ? 'sidebar-open' : ''}`} id="app-sidebar" aria-label="Site navigation">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true"><span /><span /><span /></div>
           <div><div className="brand-name">FutureNow</div><div className="brand-caption">WORKFORCE SKILLS NAVIGATOR</div></div>
           <button className="mobile-close" aria-label="Close navigation" data-testid="button-close-navigation" onClick={() => setMenuOpen(false)}><X size={18} /></button>
         </div>
-        <div className="sidebar-kicker">CHALLENGE WORKSPACE</div>
+        <div className="sidebar-kicker sidebar-kicker-modules">FUTURENOW MODULES</div>
+        <nav className="primary-nav" aria-label="FutureNow modules">
+          {modules.map(({ href, label, icon: Icon, soon }, i) => (
+            <Link key={href} href={href} data-testid={`link-module-${href.slice(1)}`} aria-current={path === href ? 'page' : undefined} className={`nav-link ${path === href ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
+              <Icon size={18} strokeWidth={1.8} /><span>{label}</span>{soon ? <span className="nav-soon">Soon</span> : <span className="nav-index">0{i + 1}</span>}
+            </Link>
+          ))}
+        </nav>
+        <div className="sidebar-kicker">DATA WORKSPACE</div>
         <nav className="primary-nav" aria-label="Primary navigation">
-          {nav.map(({ href, label, icon: Icon }, i) => (
+          {nav.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} data-testid={`link-nav-${label.toLowerCase().replaceAll(' ', '-')}`} className={`nav-link ${path === href ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
-              <Icon size={18} strokeWidth={1.8} /><span>{label}</span>{i === 0 && <span className="nav-index">0{i + 1}</span>}
+              <Icon size={18} strokeWidth={1.8} /><span>{label}</span>
             </Link>
           ))}
         </nav>
@@ -139,7 +175,7 @@ function Shell({ children }: { children: ReactNode }) {
       {menuOpen && <button aria-label="Close navigation overlay" className="nav-scrim" onClick={() => setMenuOpen(false)} />}
       <main className="main-shell">
         <header className="topbar">
-          <button className="mobile-menu" aria-label="Open navigation" data-testid="button-open-navigation" onClick={() => setMenuOpen(true)}><Menu size={20} /></button>
+          <button className="mobile-menu" aria-label="Open navigation" aria-expanded={menuOpen} aria-controls="app-sidebar" data-testid="button-open-navigation" onClick={() => setMenuOpen(true)}><Menu size={20} /></button>
           <div className="breadcrumb"><span>SDC</span><span className="crumb-slash">/</span><span>FutureNow</span><span className="crumb-slash">/</span><strong>{currentPage.title}</strong></div>
           <div className="topbar-actions">
             <div className="live-status"><span /> Supplied datasets</div>
@@ -214,6 +250,7 @@ function OverviewPage() {
         <div className="reading-item"><span className="reading-number">02</span><div><strong>Check what is reported</strong><p>Job salaries are monthly RM. Some records do not disclose salary.</p></div></div>
         <div className="reading-item"><span className="reading-number">03</span><div><strong>Keep context in its lane</strong><p>National labor indicators describe broader trends; they are not derived from these postings.</p></div></div>
         <Link className="reading-cta" href="/jobs" data-testid="link-explore-job-records"><span>Browse all job records</span><ArrowRight size={17} /></Link>
+        <Link className="reading-cta" href="/skills-profile" data-testid="link-start-skills-profile"><span>New: build your skills profile</span><ArrowRight size={17} /></Link>
       </Panel>
     </div>
     <section className="limits-strip"><div className="limits-title"><ShieldCheck size={18} /><span>Coverage notes</span></div><div className="limit-chip"><b>01</b><span>The workbook has no location, posting-date or source-URL fields.</span></div><div className="limit-chip"><b>02</b><span>Aggregate CSV wage and count units are not specified.</span></div><div className="limit-chip"><b>03</b><span>Small job sample ≠ national labor demand.</span></div></section>
@@ -335,7 +372,7 @@ function WorkforcePage() {
 
 function Router() {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route path="/skill-gap" component={SkillGapPage} /><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route path="/skill-gap" component={SkillGapPage} /><Route path="/skills-profile" component={SkillsProfilePage} /><Route path="/future-role-matching">{() => <ComingSoonPage title="Future-Role Matching" description="Planned: explainable career suggestions and skills-gap breakdowns based on your saved profile." />}</Route><Route path="/reskilling-pathway">{() => <ComingSoonPage title="Personalised Reskilling Pathway" description="Planned: a prioritised learning plan with time, cost and resource information." />}</Route><Route path="/market-intelligence">{() => <ComingSoonPage title="AI & Job-Market Intelligence" description="Planned: sourced, dated AI-trend and job-market signals with clear uncertainty labels." />}</Route><Route path="/scenario-planning">{() => <ComingSoonPage title="Scenario Planning & Workforce Insights" description="Planned: comparison of labelled hypothetical scenarios, not predictions." />}</Route><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
 }
 
 function App() {

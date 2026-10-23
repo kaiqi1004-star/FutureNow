@@ -1,12 +1,16 @@
-# [Project name]
+# FutureNow
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+FutureNow supports explainable career exploration with browser-local skills profiles, supplied job records, and separate national labour-market context.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
+- For a shell workspace build, use `PORT=19297 BASE_PATH=/ pnpm run build`; the existing Vite configurations require these values. Managed workflows provide their own values.
+- `node --test artifacts/futurer-now/src/lib/skills-profile.test.ts` — profile model, validation, storage and grounded-insight tests
+- `node artifacts/futurer-now/test/skills-profile.browser.mjs` — browser journey tests through the shared artifact proxy (requires Chromium; override `CHROMIUM_PATH` or `TEST_BASE_URL` if needed)
+- Frontend: `artifacts/futurer-now/` (intentional spelling), package `@workspace/futureready-my`; start its existing managed workflow for preview.
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
@@ -26,7 +30,9 @@ _Populate as you build — short repo map plus pointers to the source-of-truth f
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Skills profiles remain browser-local by design. No account, backend profile endpoint, database migration, or cross-device synchronisation was approved for this module.
+- Keep the supplied job resource and national aggregate datasets separate. The Skills Profile feature does not ingest or replace either dataset.
+- Self-assessments are not aptitude tests. Any derived strengths must identify the actual user response supporting the interpretation.
 
 ## Product
 

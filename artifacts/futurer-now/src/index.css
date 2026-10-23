@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
@@ -993,4 +994,22 @@ body { font-size: 14px; }
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+}
+
+/* FutureNow nature tokens */
+:root { --app-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+:root:not(.dark) { --background: 48 100% 98%; --foreground: 105 9% 13%; --primary: 152 39% 30%; --border: 84 13% 89%; }
+.sidebar { background: #2F6B4F; overflow-y: auto; }
+.dark .sidebar { background: #1A2A20; }
+.nav-link.nav-active, .nav-link.nav-active:hover { background: #E8F2E5; color: #20251F; }
+.nav-link.nav-active .nav-index { color: #2F6B4F; }
+.nav-link:focus-visible, .mobile-menu:focus-visible, .mobile-close:focus-visible { outline: 3px solid #F4D35E; outline-offset: 2px; }
+.sidebar-kicker { margin: 22px 10px 8px; color: #D7E6D9; }
+.sidebar-kicker-modules { margin-top: 30px; }
+.nav-link { padding: 9px 11px; color: #EEF4EC; }
+.nav-soon { margin-left: auto; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 1px 6px; border-radius: 8px; background: rgba(244,162,97,.25); color: #FDE6D2; }
+.nav-active .nav-soon { background: #20251F; color: #F4D35E; }
+@media (max-width: 760px) {
+  .sidebar:not(.sidebar-open) { visibility: hidden; }
+  .sidebar.sidebar-open { visibility: visible; }
 }
