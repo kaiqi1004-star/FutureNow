@@ -77,6 +77,49 @@ export function buildLabourMarketIndicators(
   });
 }
 
+export type LabourMarketInterpretation = {
+  latestDate: string;
+  unemploymentRate: number;
+  monthOverMonth: LabourMarketComparison | null;
+  yearOverYear: LabourMarketComparison | null;
+  fiveYearEndpoint: LabourMarketComparison | null;
+  fiveYearComparisonCrossesCensusBreak: boolean;
+};
+
+export function buildLabourMarketInterpretation(
+  observations: LabourMarketObservation[],
+): LabourMarketInterpretation | null {
+  const sorted = [...observations].sort((a, b) => a.date.localeCompare(b.date));
+  const latest = sorted.at(-1);
+  if (!latest) return null;
+  const byDate = new Map(sorted.map((observation) => [observation.date, observation]));
+  const comparison = (date: string): LabourMarketComparison | null => {
+    const previous = byDate.get(date);
+    if (!previous) return null;
+    return {
+      date,
+      value: previous.u_rate,
+      change: Math.round((latest.u_rate - previous.u_rate) * 10) / 10,
+      unit: "percentage points",
+    };
+  };
+  const fiveYearDate = shiftMonth(latest.date, -60);
+  const fiveYearEndpoint = comparison(fiveYearDate);
+
+  return {
+    latestDate: latest.date,
+    unemploymentRate: latest.u_rate,
+    monthOverMonth: comparison(shiftMonth(latest.date, -1)),
+    yearOverYear: comparison(shiftMonth(latest.date, -12)),
+    fiveYearEndpoint,
+    fiveYearComparisonCrossesCensusBreak: Boolean(
+      fiveYearEndpoint &&
+      fiveYearDate < "2021-01-01" &&
+      latest.date >= "2021-01-01",
+    ),
+  };
+}
+
 export function selectLabourMarketWindow(
   observations: LabourMarketObservation[],
   months: number | "all",
@@ -105,24 +148,42 @@ export type SuppliedJobSnapshot = {
   distinctTitles: number;
   categories: Array<{ key: string; label: string; count: number }>;
   topTechnicalSkills: SkillFrequency[];
+  topDomainSkills: SkillFrequency[];
   topSoftSkills: SkillFrequency[];
   jobsWithPostingDates: number;
   jobsWithoutPostingDates: number;
 };
 
+const technicalSkillAliases = new Map([
+  ["excel", "Excel"],
+  ["microsoft excel", "Excel"],
+]);
+const domainSpecificTechnicalSkills = new Set(["payroll"]);
+
+function normalizedSkillKey(value: string): string {
+  return value.normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
 function countSkillMentions(
   jobs: JobListing[],
-  field: "technicalSkills" | "softSkills",
+  group: "technical" | "domain" | "soft",
 ): SkillFrequency[] {
   const counts = new Map<string, SkillFrequency>();
+  const field = group === "soft" ? "softSkills" : "technicalSkills";
 
   for (const job of jobs) {
     const skills = new Map<string, string>();
     for (const rawSkill of job[field] ?? []) {
-      const name = rawSkill.trim();
-      if (name && !skills.has(name.toLocaleLowerCase())) {
-        skills.set(name.toLocaleLowerCase(), name);
-      }
+      const rawName = rawSkill.normalize("NFKC").trim().replace(/\s+/g, " ");
+      if (!rawName) continue;
+      const rawKey = normalizedSkillKey(rawName);
+      const name = field === "technicalSkills"
+        ? technicalSkillAliases.get(rawKey) ?? rawName
+        : rawName;
+      const key = normalizedSkillKey(name);
+      const isDomainSkill = field === "technicalSkills" && domainSpecificTechnicalSkills.has(key);
+      if ((group === "domain") !== isDomainSkill) continue;
+      if (!skills.has(key)) skills.set(key, name);
     }
     for (const [key, name] of skills) {
       const current = counts.get(key);
@@ -152,8 +213,9 @@ export function buildSuppliedJobSnapshot(jobs: JobListing[]): SuppliedJobSnapsho
     totalRecords: jobs.length,
     distinctTitles: new Set(jobs.map((job) => job.title.trim().toLocaleLowerCase())).size,
     categories,
-    topTechnicalSkills: countSkillMentions(jobs, "technicalSkills"),
-    topSoftSkills: countSkillMentions(jobs, "softSkills"),
+    topTechnicalSkills: countSkillMentions(jobs, "technical"),
+    topDomainSkills: countSkillMentions(jobs, "domain"),
+    topSoftSkills: countSkillMentions(jobs, "soft"),
     jobsWithPostingDates: jobs.filter((job) => Boolean(job.postingDate?.trim())).length,
     jobsWithoutPostingDates: jobs.filter((job) => !job.postingDate?.trim()).length,
   };

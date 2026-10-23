@@ -39,6 +39,8 @@ try {
   assert.equal(initialData.rejectedRows, 0);
   assert.equal(initialData.latestObservationDate, "2026-08-01");
   assert.equal(initialData.observations.at(-1).u_rate, 2.9);
+  assert.ok(["external-fetch", "cache-hit"].includes(initialData.retrievalMode));
+  assert.equal(typeof initialData.retrievedAt, "string");
   assert.equal(jobs.length, 50);
 
   await page.getByRole("heading", { name: "The labour force, month by month." }).waitFor();
@@ -48,8 +50,16 @@ try {
   assert.match(await page.locator(".mi-date-stat").innerText(), /0\s*\/\s*50/);
   assert.match(await page.locator(".mi-category-list").innerText(), /Mechanical[\s\S]*12/);
   assert.match(await page.locator(".mi-skill-soft").innerText(), /Communication[\s\S]*20/);
+  assert.match(await page.locator(".mi-skill-technical").innerText(), /Excel[\s\S]*9/);
+  assert.match(await page.locator(".mi-skill-domain").innerText(), /Payroll[\s\S]*6/);
+  assert.doesNotMatch(await page.locator(".mi-skill-technical").innerText(), /Payroll/);
   assert.match(await page.locator(".mi-research-card").innerText(), /Not a live feed/);
   assert.match(await page.locator(".mi-research-card").innerText(), /2,000/);
+  assert.match(await page.locator(".mi-interpretation").innerText(), /What this means/);
+  assert.match(await page.locator(".mi-interpretation").innerText(), /4\.6%/);
+  assert.match(await page.locator(".mi-data-meta").innerText(), /Last successful CSV retrieval/);
+  assert.match(await page.locator(".mi-data-meta").innerText(), /API cache/);
+  assert.match(await page.locator(".mi-data-meta").innerText(), /MYT/);
   console.log("PASS: live data, all seven indicators, the 50-record snapshot, and dated research render");
 
   const windowSelect = page.getByLabel("Select chart time window");
@@ -73,10 +83,11 @@ try {
   assert.equal(refreshResponse.status(), 200);
   const refreshedData = await refreshResponse.json();
   assert.equal(refreshedData.cacheState, "fresh");
+  assert.equal(refreshedData.retrievalMode, "external-fetch");
   assert.equal(refreshedData.rowsValid, 200);
   assert.equal(refreshedData.latestObservationDate, "2026-08-01");
   assert.notEqual(refreshedData.retrievedAt, initialData.retrievedAt);
-  await page.getByRole("status").filter({ hasText: "refreshed from the source" }).waitFor();
+  await page.getByRole("status").filter({ hasText: "Values may be unchanged" }).waitFor();
   console.log("PASS: manual refresh reaches the API and updates the page with a fresh response");
 
   await page.setViewportSize({ width: 390, height: 844 });

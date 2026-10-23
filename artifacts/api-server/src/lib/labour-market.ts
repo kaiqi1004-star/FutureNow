@@ -50,6 +50,7 @@ export type LabourMarketData = LabourMarketCsvResult & {
   catalogueNextUpdate: string | null;
   catalogueMetadataError: string | null;
   retrievedAt: string;
+  retrievalMode: "external-fetch" | "cache-hit" | "stale-cache";
   cacheState: "fresh" | "stale";
   refreshError: string | null;
 };
@@ -257,6 +258,7 @@ export function createLabourMarketRepository(
       catalogueNextUpdate,
       catalogueMetadataError,
       retrievedAt: now().toISOString(),
+      retrievalMode: "external-fetch",
       cacheState: "fresh",
       refreshError: null,
       ...parsed,
@@ -268,6 +270,7 @@ export function createLabourMarketRepository(
     retryNotBefore = now().getTime() + LABOUR_MARKET_RETRY_COOLDOWN_MS;
     return {
       ...cached!,
+      retrievalMode: "stale-cache",
       cacheState: "stale",
       refreshError: lastRefreshError,
     };
@@ -275,12 +278,26 @@ export function createLabourMarketRepository(
 
   async function getData(forceRefresh = false): Promise<LabourMarketData> {
     const currentTime = now().getTime();
+    if (!forceRefresh && cached && lastRefreshError && currentTime < retryNotBefore) {
+      return {
+        ...cached,
+        retrievalMode: "stale-cache",
+        cacheState: "stale",
+        refreshError: lastRefreshError,
+      };
+    }
     if (
       !forceRefresh &&
       cached &&
+      !lastRefreshError &&
       currentTime - Date.parse(cached.retrievedAt) < LABOUR_MARKET_CACHE_TTL_MS
     ) {
-      return { ...cached, cacheState: "fresh", refreshError: null };
+      return {
+        ...cached,
+        retrievalMode: "cache-hit",
+        cacheState: "fresh",
+        refreshError: null,
+      };
     }
     if (inFlight) return inFlight;
     if (!forceRefresh && cached && currentTime < retryNotBefore) {

@@ -14,7 +14,7 @@ import {
   CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
-  buildLabourMarketIndicators, buildSuppliedJobSnapshot, selectLabourMarketWindow,
+  buildLabourMarketIndicators, buildLabourMarketInterpretation, buildSuppliedJobSnapshot, selectLabourMarketWindow,
 } from '../lib/market-intelligence-model';
 import { aiWorkResearch } from '../lib/ai-work-research';
 import './market-intelligence.css';
@@ -32,7 +32,7 @@ const formatFullDate = (value: string) => {
 const formatCatalogueDate = (value?: string | null) => value || 'Not supplied';
 const formatTimestamp = (value: string) => {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' });
+  return Number.isNaN(date.getTime()) ? value : `${date.toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kuala_Lumpur' })} MYT`;
 };
 const shortMonth = (value: string) => {
   const date = new Date(`${value.slice(0, 7)}-01T00:00:00`);
@@ -93,6 +93,7 @@ export default function MarketIntelligencePage() {
   const [windowMonths, setWindowMonths] = useState<number | 'all'>(36);
   const observations = labour.data?.observations ?? [];
   const indicators = useMemo(() => buildLabourMarketIndicators(observations), [observations]);
+  const interpretation = useMemo(() => buildLabourMarketInterpretation(observations), [observations]);
   const windowRows = useMemo(() => selectLabourMarketWindow(observations, windowMonths), [observations, windowMonths]);
   const snapshot = useMemo(() => jobsQuery.data ? buildSuppliedJobSnapshot(jobsQuery.data) : null, [jobsQuery.data]);
 
@@ -120,16 +121,32 @@ export default function MarketIntelligencePage() {
       {labour.data && <>
         {(labour.data.cacheState === 'stale' || labour.isError) && <div className="mi-notice mi-notice-stale" role="status"><Clock3 size={16} /><span><strong>Showing cached data.</strong> {labour.data.refreshError || 'The latest refresh could not be confirmed.'}</span></div>}
         {refresh.isError && <div className="mi-notice mi-notice-error" role="alert"><AlertCircle size={16} /><span>Refresh failed. The previously cached observations are preserved.</span></div>}
-        {refresh.isSuccess && refresh.data?.cacheState === 'fresh' && <div className="mi-notice mi-notice-success" role="status"><Check size={16} /><span>Labour-market data refreshed from the source.</span></div>}
+        {refresh.isSuccess && refresh.data?.retrievalMode === 'external-fetch' && <div className="mi-notice mi-notice-success" role="status"><Check size={16} /><span>OpenDOSM CSV fetch succeeded at {formatTimestamp(refresh.data.retrievedAt)}. Values may be unchanged from the previous retrieval.</span></div>}
         {labour.data.catalogueMetadataError && <div className="mi-notice mi-notice-stale" role="status"><Info size={16} /><span>Catalogue update metadata could not be retrieved: {labour.data.catalogueMetadataError}</span></div>}
         <div className="mi-data-meta">
           <span className="mi-live-label"><i /> SOURCE OBSERVATIONS</span>
           <span><CalendarDays size={14} /> Latest observation <b>{formatDate(labour.data.latestObservationDate)}</b></span>
           <span>Catalogue last updated <b>{formatCatalogueDate(labour.data.catalogueLastUpdated)}</b></span>
-          <span>Retrieved <b>{formatTimestamp(labour.data.retrievedAt)}</b></span>
-          <span className={`mi-cache-chip ${labour.data.cacheState}`}>{labour.data.cacheState === 'fresh' ? 'Fresh cache' : 'Stale cache'}</span>
+          <span>Last successful CSV retrieval <b>{formatTimestamp(labour.data.retrievedAt)}</b></span>
+          <span className={`mi-cache-chip ${labour.data.cacheState}`}>API cache: {labour.data.cacheState === 'fresh' ? 'within 6 hours' : 'stale'}</span>
+          <span className={`mi-fetch-chip ${labour.data.retrievalMode}`}>
+            {labour.data.retrievalMode === 'external-fetch' ? 'External CSV fetch succeeded' : labour.data.retrievalMode === 'cache-hit' ? 'Cache hit · no CSV request' : 'Refresh failed · stale cache'}
+          </span>
         </div>
         {indicators.length > 0 ? <div className="mi-metrics">{indicators.map(indicator => <MetricCard key={indicator.key} indicator={indicator} />)}</div> : <div className="mi-empty">The source returned no valid monthly observations.</div>}
+        {interpretation && <section className="mi-interpretation" aria-labelledby="interpretation-heading">
+          <div className="mi-interpretation-heading"><Info size={16} /><div><span>OBSERVED VALUES ONLY</span><h3 id="interpretation-heading">What this means</h3></div></div>
+          <div className="mi-interpretation-grid">
+            <div><small>SHORT-TERM MOVEMENT</small><p>Unemployment rate was <b>{number.format(interpretation.unemploymentRate)}%</b> in {formatDate(interpretation.latestDate)}.
+              {interpretation.monthOverMonth ? <> Compared with {formatDate(interpretation.monthOverMonth.date)} ({number.format(interpretation.monthOverMonth.value)}%), that is <b>{signed(interpretation.monthOverMonth.change, 'percentage points')}</b>.</> : <> An exact prior-month comparison is unavailable.</>}
+              {interpretation.yearOverYear ? <> The same month last year was {number.format(interpretation.yearOverYear.value)}% ({signed(interpretation.yearOverYear.change, 'percentage points')} year over year).</> : <> The exact same month last year is unavailable.</>}</p></div>
+            <div><small>FIVE-YEAR ENDPOINT</small><p>{interpretation.fiveYearEndpoint
+              ? <>The rate was {number.format(interpretation.fiveYearEndpoint.value)}% in {formatDate(interpretation.fiveYearEndpoint.date)} and {number.format(interpretation.unemploymentRate)}% in {formatDate(interpretation.latestDate)} ({signed(interpretation.fiveYearEndpoint.change, 'percentage points')}). This compares two endpoints; it does not establish a continuous trend or explain a cause.</>
+              : <>The exact same-month observation five years earlier is unavailable, so no five-year comparison is shown.</>}
+              {interpretation.fiveYearComparisonCrossesCensusBreak && <> This comparison crosses the Census population-reference break; interpret it cautiously.</>}</p></div>
+          </div>
+          <p className="mi-interpretation-footnote">National unemployment rates do not identify occupational demand or its causes. The 50 supplied job records are not a representative sample of all Malaysian vacancies.</p>
+        </section>}
         {windowRows.length > 0 && <div className="mi-chart-panel">
            <div className="mi-chart-head"><div><h3>Monthly labour-force and employment counts</h3><p>Actual source observations · thousand persons</p></div>
             <label className="mi-window-select">Time window <span className="mi-select-wrap"><select value={windowMonths} onChange={e => setWindowMonths(e.target.value === 'all' ? 'all' : Number(e.target.value))} aria-label="Select chart time window"><option value={12}>12 months</option><option value={36}>36 months</option><option value={60}>60 months</option><option value="all">All available</option></select><ChevronDown size={14} /></span></label>
@@ -166,8 +183,9 @@ export default function MarketIntelligencePage() {
         <div className="mi-skills-grid">
           <SkillList title="Technical skills mentioned" items={snapshot.topTechnicalSkills} total={snapshot.totalRecords} kind="technical" />
           <SkillList title="Soft skills mentioned" items={snapshot.topSoftSkills} total={snapshot.totalRecords} kind="soft" />
+          <SkillList title="Domain-specific skills" items={snapshot.topDomainSkills} total={snapshot.totalRecords} kind="domain" />
         </div>
-        <p className="mi-skills-footnote"><Info size={14} /> Counts show records that mention each skill; one record can mention multiple skills. The denominator is the supplied record set only.</p>
+        <p className="mi-skills-footnote"><Info size={14} /> Counts show records that mention each displayed skill; equivalent mentions within one record count once. “Excel” groups “Excel” and “Microsoft Excel”; “Payroll” is shown as domain-specific. Original source wording remains unchanged in the records.</p>
       </>}
     </section>
 
@@ -191,7 +209,7 @@ export default function MarketIntelligencePage() {
   </div>;
 }
 
-function SkillList({ title, items, total, kind }: { title: string; items: Array<{ name: string; jobCount: number }>; total: number; kind: 'technical' | 'soft' }) {
+function SkillList({ title, items, total, kind }: { title: string; items: Array<{ name: string; jobCount: number }>; total: number; kind: 'technical' | 'soft' | 'domain' }) {
   return <div className={`mi-skill-panel mi-skill-${kind}`}><div className="mi-skill-heading"><h3>{title}</h3><span>TOP MENTIONS</span></div>
     {items.length ? <ol>{items.map((skill, i) => <li key={skill.name}><span className="mi-skill-number">{String(i + 1).padStart(2, '0')}</span><span className="mi-skill-name">{skill.name}</span><span className="mi-skill-meter"><i style={{ width: `${total ? skill.jobCount / total * 100 : 0}%` }} /></span><b>{skill.jobCount}</b></li>)}</ol> : <div className="mi-empty">No skill mentions are available in this snapshot.</div>}
   </div>;

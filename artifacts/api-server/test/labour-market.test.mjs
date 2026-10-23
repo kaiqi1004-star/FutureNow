@@ -72,28 +72,41 @@ test("repository caches successful retrievals, forces refresh, and preserves sta
 
   const first = await repository.getData();
   assert.equal(first.cacheState, "fresh");
+  assert.equal(first.retrievalMode, "external-fetch");
   assert.equal(first.latestObservationDate, "2026-08-01");
   assert.equal(first.catalogueLastUpdated, "09 Oct 2026, 12:30");
   assert.equal(requestCount, 2);
 
   currentTime = new Date(currentTime.getTime() + 60_000);
-  assert.equal((await repository.getData()).retrievedAt, first.retrievedAt);
+  const cacheHit = await repository.getData();
+  assert.equal(cacheHit.retrievedAt, first.retrievedAt);
+  assert.equal(cacheHit.retrievalMode, "cache-hit");
   assert.equal(requestCount, 2);
 
   const refreshed = await repository.getData(true);
+  assert.equal(refreshed.retrievalMode, "external-fetch");
   assert.notEqual(refreshed.retrievedAt, first.retrievedAt);
   assert.equal(requestCount, 4);
 
-  currentTime = new Date(currentTime.getTime() + LABOUR_MARKET_CACHE_TTL_MS + 1);
+  currentTime = new Date(currentTime.getTime() + 60_000);
   csvFails = true;
-  const stale = await repository.getData();
+  const stale = await repository.getData(true);
   assert.equal(stale.cacheState, "stale");
+  assert.equal(stale.retrievalMode, "stale-cache");
   assert.equal(stale.retrievedAt, refreshed.retrievedAt);
   assert.match(stale.refreshError, /HTTP 503/);
 
   const cooldown = await repository.getData();
   assert.equal(cooldown.cacheState, "stale");
+  assert.equal(cooldown.retrievalMode, "stale-cache");
   assert.equal(requestCount, 6);
+
+  currentTime = new Date(currentTime.getTime() + 5 * 60_000 + 1);
+  csvFails = false;
+  const retriedAfterCooldown = await repository.getData();
+  assert.equal(retriedAfterCooldown.retrievalMode, "external-fetch");
+  assert.equal(retriedAfterCooldown.cacheState, "fresh");
+  assert.equal(requestCount, 8);
 });
 
 test("initial source failure is an error, and concurrent retrievals share one request", async () => {
@@ -108,6 +121,7 @@ test("initial source failure is an error, and concurrent retrievals share one re
   };
   const repository = createLabourMarketRepository(fetcher);
   const [one, two] = await Promise.all([repository.getData(), repository.getData()]);
+  assert.equal(one.retrievalMode, "external-fetch");
   assert.equal(one.retrievedAt, two.retrievedAt);
   assert.equal(requestCount, 2);
 });

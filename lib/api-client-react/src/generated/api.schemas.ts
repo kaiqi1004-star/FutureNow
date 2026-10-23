@@ -357,6 +357,18 @@ export interface LabourMarketObservation {
   u_rate: number;
 }
 
+/**
+ * Whether this response followed a successful external fetch, a cache hit, or a failed refresh using cached data.
+ */
+export type LabourMarketDataRetrievalMode = typeof LabourMarketDataRetrievalMode[keyof typeof LabourMarketDataRetrievalMode];
+
+
+export const LabourMarketDataRetrievalMode = {
+  'external-fetch': 'external-fetch',
+  'cache-hit': 'cache-hit',
+  'stale-cache': 'stale-cache',
+} as const;
+
 export type LabourMarketDataCacheState = typeof LabourMarketDataCacheState[keyof typeof LabourMarketDataCacheState];
 
 
@@ -377,7 +389,10 @@ export interface LabourMarketData {
   catalogueNextUpdate: string | null;
   /** @nullable */
   catalogueMetadataError: string | null;
+  /** Time of the last successful external CSV retrieval; unchanged when serving a cached response. */
   retrievedAt: string;
+  /** Whether this response followed a successful external fetch, a cache hit, or a failed refresh using cached data. */
+  retrievalMode: LabourMarketDataRetrievalMode;
   cacheState: LabourMarketDataCacheState;
   /** @nullable */
   refreshError: string | null;

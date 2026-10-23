@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { LabourMarketDataCacheState } from './labourMarketDataCacheState';
+import type { LabourMarketDataRetrievalMode } from './labourMarketDataRetrievalMode';
 import type { LabourMarketObservation } from './labourMarketObservation';
 
 export interface LabourMarketData {
@@ -20,7 +21,10 @@ export interface LabourMarketData {
   catalogueNextUpdate: string | null;
   /** @nullable */
   catalogueMetadataError: string | null;
+  /** Time of the last successful external CSV retrieval; unchanged when serving a cached response. */
   retrievedAt: Date;
+  /** Whether this response followed a successful external fetch, a cache hit, or a failed refresh using cached data. */
+  retrievalMode: LabourMarketDataRetrievalMode;
   cacheState: LabourMarketDataCacheState;
   /** @nullable */
   refreshError: string | null;

@@ -14,6 +14,7 @@ export * from './jobListing';
 export * from './jobListingSector';
 export * from './labourMarketData';
 export * from './labourMarketDataCacheState';
+export * from './labourMarketDataRetrievalMode';
 export * from './labourMarketObservation';
 export * from './roleMatch';
 export * from './roleMatchInput';

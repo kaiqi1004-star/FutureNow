@@ -601,6 +601,11 @@ components:
         retrievedAt:
           type: string
           format: date-time
+          description: Time of the last successful external CSV retrieval; unchanged when serving a cached response.
+        retrievalMode:
+          type: string
+          enum: [external-fetch, cache-hit, stale-cache]
+          description: Whether this response followed a successful external fetch, a cache hit, or a failed refresh using cached data.
         cacheState:
           type: string
           enum: [fresh, stale]
@@ -623,7 +628,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LabourMarketObservation"
-      required: [sourceName, datasetName, catalogueUrl, csvUrl, latestObservationDate, catalogueLastUpdated, catalogueNextUpdate, catalogueMetadataError, retrievedAt, cacheState, refreshError, rowsReceived, rowsValid, rejectedRows, ignoredColumns, observations]
+      required: [sourceName, datasetName, catalogueUrl, csvUrl, latestObservationDate, catalogueLastUpdated, catalogueNextUpdate, catalogueMetadataError, retrievedAt, retrievalMode, cacheState, refreshError, rowsReceived, rowsValid, rejectedRows, ignoredColumns, observations]
     ApiError:
       type: object
       properties:

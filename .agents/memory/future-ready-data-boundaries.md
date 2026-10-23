@@ -17,6 +17,12 @@ Minimal, backward-compatible schema extensions are preferred over misclassifying
 
 **How to apply:** Preserve raw salary text and source spelling, keep unknown fields unknown, and label derived category counts separately from record and distinct-title counts.
 
+Derived skill summaries may group established spelling aliases and classify Payroll separately as an HR-domain skill; count each job at most once per canonical skill without rewriting record text.
+
+**Why:** Summary counts should make equivalent terms comparable while preserving the workbook's wording and avoiding duplicate mentions.
+
+**How to apply:** Normalize only aggregate calculations and display labels. Keep source records unchanged, and add alias or domain rules only when supported by the supplied role and skill evidence.
+
 Role matches must remain explainable estimates, not hiring probabilities or promises of job security. A missing profile skill means “not found in the profile,” not proven absence. Do not infer specific expertise from broad skill labels, free-text achievements, or self-rated proficiency.
 
 **Why:** The Feature 2 brief explicitly requires transparent, deterministic matching without fabricated skills or employment outcomes. Equal-weight listed-skill coverage was chosen because the source records do not support validated weighting of the broader profile fields.
