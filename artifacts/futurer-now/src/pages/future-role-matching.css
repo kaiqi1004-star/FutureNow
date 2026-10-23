@@ -13,6 +13,25 @@
 .rm-profile { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
 .rm-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .rm-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 12px; background: var(--rm-mint); color: var(--rm-ink); border: 1px solid transparent; }
+.rm-chip { flex-wrap: wrap; gap: 8px; padding: 7px 11px; border-radius: 10px; max-width: 100%; overflow-wrap: anywhere; }
+.rm-chip small { color: var(--rm-muted); }
+.rm-sdg-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; vertical-align: middle; }
+.rm-sdg.is-unassessed { background: transparent; color: var(--rm-muted); border: 1px solid var(--rm-line); font-weight: 400; }
+.rm-score-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; margin-top: 6px; }
+.rm-score-line strong { font-size: 24px; line-height: 1.2; color: var(--rm-green); }
+.rm-score-line small { font-size: 12px; }
+.rm-section-heading { margin: 24px 0 6px; font-size: 19px; }
+.rm-assessment-note { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--rm-muted); }
+.rm-assessment-note.is-review { padding-left: 10px; border-left: 2px solid var(--rm-orange); }
+.rm-sdg-disclosure { margin-top: 12px; }
+.rm-sdg-disclosure summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--rm-green); padding: 5px 0; }
+.rm-sdg-disclosure summary:focus-visible, .rm-sdg-tags a:focus-visible { outline: 2px solid var(--rm-orange); outline-offset: 3px; }
+.rm-sdg-detail p { margin: 7px 0; }
+.rm-sdg-detail dl { margin: 8px 0; }
+.rm-sdg-detail dt { font-weight: 600; margin-top: 6px; }
+.rm-sdg-detail dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+.rm-mapping-kind { font-size: 11px; }
+.rm-detail, .rm-skill-row, .rm-result > div { min-width: 0; overflow-wrap: anywhere; }
 .rm-chip.is-gap { background: var(--rm-peach); }
 .rm-chip.is-plain { background: transparent; border-color: var(--rm-line); }
 .rm-context dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13px; margin: 8px 0; }

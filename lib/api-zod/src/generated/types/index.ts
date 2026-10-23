@@ -19,6 +19,7 @@ export * from './roleMatchSkillCategory';
 export * from './salaryRange';
 export * from './salaryRangeSector';
 export * from './sdgAssessment';
+export * from './sdgAssessmentStatus';
 export * from './sdgConnection';
 export * from './sdgConnectionGoalNumber';
 export * from './skillGapAnalysis';

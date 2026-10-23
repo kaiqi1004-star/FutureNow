@@ -15,4 +15,7 @@ export interface SdgConnection {
   explanation: string;
   evidence: string;
   ruleId: string;
+  conditions: string;
+  indicative: boolean;
+  contextEvidence: string[];
 }

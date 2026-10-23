@@ -112,6 +112,8 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "category": zod.enum(['technical', 'soft']),
   "matchedBy": zod.string().nullable(),
   "sdg": zod.object({
+  "status": zod.enum(['mapped', 'review_required', 'not_assessed']),
+  "assessmentNote": zod.string(),
   "connections": zod.array(zod.object({
   "goalNumber": zod.union([zod.literal(4),zod.literal(5),zod.literal(8),zod.literal(9),zod.literal(12)]),
   "title": zod.string(),
@@ -119,7 +121,10 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "url": zod.string(),
   "explanation": zod.string(),
   "evidence": zod.string(),
-  "ruleId": zod.string()
+  "ruleId": zod.string(),
+  "conditions": zod.string(),
+  "indicative": zod.boolean(),
+  "contextEvidence": zod.array(zod.string())
 })),
   "reviewRequired": zod.boolean(),
   "reviewReason": zod.string().nullable()
@@ -130,6 +135,8 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "category": zod.enum(['technical', 'soft']),
   "matchedBy": zod.string().nullable(),
   "sdg": zod.object({
+  "status": zod.enum(['mapped', 'review_required', 'not_assessed']),
+  "assessmentNote": zod.string(),
   "connections": zod.array(zod.object({
   "goalNumber": zod.union([zod.literal(4),zod.literal(5),zod.literal(8),zod.literal(9),zod.literal(12)]),
   "title": zod.string(),
@@ -137,7 +144,10 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "url": zod.string(),
   "explanation": zod.string(),
   "evidence": zod.string(),
-  "ruleId": zod.string()
+  "ruleId": zod.string(),
+  "conditions": zod.string(),
+  "indicative": zod.boolean(),
+  "contextEvidence": zod.array(zod.string())
 })),
   "reviewRequired": zod.boolean(),
   "reviewReason": zod.string().nullable()
@@ -145,6 +155,8 @@ export const MatchFutureReadyRolesResponse = zod.object({
 })),
   "unmatchedProfileSkills": zod.array(zod.string()),
   "roleSdg": zod.object({
+  "status": zod.enum(['mapped', 'review_required', 'not_assessed']),
+  "assessmentNote": zod.string(),
   "connections": zod.array(zod.object({
   "goalNumber": zod.union([zod.literal(4),zod.literal(5),zod.literal(8),zod.literal(9),zod.literal(12)]),
   "title": zod.string(),
@@ -152,7 +164,10 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "url": zod.string(),
   "explanation": zod.string(),
   "evidence": zod.string(),
-  "ruleId": zod.string()
+  "ruleId": zod.string(),
+  "conditions": zod.string(),
+  "indicative": zod.boolean(),
+  "contextEvidence": zod.array(zod.string())
 })),
   "reviewRequired": zod.boolean(),
   "reviewReason": zod.string().nullable()

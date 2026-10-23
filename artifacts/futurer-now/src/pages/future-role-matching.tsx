@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Link } from 'wouter';
 import { useMatchFutureReadyRoles } from '@workspace/api-client-react';
-import type { JobListing, RoleMatch, SdgAssessment } from '@workspace/api-client-react';
+import type { JobListing, RoleMatch } from '@workspace/api-client-react';
 import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Compass, ExternalLink, Info, Lock, RefreshCw, Sparkles, UserRound } from 'lucide-react';
 import { loadProfile, type SavedProfile } from '@/lib/skills-profile';
 import { matchingProfileInput } from '@/lib/matching-profile';
+import { assessExperience } from '@/lib/experience-fit';
+import { SdgTags, SdgDetail, UnassessedSdg } from '@/components/sdg-assessment';
 import './future-role-matching.css';
 
 const categoryLabels: Record<JobListing['sector'], string> = {
@@ -19,23 +21,6 @@ const salaryLabel = (job: JobListing) => {
   if (raw && /\d/.test(raw)) return `RM ${raw} monthly (as supplied)`;
   return raw ? `${raw} (as supplied)` : 'Salary not disclosed';
 };
-
-function SdgTags({ a, id }: { a: SdgAssessment; id: string }) {
-  return <span className="rm-chips" data-testid={`sdg-tags-${id}`}>
-    {a.connections.map((c) => <a key={c.ruleId + c.target} className="rm-sdg" href={c.url} target="_blank" rel="noopener noreferrer" title={`${c.title}, target ${c.target}`}>SDG {c.goalNumber}</a>)}
-    {(a.reviewRequired || !a.connections.length) && <span className="rm-sdg is-review">SDG review needed</span>}
-  </span>;
-}
-
-function SdgDetail({ a, id }: { a: SdgAssessment; id: string }) {
-  return <div data-testid={`sdg-detail-${id}`}>
-    {a.connections.map((c) => <div key={c.ruleId + c.target} className="rm-sdg-detail">
-      <strong>SDG {c.goalNumber}: {c.title}</strong> (target {c.target}). {c.explanation} <em>Evidence: {c.evidence}</em>{' '}
-      <a href={c.url} target="_blank" rel="noopener noreferrer">Official UN page <ExternalLink size={11} /></a>
-    </div>)}
-    {(a.reviewRequired || !a.connections.length) && <div className="rm-sdg-detail is-review"><strong>Review required.</strong> {a.reviewReason ?? 'No rule-based SDG connection was found; this needs human review rather than an assumed tag.'}</div>}
-  </div>;
-}
 
 function readProfile() {
   const r = loadProfile();
@@ -101,7 +86,7 @@ export default function FutureRoleMatchingPage() {
       <div className="rm-privacy" data-testid="text-privacy-disclosure"><Lock size={16} /><span>Only your skill names are sent to a stateless matcher. Your other answers stay in this browser and do not affect the score.</span></div>
     </div>
 
-    {detail && data ? <Detail r={detail} formula={data.formula} sdgNotice={data.sdgNotice} rank={rankOf(detail)} headRef={detailHead} onBack={() => { returnFocus.current = detail.job.id; setDetailId(null); }} /> : <>
+    {detail && data ? <Detail r={detail} experienceYears={saved?.profile.basic.years} formula={data.formula} sdgNotice={data.sdgNotice} rank={rankOf(detail)} headRef={detailHead} onBack={() => { returnFocus.current = detail.job.id; setDetailId(null); }} /> : <>
       <section className="rm-card" aria-labelledby="rm-profile-h">
         <div className="rm-toolbar"><div><div className="rm-eyebrow">Your saved profile</div><h2 id="rm-profile-h">Skills used for matching</h2></div>
           <button type="button" className="rm-btn" onClick={refresh} data-testid="button-refresh-profile"><RefreshCw size={14} />Reload saved profile</button></div>
@@ -112,7 +97,8 @@ export default function FutureRoleMatchingPage() {
             {incomplete > 0 && <div className="rm-note" data-testid="status-incomplete-profile"><Info size={16} /><p>This is a {input.isDraft ? 'draft' : 'saved'} profile with {incomplete} required {incomplete === 1 ? 'answer' : 'answers'} still missing ({input.missingFields.join(' ')}). Matching works with your skills, but <Link href="/skills-profile">completing your profile</Link> keeps your context accurate.</p></div>}
             <div className="rm-profile">
               <div><p className="rm-muted">{skills.length} skill {skills.length === 1 ? 'name' : 'names'} will be sent. Proficiency is shown for your reference and is not weighted.</p>
-                <div className="rm-chips" data-testid="list-profile-skills">{saved.profile.skills.map((s) => <span key={s.id} className="rm-chip">{s.name}<small>· {s.proficiency}</small><span className="rm-sdg is-review" title="This profile term has not been assessed in a work context. Curated mappings are shown against source-listed requirements in each result.">SDG review needed</span></span>)}</div></div>
+                <p className="rm-muted">Profile terms are not yet assessed for SDG contribution here. Each job provides its own source-supported context.</p>
+                <div className="rm-chips" data-testid="list-profile-skills">{saved.profile.skills.map((s) => <span key={s.id} className="rm-chip"><span>{s.name}</span><small>{s.proficiency}</small><UnassessedSdg /></span>)}</div></div>
               <div className="rm-context"><h3>Local context (not scored)</h3><dl>
                 <dt>Experience</dt><dd>{p?.basic.years === '' ? 'Not provided' : `${p?.basic.years} years`}</dd>
                 <dt>Education</dt><dd>{p?.basic.education || 'Not provided'}</dd>
@@ -160,8 +146,9 @@ export default function FutureRoleMatchingPage() {
   </div>;
 }
 
-function Detail({ r, rank, formula, sdgNotice, headRef, onBack }: { r: RoleMatch; rank: number; formula: string; sdgNotice: string; headRef: RefObject<HTMLHeadingElement | null>; onBack: () => void }) {
+function Detail({ r, rank, formula, sdgNotice, experienceYears, headRef, onBack }: { r: RoleMatch; rank: number; formula: string; sdgNotice: string; experienceYears: number | "" | undefined; headRef: RefObject<HTMLHeadingElement | null>; onBack: () => void }) {
   const j = r.job;
+  const experienceFit = assessExperience(experienceYears, j.experience);
   return <section className="rm-detail" aria-labelledby="rm-detail-h" data-testid={`detail-match-${j.id}`}>
     <button type="button" className="rm-btn" onClick={onBack} data-testid="button-back-to-results"><ArrowLeft size={14} />Back to ranked results</button>
     <div className="rm-card" style={{ marginTop: 14 }}>
@@ -169,24 +156,31 @@ function Detail({ r, rank, formula, sdgNotice, headRef, onBack }: { r: RoleMatch
       <h2 id="rm-detail-h" ref={headRef} tabIndex={-1} data-testid="text-detail-title">{j.title}</h2>
       <div className="rm-meta" data-testid="text-detail-company">{j.company} · {j.industry}</div>
       <div className="rm-detail-grid">
-        <div className="rm-fact"><span>Estimated skill fit</span><strong data-testid="text-detail-score">{r.score === null ? 'Not calculable' : `${r.score}%`}</strong> · {r.matchedCount} of {r.requiredCount} listed skills</div>
+        <div className="rm-fact"><span>Estimated skill fit</span><div className="rm-score-line"><strong data-testid="text-detail-score">{r.score === null ? 'Not calculable' : `${r.score}%`}</strong><small>{r.matchedCount} of {r.requiredCount} listed skills</small></div></div>
         <div className="rm-fact"><span>Experience (source wording)</span>{j.experience || 'Not specified'}</div>
         <div className="rm-fact"><span>Education (source wording)</span>{j.education || 'Not specified'}</div>
         <div className="rm-fact"><span>Salary (original)</span><span data-testid="text-detail-salary" style={{ textTransform: 'none', fontSize: 13, color: 'inherit', letterSpacing: 0 }}>{salaryLabel(j)}</span></div>
       </div>
+      <div className={`rm-note ${experienceFit.status === 'below_requirement' ? 'is-warn' : ''}`} role={experienceFit.status === 'below_requirement' ? 'alert' : 'note'} data-testid="experience-fit" data-state={experienceFit.status}>
+        {experienceFit.status === 'below_requirement' ? <AlertTriangle size={16} /> : <Info size={16} />}<p>{experienceFit.message}</p>
+      </div>
       <p className="rm-muted" data-testid="text-detail-formula">{formula} The profile is self-reported; this is not a hiring probability. Experience, education, interests, proficiency and salary are not scored.</p>
       <div className="rm-actions">{j.sourceUrl ? <a className="rm-btn" href={j.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="link-detail-source">View source listing ({j.source || 'source name not provided'})<ExternalLink size={13} /></a> : <span className="rm-muted">Source: {j.source || 'not specified'}, no URL supplied.</span>}</div>
-      <p className="rm-muted">{sdgNotice}</p>
-      <h3 style={{ marginTop: 18 }}>Role SDG assessment</h3><SdgDetail a={r.roleSdg} id={`role-${j.id}`} />
     </div>
+    <section className="rm-card" aria-labelledby="rm-role-sdg-h">
+      <div className="rm-toolbar"><h3 id="rm-role-sdg-h">Role SDG mapping</h3><SdgTags a={r.roleSdg} id={`detail-role-${j.id}`} /></div>
+      <p className="rm-muted">{sdgNotice}</p><SdgDetail a={r.roleSdg} id={`role-${j.id}`} />
+    </section>
+    <h3 className="rm-section-heading">Individual skill SDG assessments</h3>
+    <p className="rm-muted">Compact tags show mapped goals. Open an assessment for its explanation, conditions, source context, and official UN reference. Neutral “Not assessed” labels are not review warnings.</p>
     <div className="rm-two">
       <div className="rm-card"><h3>Matched skills ({r.matchedSkills.length})</h3><p className="rm-muted">Listed requirements that match a skill name in your profile.</p>
-        {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong><SdgTags a={s.sdg} id={`m-${slug(s.skill)}`} /></header><div className="rm-meta">{s.category} skill{s.matchedBy ? ` · matched by your "${s.matchedBy}"` : ''}</div><SdgDetail a={s.sdg} id={`m-${slug(s.skill)}`} /></li>)}</ul> : <p className="rm-muted">No listed skills matched.</p>}</div>
-      <div className="rm-card"><h3>Skill gaps ({r.skillGaps.length})</h3><p className="rm-muted">Not found in your profile. That does not mean you definitely lack them; you may simply not have listed them.</p>
-        {r.skillGaps.length ? <ul className="rm-skill-table">{r.skillGaps.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-gap-${slug(s.skill)}`}><header><strong>{s.skill}</strong><SdgTags a={s.sdg} id={`g-${slug(s.skill)}`} /></header><div className="rm-meta">{s.category} skill</div><SdgDetail a={s.sdg} id={`g-${slug(s.skill)}`} /></li>)}</ul> : <p className="rm-muted">No gaps against listed skills.</p>}</div>
+        {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong><SdgTags a={s.sdg} id={`m-${slug(s.skill)}`} /></header><div className="rm-meta">{s.category} skill{s.matchedBy ? ` · matched by your "${s.matchedBy}"` : ''}</div><SdgDetail a={s.sdg} id={`m-${slug(s.skill)}`} collapsed /></li>)}</ul> : <p className="rm-muted">No listed skills matched.</p>}</div>
+      <div className="rm-card"><h3>Skills not found in your saved profile ({r.skillGaps.length})</h3><p className="rm-muted">This does not mean you definitely lack them; you may simply not have listed them.</p>
+        {r.skillGaps.length ? <ul className="rm-skill-table">{r.skillGaps.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-gap-${slug(s.skill)}`}><header><strong>{s.skill}</strong><SdgTags a={s.sdg} id={`g-${slug(s.skill)}`} /></header><div className="rm-meta">{s.category} skill</div><SdgDetail a={s.sdg} id={`g-${slug(s.skill)}`} collapsed /></li>)}</ul> : <p className="rm-muted">No gaps against listed skills.</p>}</div>
     </div>
     <div className="rm-card"><h3>Suggested improvement</h3><p data-testid="text-detail-improvement">{r.improvement}</p>
-      {r.unmatchedProfileSkills.length > 0 && <><h3>Your skills not listed for this role</h3><p className="rm-muted">These profile terms do not contribute to this score. Their SDG application needs review outside this listing.</p><div className="rm-chips">{r.unmatchedProfileSkills.map((s) => <span key={s} className="rm-chip is-plain">{s}<span className="rm-sdg is-review">SDG review needed</span></span>)}</div></>}</div>
+      {r.unmatchedProfileSkills.length > 0 && <><h3>Your skills not listed for this role</h3><p className="rm-muted">These terms do not contribute to this score and have not been assessed in this role's requirements.</p><div className="rm-chips">{r.unmatchedProfileSkills.map((s) => <span key={s} className="rm-chip is-plain"><span>{s}</span><UnassessedSdg /></span>)}</div></>}</div>
     <button type="button" className="rm-btn" onClick={onBack} data-testid="button-back-to-results-bottom"><ArrowLeft size={14} />Back to ranked results</button>
   </section>;
 }

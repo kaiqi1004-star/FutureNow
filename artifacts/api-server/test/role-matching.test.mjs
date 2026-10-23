@@ -78,7 +78,7 @@ test("salary bands and blank source names survive; salary/category never affect 
   assert.equal(matchRoles([jobs.find((job) => job.id === "J43")], []).results[0].job.source, "");
 });
 
-test("all role and requirement mappings are explained valid SDGs or explicitly flagged", () => {
+test("all role and requirement mappings expose coherent mapped, reviewed, or unassessed states", () => {
   const result = matchRoles(jobs, ["PHP", "Communication"]);
   const titles = {
     4: "Quality Education", 5: "Gender Equality", 8: "Decent Work and Economic Growth",
@@ -87,15 +87,23 @@ test("all role and requirement mappings are explained valid SDGs or explicitly f
   assert.deepEqual(SDG_GOALS, titles);
   for (const row of result.results) {
     for (const assessment of [row.roleSdg, ...row.matchedSkills.map((s) => s.sdg), ...row.skillGaps.map((s) => s.sdg)]) {
-      assert.ok(assessment.connections.length > 0 || (assessment.reviewRequired && assessment.reviewReason));
-      assert.equal(assessment.reviewRequired, assessment.connections.length === 0);
+      assert.ok(["mapped", "review_required", "not_assessed"].includes(assessment.status));
+      assert.equal(assessment.connections.length > 0, assessment.status === "mapped");
+      assert.equal(assessment.reviewRequired, assessment.status === "review_required");
+      assert.ok(assessment.assessmentNote);
+      assert.equal(assessment.reviewReason !== null, assessment.status === "review_required");
       for (const connection of assessment.connections) {
         assert.equal(connection.title, titles[connection.goalNumber]);
         assert.equal(connection.url, `https://sdgs.un.org/goals/goal${connection.goalNumber}#targets_and_indicators`);
         assert.ok(connection.target.startsWith(`${connection.goalNumber}.`));
         assert.ok(connection.explanation.length > 60);
         assert.ok(connection.ruleId);
+        assert.equal(connection.indicative, true);
+        assert.ok(connection.conditions.length > 40);
         assert.ok([...row.job.technicalSkills, ...row.job.softSkills].includes(connection.evidence));
+        for (const evidence of connection.contextEvidence) {
+          assert.ok([...row.job.technicalSkills, ...row.job.softSkills].includes(evidence));
+        }
       }
     }
   }
@@ -103,15 +111,68 @@ test("all role and requirement mappings are explained valid SDGs or explicitly f
 
 test("generic traits are flagged, not given unrelated goals; specific connections cite actual evidence", () => {
   assert.equal(mapSkillToSdgs("Positive attitude").reviewRequired, true);
-  assert.equal(mapSkillToSdgs("An unfamiliar skill").reviewRequired, true);
-  assert.equal(mapSkillToSdgs("Excel").reviewRequired, true);
-  assert.equal(mapSkillToSdgs("Syntax").reviewRequired, true);
+  assert.equal(mapSkillToSdgs("An unfamiliar skill").status, "not_assessed");
+  assert.equal(mapSkillToSdgs("Excel").status, "not_assessed");
+  assert.equal(mapSkillToSdgs("Syntax").status, "not_assessed");
   assert.equal(mapSkillToSdgs("Model training").connections.some((item) => item.goalNumber === 4), false);
   assert.equal(mapSkillToSdgs("Recruitment").connections.some((item) => item.goalNumber === 5), false);
   assert.ok(mapSkillToSdgs("Inclusive recruitment and equal opportunities").connections.some((item) => item.goalNumber === 5));
   assert.ok(mapSkillToSdgs("Preventive maintenance").connections.some((item) => item.goalNumber === 12));
   assert.ok(mapSkillToSdgs("Mentoring").connections.some((item) => item.goalNumber === 4));
-  assert.equal(mapRoleToSdgs([]).reviewRequired, true);
+  assert.equal(mapRoleToSdgs(fixture("X", [])).reviewRequired, true);
+});
+
+test("spreadsheet and general skills get reusable conditional mappings only with actual source context", () => {
+  const dataJob = { ...fixture("D", ["Data Analytics", "Excel", "Google Sheets"]), title: "Junior Data Analyst", softSkills: ["Communication", "Teamwork", "Problem-solving", "Attention to detail"] };
+  for (const skill of [...dataJob.technicalSkills, ...dataJob.softSkills]) {
+    const mapped = mapSkillToSdgs(skill, dataJob);
+    assert.equal(mapped.status, "mapped", skill);
+    assert.equal(mapped.connections[0].goalNumber, 9);
+    assert.ok(mapped.connections[0].conditions.includes("research") || skill === "Data Analytics");
+  }
+  const excel = mapSkillToSdgs("Excel", dataJob).connections[0];
+  const sheets = mapSkillToSdgs("Google Sheets", dataJob).connections[0];
+  assert.equal(excel.ruleId, sheets.ruleId);
+  assert.equal(excel.explanation, sheets.explanation);
+  assert.equal(mapSkillToSdgs("  EXCEL  ", dataJob).connections[0].ruleId, excel.ruleId);
+  const financeJob = fixture("F", ["Financial Reporting", "MS Excel"]);
+  assert.equal(mapSkillToSdgs("MS Excel", financeJob).connections[0].goalNumber, 8);
+  assert.equal(mapSkillToSdgs("Communication", financeJob).connections[0].target, "8.3");
+});
+
+test("role titles, industry labels, or generic tools alone cannot create a goal contribution", () => {
+  const unsupported = { ...fixture("X", ["Excel", "Google Sheets"]), title: "Junior Data Analyst", industry: "Technology", softSkills: ["Communication", "Teamwork"] };
+  assert.equal(mapRoleToSdgs(unsupported).status, "review_required");
+  assert.equal(mapSkillToSdgs("Excel", unsupported).status, "review_required");
+  assert.equal(mapSkillToSdgs("Communication", unsupported).status, "review_required");
+  assert.equal(mapSkillToSdgs("An unfamiliar skill", unsupported).status, "not_assessed");
+  assert.equal(mapSkillToSdgs("", { ...unsupported, title: "", industry: "", technicalSkills: [] }).status, "not_assessed");
+});
+
+test("curated vocabulary aliases resolve repeated source tools without rewriting evidence or scoring terms", () => {
+  for (const name of ["MySQL", "HTML5", "CSS3", "GitLab", "Next.js", "Pandas"]) {
+    const mapped = mapSkillToSdgs(name);
+    assert.equal(mapped.status, "mapped", name);
+    assert.equal(mapped.connections[0].goalNumber, 9);
+    assert.equal(mapped.connections[0].evidence, name);
+  }
+  for (const name of ["General Ledger (GL)", "Accounts Payable", "IFRS"]) {
+    assert.equal(mapSkillToSdgs(name).connections[0].goalNumber, 8);
+  }
+});
+
+test("the real dataset includes mapped roles and a defensibly reviewed role without modifying its records", () => {
+  const matched = matchRoles(jobs, []);
+  const reviewRole = matched.results.find((row) => row.job.id === "J24");
+  assert.equal(reviewRole.roleSdg.status, "review_required");
+  assert.match(reviewRole.roleSdg.assessmentNote, /title and industry alone/i);
+  const junior = matched.results.find((row) => row.job.id === "J43");
+  assert.equal(junior.roleSdg.status, "review_required");
+  assert.match(junior.roleSdg.assessmentNote, /GTM; DNS; PWA/);
+  for (const row of matched.results.filter((r) => /data analyst/i.test(r.job.title) && r.job.id !== "J43")) {
+    assert.equal(row.roleSdg.status, "mapped", row.job.id);
+    assert.ok(row.roleSdg.connections.some((c) => c.goalNumber === 9), row.job.id);
+  }
 });
 
 test("API contract handles empty skills and rejects oversized or malformed input", () => {

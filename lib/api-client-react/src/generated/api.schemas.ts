@@ -32,9 +32,23 @@ export interface SdgConnection {
   explanation: string;
   evidence: string;
   ruleId: string;
+  conditions: string;
+  indicative: boolean;
+  contextEvidence: string[];
 }
 
+export type SdgAssessmentStatus = typeof SdgAssessmentStatus[keyof typeof SdgAssessmentStatus];
+
+
+export const SdgAssessmentStatus = {
+  mapped: 'mapped',
+  review_required: 'review_required',
+  not_assessed: 'not_assessed',
+} as const;
+
 export interface SdgAssessment {
+  status: SdgAssessmentStatus;
+  assessmentNote: string;
   connections: SdgConnection[];
   reviewRequired: boolean;
   /** @nullable */

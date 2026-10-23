@@ -168,10 +168,23 @@ components:
           type: string
         ruleId:
           type: string
-      required: [goalNumber, title, target, url, explanation, evidence, ruleId]
+        conditions:
+          type: string
+        indicative:
+          type: boolean
+        contextEvidence:
+          type: array
+          items:
+            type: string
+      required: [goalNumber, title, target, url, explanation, evidence, ruleId, conditions, indicative, contextEvidence]
     SdgAssessment:
       type: object
       properties:
+        status:
+          type: string
+          enum: [mapped, review_required, not_assessed]
+        assessmentNote:
+          type: string
         connections:
           type: array
           items:
@@ -180,7 +193,7 @@ components:
           type: boolean
         reviewReason:
           type: ["string", "null"]
-      required: [connections, reviewRequired, reviewReason]
+      required: [status, assessmentNote, connections, reviewRequired, reviewReason]
     RoleMatchSkill:
       type: object
       properties:

@@ -14,10 +14,10 @@ export function matchRoles(jobs: readonly JobListing[], currentSkills: string[])
       matchedCount: analysis.matchedCount,
       requiredCount: analysis.requiredCount,
       score: analysis.coveragePercent,
-      matchedSkills: analysis.matchedSkills.map((skill) => ({ ...skill, sdg: mapSkillToSdgs(skill.skill) })),
-      skillGaps: analysis.missingSkills.map((skill) => ({ ...skill, sdg: mapSkillToSdgs(skill.skill) })),
+      matchedSkills: analysis.matchedSkills.map((skill) => ({ ...skill, sdg: mapSkillToSdgs(skill.skill, job) })),
+      skillGaps: analysis.missingSkills.map((skill) => ({ ...skill, sdg: mapSkillToSdgs(skill.skill, job) })),
       unmatchedProfileSkills: analysis.unmatchedInputSkills,
-      roleSdg: mapRoleToSdgs([...job.technicalSkills, ...job.softSkills]),
+      roleSdg: mapRoleToSdgs(job),
       improvement: analysis.requiredCount === 0
         ? "The source lists no skills to compare. Review the original listing and ask the employer for requirements."
         : analysis.missingSkills.length

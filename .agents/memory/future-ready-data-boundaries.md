@@ -23,8 +23,14 @@ Role matches must remain explainable estimates, not hiring probabilities or prom
 
 **How to apply:** Keep broader profile answers as context unless a future change supplies defensible evidence for scoring them. Preserve an auditable profile-term-to-source-requirement explanation.
 
-SDG connections must use real UN goal numbers and titles, remain conditional and indicative, and never imply official UN classification of jobs. Flag ambiguous or unsupported connections for review instead of assigning an unrelated goal to meet tag coverage.
+SDG connections must use real UN goal numbers and titles, remain conditional and indicative, and never imply official UN classification of jobs. Use review status for assessed but unsupported connections, and a separate neutral “Not assessed” state for unevaluated wording or profile-only applications. No connections does not automatically mean review is required.
 
-**Why:** The user's Feature 2 brief explicitly prioritises defensible mappings over indiscriminate goal tagging; job requirements alone do not establish real-world SDG outcomes.
+**Why:** The user's Feature 2 briefs prioritise defensible mappings over indiscriminate goal tagging. The user specifically reported excessive review warnings when unassessed terms were treated as failed mappings; job requirements alone do not establish real-world SDG outcomes.
 
-**How to apply:** Ground mappings in actual source skill or role evidence, supply official UN references and a contribution explanation, and retain review flags when evidence is insufficient.
+**How to apply:** Ground mappings in actual source skill or role evidence, supply official UN references, contribution conditions and an explanation, and retain review flags when assessed evidence is insufficient. General skills such as communication or spreadsheets need a specific source-supported application, not a title-only assumption. Keep the catalogue's incomplete coverage explicit.
+
+Experience-fit comparisons must remain separate from the skill score. Preferred requirements, fresh-graduate exceptions, and alternative qualification paths must not become automatic numeric eligibility failures.
+
+**Why:** The user explicitly requested an experience warning without changing skill coverage or ranking. Total stated years cannot establish relevant-domain experience, and source exceptions can make simple thresholds misleading.
+
+**How to apply:** Warn about a clear numeric shortfall separately, leave ambiguous requirements for manual comparison, and never treat meeting a numeric minimum as proof of eligibility.

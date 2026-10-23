@@ -5,9 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SdgAssessmentStatus } from './sdgAssessmentStatus';
 import type { SdgConnection } from './sdgConnection';
 
 export interface SdgAssessment {
+  status: SdgAssessmentStatus;
+  assessmentNote: string;
   connections: SdgConnection[];
   reviewRequired: boolean;
   /** @nullable */
