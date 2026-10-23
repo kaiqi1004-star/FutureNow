@@ -150,6 +150,14 @@ components:
           type: integer
         mechanicalJobs:
           type: integer
+        distinctJobTitles:
+          type: integer
+        careerCategoryCount:
+          type: integer
+        careerCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CareerCategoryCount"
         disclosedSalaryCount:
           type: integer
         undisclosedSalaryCount:
@@ -162,7 +170,15 @@ components:
           type: array
           items:
             type: string
-      required: [totalJobs, softwareJobs, mechanicalJobs, disclosedSalaryCount, undisclosedSalaryCount, salaryRanges, dataNotes]
+      required: [totalJobs, softwareJobs, mechanicalJobs, distinctJobTitles, careerCategoryCount, careerCategories, disclosedSalaryCount, undisclosedSalaryCount, salaryRanges, dataNotes]
+    CareerCategoryCount:
+      type: object
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+      required: [category, count]
     JobListing:
       type: object
       properties:
@@ -180,6 +196,9 @@ components:
           type: string
         salaryMonthlyRm:
           type: ["number", "null"]
+        salaryText:
+          type: string
+          description: Original monthly RM salary cell, including disclosed ranges or Undisclosed. No midpoint is inferred.
         experience:
           type: string
         technicalSkills:
@@ -192,7 +211,8 @@ components:
             type: string
         sector:
           type: string
-          enum: [software, mechanical]
+          description: Career category derived from the supplied job title; not the source Industry field.
+          enum: [software, mechanical, digital-marketing, human-resources, accounting-finance, data-analytics]
         location:
           type: ["string", "null"]
         postingDate:

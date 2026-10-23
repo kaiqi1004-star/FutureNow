@@ -24,6 +24,12 @@ export const GetFutureReadyOverviewResponse = zod.object({
   "totalJobs": zod.number().int(),
   "softwareJobs": zod.number().int(),
   "mechanicalJobs": zod.number().int(),
+  "distinctJobTitles": zod.number().int(),
+  "careerCategoryCount": zod.number().int(),
+  "careerCategories": zod.array(zod.object({
+  "category": zod.string(),
+  "count": zod.number().int()
+})),
   "disclosedSalaryCount": zod.number().int(),
   "undisclosedSalaryCount": zod.number().int(),
   "salaryRanges": zod.array(zod.object({
@@ -48,10 +54,11 @@ export const GetFutureReadyJobsResponseItem = zod.object({
   "industry": zod.string(),
   "education": zod.string(),
   "salaryMonthlyRm": zod.number().nullable(),
+  "salaryText": zod.string().optional().describe('Original monthly RM salary cell, including disclosed ranges or Undisclosed. No midpoint is inferred.'),
   "experience": zod.string(),
   "technicalSkills": zod.array(zod.string()),
   "softSkills": zod.array(zod.string()),
-  "sector": zod.enum(['software', 'mechanical']),
+  "sector": zod.enum(['software', 'mechanical', 'digital-marketing', 'human-resources', 'accounting-finance', 'data-analytics']).describe('Career category derived from the supplied job title; not the source Industry field.'),
   "location": zod.string().nullable(),
   "postingDate": zod.string().nullable(),
   "sourceUrl": zod.string().nullable()
@@ -100,10 +107,11 @@ export const AnalyzeFutureReadySkillGapResponse = zod.object({
   "industry": zod.string(),
   "education": zod.string(),
   "salaryMonthlyRm": zod.number().nullable(),
+  "salaryText": zod.string().optional().describe('Original monthly RM salary cell, including disclosed ranges or Undisclosed. No midpoint is inferred.'),
   "experience": zod.string(),
   "technicalSkills": zod.array(zod.string()),
   "softSkills": zod.array(zod.string()),
-  "sector": zod.enum(['software', 'mechanical']),
+  "sector": zod.enum(['software', 'mechanical', 'digital-marketing', 'human-resources', 'accounting-finance', 'data-analytics']).describe('Career category derived from the supplied job title; not the source Industry field.'),
   "location": zod.string().nullable(),
   "postingDate": zod.string().nullable(),
   "sourceUrl": zod.string().nullable()

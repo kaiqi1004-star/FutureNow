@@ -10,3 +10,9 @@ The user is a beginner and wants implementation explanations in simple terms.
 **Why:** The user's project brief explicitly set these evidence limits and asked for simple implementation explanations.
 
 **How to apply:** Preserve these constraints in new analysis, charts, transformations, labels, and explanations; use the uploaded files as the evidence source and state unknowns plainly.
+
+Minimal, backward-compatible schema extensions are preferred over misclassifying new occupations or reducing disclosed salary bands to invented single values. Career categories are title-derived app groupings, not the source Industry field.
+
+**Why:** The user explicitly approved extending the original two-category, single-salary schema so the expanded workbook could be imported without losing source meaning.
+
+**How to apply:** Preserve raw salary text and source spelling, keep unknown fields unknown, and label derived category counts separately from record and distinct-title counts.

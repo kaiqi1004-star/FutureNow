@@ -5,12 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CareerCategoryCount } from './careerCategoryCount';
 import type { SalaryRange } from './salaryRange';
 
 export interface FutureReadyOverview {
   totalJobs: number;
   softwareJobs: number;
   mechanicalJobs: number;
+  distinctJobTitles: number;
+  careerCategoryCount: number;
+  careerCategories: CareerCategoryCount[];
   disclosedSalaryCount: number;
   undisclosedSalaryCount: number;
   salaryRanges: SalaryRange[];

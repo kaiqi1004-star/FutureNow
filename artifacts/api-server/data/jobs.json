@@ -7,6 +7,7 @@
     "industry": "Financial Service",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 2500.0,
+    "salaryText": "2500",
     "experience": "Software development experience required; strong experience with Laravel, PHP and MySQL",
     "technicalSkills": [
       "Laravel",
@@ -30,7 +31,7 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=1b51f73e17334f559df77acbb9d14485"
   },
   {
     "id": "J2",
@@ -40,6 +41,7 @@
     "industry": "Other professional, scientific and technical activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 3000.0,
+    "salaryText": "3000",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "HTML5",
@@ -67,7 +69,7 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=434b0ed5af614943b5409e0b1819945d"
   },
   {
     "id": "J3",
@@ -77,6 +79,7 @@
     "industry": "Informaton Service Activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": null,
+    "salaryText": "Undisclosed",
     "experience": "1 year relevant software development experience; fresh graduates with relevant project experience may be considered",
     "technicalSkills": [
       "ASP.NET",
@@ -104,7 +107,7 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=f6ddbb1330b74a539c4df042b51dcdcc"
   },
   {
     "id": "J4",
@@ -114,6 +117,7 @@
     "industry": "Employment Activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 3000.0,
+    "salaryText": "3000",
     "experience": "Proven web development experience with a portfolio; self-taught programmers welcome",
     "technicalSkills": [
       "HTML5",
@@ -146,16 +150,17 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=e7024fed016942ada89fe183abe7d35a"
   },
   {
     "id": "J5",
     "title": "Junior Software Developer",
-    "company": "My EG",
+    "company": "My EG ",
     "source": "MYFutureJobs",
     "industry": "Informaton Service Activities",
     "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
     "salaryMonthlyRm": 6000.0,
+    "salaryText": "6000",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Test-Driven Development (TDD)",
@@ -179,7 +184,7 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=a834a90c1e104ffd94a80e03fbf9acfb"
   },
   {
     "id": "J6",
@@ -189,6 +194,7 @@
     "industry": "Employment Activities",
     "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 6",
     "salaryMonthlyRm": 2300.0,
+    "salaryText": "2300",
     "experience": "Minimum 2–3 years of relevant experience preferred; intended for candidates with hands-on programming experience",
     "technicalSkills": [
       "Microsoft Visual FoxPro",
@@ -212,16 +218,17 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=2e7d11730a4549f5b08698899d5bf550"
   },
   {
     "id": "J7",
     "title": "Senior Software Developer",
-    "company": "Inscale Asia",
+    "company": "Inscale Asia ",
     "source": "MYFutureJobs",
     "industry": "Computer programming, consultancy and related activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 14999.0,
+    "salaryText": "14999",
     "experience": "Relevant experience across software design, development and release phases; exact years not specified",
     "technicalSkills": [
       "C#",
@@ -258,7 +265,7 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=3208264a6e5844d29396b3a13512928f"
   },
   {
     "id": "J8",
@@ -268,6 +275,7 @@
     "industry": "Employment Activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": null,
+    "salaryText": "Undisclosed",
     "experience": "Minimum 5 years of software development experience; enterprise-level web application portfolio; experience leading and mentoring a team of 3+ developers",
     "technicalSkills": [
       "C#",
@@ -299,16 +307,17 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=6cb09d8389ae41fab4d0c3caa17b0c34"
   },
   {
     "id": "J9",
     "title": "Senior Software Developer",
-    "company": "PeopleX HR Tech",
+    "company": "PeopleX HR Tech ",
     "source": "MYFutureJobs",
     "industry": "Computer programming, consultancy and related activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 7000.0,
+    "salaryText": "7000",
     "experience": "Minimum 3 years of hands-on software development experience",
     "technicalSkills": [
       "React JS",
@@ -335,7 +344,7 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=d9f23a4bd4ea481e86f6bc2bac066d4c"
   },
   {
     "id": "J10",
@@ -345,6 +354,7 @@
     "industry": "Information service activities.Computer programming, consultancy and related activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 12000.0,
+    "salaryText": "12000",
     "experience": "6–9 years of relevant experience in a techno-functional role in the financial domain",
     "technicalSkills": [
       "SAS Base",
@@ -373,16 +383,17 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=a041696ec0df41e7b5a7756fdf0dfeb5"
   },
   {
     "id": "J11",
     "title": "Senior Software Developer",
     "company": "Infinity Logistics and Transport",
     "source": "MYFutureJobs",
-    "industry": "Air transport, land transport and transport via pipelines",
+    "industry": "Air transport, land transport and transport via pipelines\n",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 3500.0,
+    "salaryText": "3500",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Web application development",
@@ -406,7 +417,7 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=c28c047083c449539fc96845e1d24b24"
   },
   {
     "id": "J12",
@@ -416,6 +427,7 @@
     "industry": "Computer programming, consultancy and related activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 8000.0,
+    "salaryText": "8000",
     "experience": "Minimum 5 years of professional software development experience",
     "technicalSkills": [
       "Java/Python/C#/JavaScript/TypeScript (at least one)",
@@ -453,16 +465,17 @@
     "sector": "software",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=df03be7febc14b22bd392752ed8c229a"
   },
   {
     "id": "J13",
     "title": "Junior Mechanical Engineer",
-    "company": "Meraque Services",
+    "company": "Meraque Services ",
     "source": "MYFutureJobs",
     "industry": "Architectural and engineering activities; technical testing and analysis",
     "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
     "salaryMonthlyRm": 2500.0,
+    "salaryText": "2500",
     "experience": "No specific years stated; practical experience is not explicitly required",
     "technicalSkills": [
       "AGV research and product development",
@@ -506,7 +519,7 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=a458db85bd044e46b615c3fc93475e0b"
   },
   {
     "id": "J14",
@@ -516,6 +529,7 @@
     "industry": "Manufacture of wood and products of wood and cork, except furniture; manufacture of articles of straw and plaiting materials",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": null,
+    "salaryText": "Undisclosed",
     "experience": "Less than 2 years of relevant working experience",
     "technicalSkills": [
       "CAD drawings",
@@ -537,16 +551,17 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=d9bcfaa151d641b2886301b5ba19d04a"
   },
   {
     "id": "J15",
     "title": "Junior Mechanical Engineer",
-    "company": "Kunyi Composite",
+    "company": "Kunyi Composite ",
     "source": "MYFutureJobs",
     "industry": "Other manufacturing",
     "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
     "salaryMonthlyRm": 2500.0,
+    "salaryText": "2500",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Project planning",
@@ -567,7 +582,7 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=629fdb0351e64fbe8e3c684f71f8ae05"
   },
   {
     "id": "J16",
@@ -577,6 +592,7 @@
     "industry": "Manufacture of computer, electronic and optical products",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": null,
+    "salaryText": "Undisclosed",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Engineering solution design",
@@ -601,7 +617,7 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=7a4e094ce17841bdb7e64ca596f24e07"
   },
   {
     "id": "J17",
@@ -611,6 +627,7 @@
     "industry": "Electricity, gas, steam and air conditioning supply",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 800.0,
+    "salaryText": "800",
     "experience": "Currently pursuing a relevant diploma or degree; internship position",
     "technicalSkills": [
       "Engineering and technical tasks",
@@ -629,7 +646,7 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=bcbea947330041d78cc3a70489e80ed3"
   },
   {
     "id": "J18",
@@ -639,6 +656,7 @@
     "industry": "Electricity, gas, steam and air conditioning supply",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 3300.0,
+    "salaryText": "3300",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Site work planning",
@@ -658,16 +676,17 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=504df70fb17a4e76af7179de2630cdc6"
   },
   {
     "id": "J19",
-    "title": "Senior Mechanical Engineer",
+    "title": "Senior  Mechanical Engineer",
     "company": "Score EPCC",
     "source": "MYFutureJobs",
     "industry": "Construction of buildings",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 8000.0,
+    "salaryText": "8000",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Pre-commissioning",
@@ -694,16 +713,17 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=bcbea947330041d78cc3a70489e80ed3"
   },
   {
     "id": "J20",
-    "title": "Senior Mechanical Engineer",
-    "company": "Dynast Consult",
+    "title": "Senior  Mechanical Engineer",
+    "company": "Dynast Consult ",
     "source": "MYFutureJobs",
     "industry": "Construction of buildings",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 8000.0,
+    "salaryText": "8000",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Mechanical and Electrical (M&E) design",
@@ -722,16 +742,17 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=5b426895f0d940e0b2b5bc131d86a4d2"
   },
   {
     "id": "J21",
-    "title": "Senior Mechanical Engineer",
-    "company": "Kiswire",
+    "title": "Senior  Mechanical Engineer",
+    "company": "Kiswire ",
     "source": "MYFutureJobs",
     "industry": "Manufacture of basic metals",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": null,
+    "salaryText": "Undisclosed",
     "experience": "Minimum 3 years of production/manufacturing experience with a relevant engineering degree; alternatively, more than 5 years with a relevant diploma",
     "technicalSkills": [
       "Production process planning",
@@ -753,16 +774,17 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=a8bece9c28ea4cb9af8376489d02ef31"
   },
   {
     "id": "J22",
-    "title": "Senior Mechanical Engineer",
+    "title": "Senior  Mechanical Design Engineer",
     "company": "Agensi Perkerjaan Hunters Search",
     "source": "MYFutureJobs",
     "industry": "Employment activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 5000.0,
+    "salaryText": "5000",
     "experience": "Minimum 8 years of mechanical design or automation machine-development experience",
     "technicalSkills": [
       "Mechanical design",
@@ -795,16 +817,17 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=d34c164ea74d42b09c78205092d2288d"
   },
   {
     "id": "J23",
-    "title": "Senior Mechanical Engineer",
+    "title": "Senior  Mechanical Design Engineer",
     "company": "Hiredly",
     "source": "MYFutureJobs",
     "industry": "Employment activities",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 3000.0,
+    "salaryText": "3000",
     "experience": "Minimum 2 years of mechanical design or related engineering experience",
     "technicalSkills": [
       "SolidWorks",
@@ -833,16 +856,17 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=86a15beab0784cc5a204fb571f88b089"
   },
   {
     "id": "J24",
-    "title": "Senior Mechanical Engineer",
+    "title": "Senior  Mechanical Engineer",
     "company": "Syarikat Udin Engineering Workd",
     "source": "MYFutureJobs",
     "industry": "Construction of buildings",
     "education": "Bachelor's & Equivalent",
     "salaryMonthlyRm": 4000.0,
+    "salaryText": "4000",
     "experience": "Not explicitly specified",
     "technicalSkills": [
       "Daily operational workflow coordination",
@@ -864,6 +888,793 @@
     "sector": "mechanical",
     "location": null,
     "postingDate": null,
-    "sourceUrl": null
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=35259f76cd2a4400b14fe70351cdb43e"
+  },
+  {
+    "id": "J25",
+    "title": "Senior Digital Marketing Spacialist",
+    "company": "Hiredly",
+    "source": "MYFutureJobs",
+    "industry": "Employment activities",
+    "education": "Bachelor's & Equivalent",
+    "salaryMonthlyRm": 4000.0,
+    "salaryText": "4000",
+    "experience": "Senior-level; paid campaign management, budget optimisation, conversion tracking and performance reporting",
+    "technicalSkills": [
+      "Meta Ads",
+      "Google Ads",
+      "A/B Testing",
+      "SEO/SEM",
+      "GA4",
+      "Google Tag Manager",
+      "Meta Pixel",
+      "Conversion Rate Optimisation (CRO)",
+      "Analytics",
+      "Content Creation"
+    ],
+    "softSkills": [
+      "Analytical Thinking",
+      "Strategic Planning",
+      "Accountability",
+      "Creativity"
+    ],
+    "sector": "digital-marketing",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=221a6835dd2544e892c303a6e062d1d7"
+  },
+  {
+    "id": "J26",
+    "title": "Creative Design & Digital Marketing Executive",
+    "company": "Hiredly",
+    "source": "MYFutureJobs",
+    "industry": "Employment activities",
+    "education": "Bachelor's & Equivalent",
+    "salaryMonthlyRm": 3500.0,
+    "salaryText": "3500",
+    "experience": "2–4 years; graphic design, multimedia content production and campaign support",
+    "technicalSkills": [
+      "Adobe Photoshop",
+      "Adobe Illustrator",
+      "Figma",
+      "Canva",
+      "InDesign",
+      "Premiere Pro",
+      "CapCut",
+      "Facebook Ads",
+      "Google Ads",
+      "HTML/CSS Basics",
+      "AI Tools"
+    ],
+    "softSkills": [
+      "Creativity",
+      "Attention to Detail",
+      "Time Management",
+      "Communication",
+      "Collaboration",
+      "Adaptability"
+    ],
+    "sector": "digital-marketing",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=05df704ffec647bcbc0b8ceea7cded14"
+  },
+  {
+    "id": "J27",
+    "title": "Digital & AI Marketing Specialist",
+    "company": "Capital Dynamics ",
+    "source": "MYFutureJobs",
+    "industry": "Financial service activities, except insurance/takaful and pension funding",
+    "education": "Bachelor's & Equivalent",
+    "salaryMonthlyRm": 4000.0,
+    "salaryText": "4000",
+    "experience": "Digital marketing experience; AI-powered content, SEO/GEO strategy and digital campaign optimisation",
+    "technicalSkills": [
+      "Generative AI",
+      "AI-powered Content Creation",
+      "SEO",
+      "GEO",
+      "Marketing Automation",
+      "Digital Analytics",
+      "Content Optimisation"
+    ],
+    "softSkills": [
+      "Communication",
+      "Storytelling",
+      "Creativity",
+      "Curiosity",
+      "Collaboration",
+      "Resourcefulness"
+    ],
+    "sector": "digital-marketing",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=b49e1cb974f14a3896fafbe732aed9ba"
+  },
+  {
+    "id": "J28",
+    "title": "Digital Marketing Executive",
+    "company": "Hayamim Ava",
+    "source": "MYFutureJobs",
+    "industry": "Retail trade, except of motor vehicles and motorcycles",
+    "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
+    "salaryMonthlyRm": 4500.0,
+    "salaryText": "4500",
+    "experience": "2–3 years; social media management, B2B marketing, lead generation and campaign reporting",
+    "technicalSkills": [
+      "LinkedIn Marketing",
+      "B2B Marketing",
+      "Facebook Ads",
+      "Google Ads",
+      "GA4",
+      "SEO",
+      "Content Writing",
+      "Video Content",
+      "AI Marketing Tools"
+    ],
+    "softSkills": [
+      "Creativity",
+      "Proactiveness",
+      "Independence",
+      "Communication",
+      "Teamwork"
+    ],
+    "sector": "digital-marketing",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=c2bc613b88c44f32b78df4610f1a0425"
+  },
+  {
+    "id": "J29",
+    "title": "Digital Marketing Executive",
+    "company": "IP Media Production PLT",
+    "source": "MYFutureJobs",
+    "industry": "Advertising and market research",
+    "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
+    "salaryMonthlyRm": 3000.0,
+    "salaryText": "3000",
+    "experience": "Preferably 2 years; client account management, campaign execution, optimisation and reporting",
+    "technicalSkills": [
+      "Meta Ads",
+      "TikTok Marketing",
+      "Google Ads",
+      "SEO",
+      "GA4",
+      "Search Console",
+      "AI Tools (ChatGPT",
+      "Claude)",
+      "HTML Basics",
+      "Campaign Analytics"
+    ],
+    "softSkills": [
+      "Client Communication",
+      "Problem-solving",
+      "Multitasking",
+      "Presentation",
+      "Time Management"
+    ],
+    "sector": "digital-marketing",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=d58866b71afe43e2ade42b436e07001b"
+  },
+  {
+    "id": "J30",
+    "title": "Digital Marketing Executive",
+    "company": "Unita International ",
+    "source": "MYFutureJobs",
+    "industry": "Activities of head offices; management consultancy activities",
+    "education": "Bachelor's or Equivalen",
+    "salaryMonthlyRm": 7000.0,
+    "salaryText": "7000",
+    "experience": "Minimum 2 years; Thailand-market campaigns, localisation, SEO/SEM and cross-border coordination",
+    "technicalSkills": [
+      "SEO",
+      "SEM",
+      "Keyword Research",
+      "Social Media Marketing",
+      "Content Marketing",
+      "Campaign Analytics",
+      "Performance Reporting",
+      "Thai-language Copywriting"
+    ],
+    "softSkills": [
+      "Cross-cultural Communication",
+      "Collaboration",
+      "Attention to Detail",
+      "Adaptability"
+    ],
+    "sector": "digital-marketing",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=8f6dadc163754b10805f84f6476135ad"
+  },
+  {
+    "id": "J31",
+    "title": "Human Resources Executive",
+    "company": "Qarisma Moda",
+    "source": "MYFutureJobs",
+    "industry": "Manufacture of textiles",
+    "education": "Bachelor's or Equivalen",
+    "salaryMonthlyRm": 2500.0,
+    "salaryText": "2500",
+    "experience": "2–3 years in HR",
+    "technicalSkills": [
+      "Recruitment",
+      "Payroll",
+      "Microsoft Word",
+      "Excel",
+      "EPF",
+      "SOCSO",
+      "EIS",
+      "PCB",
+      "Employment Law"
+    ],
+    "softSkills": [
+      "Communication",
+      "Attention to Detail",
+      "Responsibility",
+      "Confidentiality",
+      "Discipline"
+    ],
+    "sector": "human-resources",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=8c5903b93a3e43b5a352496291cd93a3"
+  },
+  {
+    "id": "J32",
+    "title": "Human Resources Executive",
+    "company": "Soxmax Malaysia",
+    "source": "MYFutureJobs",
+    "industry": "Manufacture of textiles",
+    "education": "Bachelor's or Equivalen",
+    "salaryMonthlyRm": 3500.0,
+    "salaryText": "3500",
+    "experience": "HR and administration experience; training provided",
+    "technicalSkills": [
+      "Payroll",
+      "Government Documentation",
+      "Leave Records",
+      "Factory Auditing"
+    ],
+    "softSkills": [
+      "English Communication",
+      "Numeracy",
+      "Attention to Detail"
+    ],
+    "sector": "human-resources",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=48a6c7f33a154956a868011934b3605f"
+  },
+  {
+    "id": "J33",
+    "title": "Human Resources Executive",
+    "company": "Hiredly",
+    "source": "MYFutureJobs",
+    "industry": "Employment activities",
+    "education": "SPM / O Level / SKM Level 1 / SKM Level 2 / SKM Level 3 or Equivalent",
+    "salaryMonthlyRm": 2000.0,
+    "salaryText": "2000",
+    "experience": "HR, recruitment or administration experience preferred; fresh graduates welcome",
+    "technicalSkills": [
+      "Recruitment",
+      "CV Screening",
+      "Onboarding",
+      "Payroll",
+      "EPF",
+      "SOCSO",
+      "EIS",
+      "Microsoft Office",
+      "HR Documentation"
+    ],
+    "softSkills": [
+      "Communication",
+      "Organisation",
+      "Proactiveness",
+      "Confidentiality",
+      "Teamwork"
+    ],
+    "sector": "human-resources",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=ea6fd1fb498c4006ba30fead604d7d22"
+  },
+  {
+    "id": "J34",
+    "title": "Human Resources Executive",
+    "company": "Tenby Southern ",
+    "source": "MYFutureJobs",
+    "industry": "Education",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 3000.0,
+    "salaryText": "3000",
+    "experience": "HR experience; specific years not stated",
+    "technicalSkills": [
+      "Recruitment",
+      "Interviewing",
+      "Payroll",
+      "Salary Administration",
+      "Employment Law",
+      "Training Coordination"
+    ],
+    "softSkills": [
+      "Communication",
+      "Decision-making",
+      "Negotiation",
+      "Organisation"
+    ],
+    "sector": "human-resources",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=b71bc67ff9fd48c59fb9901cda1441c0"
+  },
+  {
+    "id": "J35",
+    "title": "Human Resources Executive",
+    "company": "Governor Injector System",
+    "source": "MYFutureJobs",
+    "industry": "Architectural and engineering activities; technical testing and analysis",
+    "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
+    "salaryMonthlyRm": 2200.0,
+    "salaryText": "2200",
+    "experience": "HR and administration experience is an advantage",
+    "technicalSkills": [
+      "Recruitment",
+      "Onboarding",
+      "Payroll",
+      "EPF",
+      "SOCSO",
+      "EIS",
+      "PCB",
+      "Microsoft Office",
+      "Employment Law"
+    ],
+    "softSkills": [
+      "Communication",
+      "Organisation",
+      "Independence",
+      "Confidentiality"
+    ],
+    "sector": "human-resources",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=54d97b8c044f481ab8370cca4f0e5fd4"
+  },
+  {
+    "id": "J36",
+    "title": "Human Resources Executive",
+    "company": "Bumiria Dinamik",
+    "source": "MYFutureJobs",
+    "industry": "Other professional, scientific and technical activities",
+    "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
+    "salaryMonthlyRm": null,
+    "salaryText": "3500-4999",
+    "experience": "Minimum 2 years in a related field",
+    "technicalSkills": [
+      "HR Software",
+      "Payroll",
+      "HR Database",
+      "Immigration Compliance",
+      "FOMEMA",
+      "Work Permit Renewal",
+      "Microsoft Office"
+    ],
+    "softSkills": [
+      "Communication",
+      "Organisation",
+      "Attention to Detail",
+      "Responsibility"
+    ],
+    "sector": "human-resources",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=603c535f95b241f7b60ebfd62680cddf"
+  },
+  {
+    "id": "J37",
+    "title": "Accountant (GL) Japanese speaking",
+    "company": "Manpower Staffing Services (M)",
+    "source": "MYFutureJobs",
+    "industry": "Activities of head offices; management consultancy activities",
+    "education": "SPM / O Level / SKM Level 1 / SKM Level 2 / SKM Level 3 or Equivalent",
+    "salaryMonthlyRm": null,
+    "salaryText": "8000-9999",
+    "experience": "3–5 years in accounting",
+    "technicalSkills": [
+      "General Ledger (GL)",
+      "Month-end Closing",
+      "US GAAP",
+      "Account Reconciliation",
+      "SOX Controls",
+      "MS Excel",
+      "Oracle/SAP ERP"
+    ],
+    "softSkills": [
+      "Analytical Thinking",
+      "Problem-solving",
+      "Attention to Detail",
+      "Communication",
+      "Adaptability"
+    ],
+    "sector": "accounting-finance",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=e7cd8471e98640efb5628d1dc58fe575"
+  },
+  {
+    "id": "J38",
+    "title": "Cost & Finance Accountant",
+    "company": "Hiredly",
+    "source": "MYFutureJobs",
+    "industry": "Employment activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 6500.0,
+    "salaryText": "6500",
+    "experience": "Minimum 5 years in accounting, preferably manufacturing",
+    "technicalSkills": [
+      "Cost Accounting",
+      "SAP Business One",
+      "Financial Reporting",
+      "Inventory Management",
+      "General Ledger",
+      "Microsoft Excel",
+      "SST",
+      "E-Invoice"
+    ],
+    "softSkills": [
+      "Analytical Thinking",
+      "Problem-solving",
+      "Communication",
+      "Leadership"
+    ],
+    "sector": "accounting-finance",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=60dd11140330410b904b64f0f983e63d"
+  },
+  {
+    "id": "J39",
+    "title": "Accountant (mandarin-speaker)",
+    "company": "UR Fashion Group",
+    "source": "MYFutureJobs",
+    "industry": "Retail trade, except of motor vehicles and motorcycles",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": null,
+    "salaryText": "3500-5999",
+    "experience": "Minimum 2 years in SAP financial processing",
+    "technicalSkills": [
+      "SAP",
+      "Bank Reconciliation",
+      "Accounts Payable",
+      "Month-end Closing",
+      "Financial Reporting",
+      "International Accounting Standards"
+    ],
+    "softSkills": [
+      "Analytical Thinking",
+      "Communication",
+      "Collaboration",
+      "Attention to Detail"
+    ],
+    "sector": "accounting-finance",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=9598bde6b92e48ce93728f71307cf4e9"
+  },
+  {
+    "id": "J40",
+    "title": "B- Accountant ( ACCA)",
+    "company": "Agensi Pekerjaaan The Supreme HR Advisory ",
+    "source": "MYFutureJobs",
+    "industry": "Activities of head offices; management consultancy activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 6500.0,
+    "salaryText": "6500",
+    "experience": "Minimum 5 years in accounting",
+    "technicalSkills": [
+      "Full-set Accounts",
+      "Accounting Software",
+      "Microsoft Excel",
+      "Costing",
+      "Cash Flow Management",
+      "SST",
+      "E-Invoice",
+      "Taxation"
+    ],
+    "softSkills": [
+      "Teamwork",
+      "Time Management",
+      "Analytical Thinking",
+      "Responsibility"
+    ],
+    "sector": "accounting-finance",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=7fb6e1af7f8d411fabad3cdf58c86998"
+  },
+  {
+    "id": "J41",
+    "title": "Accountant (Full Set Accounts)",
+    "company": "Sig Advisory",
+    "source": "MYFutureJobs",
+    "industry": "Legal and accounting activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 6500.0,
+    "salaryText": "6500",
+    "experience": "Minimum 3 years in finance and accounting",
+    "technicalSkills": [
+      "Full-set Accounts",
+      "Accounting Software",
+      "Microsoft Excel",
+      "IFRS",
+      "Corporate Tax",
+      "SST",
+      "Financial Planning and Analysis"
+    ],
+    "softSkills": [
+      "Communication",
+      "Integrity",
+      "Responsibility",
+      "Multitasking",
+      "Adaptability"
+    ],
+    "sector": "accounting-finance",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=81253fc66a1f4504a1e5c50016efe08e"
+  },
+  {
+    "id": "J42",
+    "title": "Accountant",
+    "company": "Exact Automation ",
+    "source": "MYFutureJobs",
+    "industry": "Wholesale trade, except of motor vehicles and motorcycles",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 4500.0,
+    "salaryText": "4500",
+    "experience": "3–5 years in accounting and finance",
+    "technicalSkills": [
+      "Full-set Accounts",
+      "General Ledger",
+      "Accounts Payable/Receivable",
+      "Microsoft Excel",
+      "ERP Systems",
+      "Financial Reporting",
+      "MFRS",
+      "SST",
+      "Taxation"
+    ],
+    "softSkills": [
+      "Analytical Thinking",
+      "Problem-solving",
+      "Organisation",
+      "Independence",
+      "Integrity",
+      "Attention to Detail"
+    ],
+    "sector": "accounting-finance",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=3408edcdf3214ab980a152cc8fb3b3a4"
+  },
+  {
+    "id": "J43",
+    "title": "Mandarin Speaking Junior Data Analyst",
+    "company": "Hiredly",
+    "source": "",
+    "industry": "Employment activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 3000.0,
+    "salaryText": "3000",
+    "experience": "Fresh graduates encouraged to apply; prior experience not required in the listing.",
+    "technicalSkills": [
+      "Excel",
+      "Google Sheets",
+      "GTM",
+      "DNS",
+      "PWA"
+    ],
+    "softSkills": [
+      "Attention to detail",
+      "Problem-solving",
+      "Communication",
+      "Teamwork"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=71cc932efb8c41a99af89078b0bb69ce "
+  },
+  {
+    "id": "J44",
+    "title": "Data Analyst",
+    "company": "Cloud Metric ",
+    "source": "",
+    "industry": "Information service activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 12300.0,
+    "salaryText": "12300",
+    "experience": "Not specified",
+    "technicalSkills": [
+      "SQL",
+      "Power BI",
+      "Tableau",
+      "Excel",
+      "Statistics"
+    ],
+    "softSkills": [
+      "Analytical thinking",
+      "Collaboration",
+      "Communication"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=a3a3bf0e724448818cf33a9bce49ff0f"
+  },
+  {
+    "id": "J45",
+    "title": "Data Analyst Intern",
+    "company": "Momentum Commerce",
+    "source": "",
+    "industry": "Advertising and market research",
+    "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 5",
+    "salaryMonthlyRm": 1200.0,
+    "salaryText": "1200",
+    "experience": "Internship",
+    "technicalSkills": [
+      "Excel",
+      "Google Sheets",
+      "Power BI",
+      "Looker Studio",
+      "A/B Testing"
+    ],
+    "softSkills": [
+      "Attention to detail",
+      "Analytical thinking"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=1cad04e983214e688905af79952f7d71"
+  },
+  {
+    "id": "J46",
+    "title": "Senior Data Analyst",
+    "company": "Instapay Technologies ",
+    "source": "",
+    "industry": "Financial service activities, except insurance/takaful and pension funding",
+    "education": "Diploma / Advanced Diploma / Higher Graduate Diploma / DVM / DKM Level 4 / DLKM Level 6",
+    "salaryMonthlyRm": null,
+    "salaryText": "Undisclosed",
+    "experience": "4–5 years preferred",
+    "technicalSkills": [
+      "Power BI",
+      "MySQL",
+      "Excel",
+      "Python",
+      "Pandas",
+      "NumPy"
+    ],
+    "softSkills": [
+      "Critical thinking",
+      "Problem-solving",
+      "Independence"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=d91e218b3c0b45c3b3bfc2cdc9c19a80"
+  },
+  {
+    "id": "J47",
+    "title": "Senior Data Analyst (Analytics & Business Intelligence)",
+    "company": "Integrated Health Plans (Malaysia) ",
+    "source": "",
+    "industry": "Office administrative, office support and other business support activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 6000.0,
+    "salaryText": "6000",
+    "experience": "Minimum 3 years",
+    "technicalSkills": [
+      "SQL",
+      "Power BI",
+      "Databases",
+      "Data Pipelines"
+    ],
+    "softSkills": [
+      "Communication",
+      "Project Management",
+      "Teamwork",
+      "Mentoring"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=eedc62dc8b334981a78b631e43f29e33"
+  },
+  {
+    "id": "J48",
+    "title": "Data Analyst",
+    "company": "TechTiera ",
+    "source": "",
+    "industry": "Information service activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 9000.0,
+    "salaryText": "9000",
+    "experience": "Minimum 5 years in data integration",
+    "technicalSkills": [
+      "SQL",
+      "Python",
+      "Shell",
+      "Linux",
+      "ETL/ELT",
+      "Hadoop"
+    ],
+    "softSkills": [
+      "Problem-solving",
+      "Collaboration",
+      "Documentation"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=f96506c54708413ca3c99a1f7c6b70f1"
+  },
+  {
+    "id": "J49",
+    "title": "Senior Data Analyst Engineer",
+    "company": "Remoly",
+    "source": "",
+    "industry": "Office administrative, office support and other business support activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": 8000.0,
+    "salaryText": "8000",
+    "experience": "Not specified",
+    "technicalSkills": [
+      "AI Algorithms",
+      "Data Analysis",
+      "Evaluation Metrics"
+    ],
+    "softSkills": [
+      "Strategic Thinking",
+      "Mentoring",
+      "Collaboration"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=f142e5c869f84c209a48c2554c04d928"
+  },
+  {
+    "id": "J50",
+    "title": "Data Analyst Executive",
+    "company": "Agensi Pekerjaan Unitalent",
+    "source": "",
+    "industry": "Employment activities",
+    "education": "Bachelor's or Equivalent",
+    "salaryMonthlyRm": null,
+    "salaryText": "4000-7999",
+    "experience": "Minimum 3 years",
+    "technicalSkills": [
+      "SQL",
+      "Python",
+      "Power BI",
+      "ETL",
+      "AI",
+      "Data Modelling"
+    ],
+    "softSkills": [
+      "Communication",
+      "Teamwork",
+      "Adaptability",
+      "Time Management"
+    ],
+    "sector": "data-analytics",
+    "location": null,
+    "postingDate": null,
+    "sourceUrl": "https://candidates.myfuturejobs.gov.my/search-jobs?jobId=0d458f0e5be84cf7962ce09f4c4c06af"
   }
 ]

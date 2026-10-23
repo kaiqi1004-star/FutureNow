@@ -6,10 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Career category derived from the supplied job title; not the source Industry field.
+ */
 export type JobListingSector = typeof JobListingSector[keyof typeof JobListingSector];
 
 
 export const JobListingSector = {
   software: 'software',
   mechanical: 'mechanical',
+  'digital-marketing': 'digital-marketing',
+  'human-resources': 'human-resources',
+  'accounting-finance': 'accounting-finance',
+  'data-analytics': 'data-analytics',
 } as const;

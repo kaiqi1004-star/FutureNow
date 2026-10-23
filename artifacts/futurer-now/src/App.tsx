@@ -31,6 +31,20 @@ import SkillsProfilePage, { ComingSoonPage } from '@/pages/skills-profile';
 import NotFound from '@/pages/not-found';
 import './index.css';
 
+const careerCategoryLabels: Record<JobListing['sector'], string> = {
+  software: 'Software',
+  mechanical: 'Mechanical',
+  'digital-marketing': 'Digital marketing',
+  'human-resources': 'Human resources',
+  'accounting-finance': 'Accounting / finance',
+  'data-analytics': 'Data analytics',
+};
+const hasDisclosedSalary = (job: JobListing) =>
+  job.salaryMonthlyRm !== null || /^\d+-\d+$/.test(job.salaryText?.trim() ?? '');
+const jobSalaryLabel = (job: JobListing) => job.salaryMonthlyRm !== null
+  ? money(job.salaryMonthlyRm)
+  : hasDisclosedSalary(job) ? `RM ${job.salaryText}` : 'Salary not disclosed';
+
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false } },
 });
@@ -90,7 +104,7 @@ function Shell({ children }: { children: ReactNode }) {
     },
     '/jobs': {
       title: 'Job Record Explorer',
-      description: 'Search the supplied software and mechanical job records in FutureNow.',
+      description: 'Search the supplied job records across the workbook career categories in FutureNow.',
     },
     '/workforce-data': {
       title: 'National Context',
@@ -223,15 +237,15 @@ function OverviewPage() {
   const lastMonth = unemployment.data?.slice(-12).map((d) => ({ ...d, label: month(d.date) })) ?? [];
   return <div className="page-wrap overview-page">
     <PageHeading eyebrow="01 / supplied records + national indicators" title={<>A clearer view of<br className="desktop-break" /> workforce readiness.</>}>
-      Explore the supplied software and mechanical job records alongside national labor-market context. Different datasets answer different questions.
+      Explore the supplied job records across career categories alongside national labor-market context. Different datasets answer different questions.
     </PageHeading>
     <div className="hero-note"><div className="hero-note-icon"><Info size={17} /></div><p><strong>Important distinction</strong> — these job postings are a small supplied sample, not a measure of national demand. National indicators below are shown independently.</p><span className="note-rule" /></div>
     {summary.isError && <QueryError label="overview summary" retry={refresh} />}
     <div className="metrics-grid">
       {summary.isLoading || summary.isFetching ? <><div className="metric-skeleton" /><div className="metric-skeleton" /><div className="metric-skeleton" /><div className="metric-skeleton" /></> : summary.data ? <>
         <Metric label="Supplied job records" value={fmt(summary.data.totalJobs)} note="A finite workbook sample" icon={BriefcaseBusiness} accent="metric-featured" />
-        <Metric label="Software records" value={fmt(summary.data.softwareJobs)} note="Supplied records only" icon={Layers3} />
-        <Metric label="Mechanical records" value={fmt(summary.data.mechanicalJobs)} note="Supplied records only" icon={Activity} />
+        <Metric label="Distinct job titles" value={fmt(summary.data.distinctJobTitles)} note="Whitespace-normalized titles, not records" icon={Layers3} />
+        <Metric label="Career categories" value={fmt(summary.data.careerCategoryCount)} note="Derived from the supplied job titles" icon={Activity} />
         <Metric label="Salary disclosed" value={`${fmt(summary.data.disclosedSalaryCount)} / ${fmt(summary.data.totalJobs)}`} note={`${fmt(summary.data.undisclosedSalaryCount)} records without salary`} icon={Database} />
       </> : null}
     </div>
@@ -246,14 +260,14 @@ function OverviewPage() {
         </> : <EmptyState title="No unemployment observations" text="No national unemployment series is currently available." />}
       </Panel>
       <Panel title="What the records can tell you" kicker="READ THE SAMPLE" className="reading-panel">
-        <div className="reading-item"><span className="reading-number">01</span><div><strong>Compare the two sectors</strong><p>Review software and mechanical roles, their stated education, experience and skills.</p></div></div>
+        <div className="reading-item"><span className="reading-number">01</span><div><strong>Compare career categories</strong><p>Review the supplied roles, their stated education, experience and skills.</p></div></div>
         <div className="reading-item"><span className="reading-number">02</span><div><strong>Check what is reported</strong><p>Job salaries are monthly RM. Some records do not disclose salary.</p></div></div>
         <div className="reading-item"><span className="reading-number">03</span><div><strong>Keep context in its lane</strong><p>National labor indicators describe broader trends; they are not derived from these postings.</p></div></div>
         <Link className="reading-cta" href="/jobs" data-testid="link-explore-job-records"><span>Browse all job records</span><ArrowRight size={17} /></Link>
         <Link className="reading-cta" href="/skills-profile" data-testid="link-start-skills-profile"><span>New: build your skills profile</span><ArrowRight size={17} /></Link>
       </Panel>
     </div>
-    <section className="limits-strip"><div className="limits-title"><ShieldCheck size={18} /><span>Coverage notes</span></div><div className="limit-chip"><b>01</b><span>The workbook has no location, posting-date or source-URL fields.</span></div><div className="limit-chip"><b>02</b><span>Aggregate CSV wage and count units are not specified.</span></div><div className="limit-chip"><b>03</b><span>Small job sample ≠ national labor demand.</span></div></section>
+    <section className="limits-strip"><div className="limits-title"><ShieldCheck size={18} /><span>Coverage notes</span></div><div className="limit-chip"><b>01</b><span>Source URLs are supplied; locations and posting dates are not.</span></div><div className="limit-chip"><b>02</b><span>Aggregate CSV wage and count units are not specified.</span></div><div className="limit-chip"><b>03</b><span>Small job sample ≠ national labor demand.</span></div></section>
     {summary.data?.dataNotes?.length ? <details className="source-notes"><summary>Dataset notes from the supplied overview <ChevronDown size={15} /></summary><ul>{summary.data.dataNotes.map((note, i) => <li key={`${i}-${note}`}>{note}</li>)}</ul></details> : null}
   </div>;
 }
@@ -261,11 +275,11 @@ function OverviewPage() {
 function JobCard({ job }: { job: JobListing }) {
   const [expanded, setExpanded] = useState(false);
   return <article className="job-card" data-testid={`card-job-${job.id}`}>
-    <div className="job-card-top"><span className={`sector-pill ${job.sector}`}>{job.sector}</span><span className="job-id">RECORD / {job.id}</span></div>
+    <div className="job-card-top"><span className={`sector-pill ${job.sector}`}>{careerCategoryLabels[job.sector]}</span><span className="job-id">RECORD / {job.id}</span></div>
     <div className="job-title-line"><div><h3>{job.title}</h3><p className="job-company">{job.company} <span>·</span> {job.industry}</p></div><button className={`expand-button ${expanded ? 'is-expanded' : ''}`} aria-label={`${expanded ? 'Hide' : 'Show'} details for ${job.title}`} aria-expanded={expanded} data-testid={`button-job-details-${job.id}`} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronDown size={17} /> : <ChevronRight size={17} />}</button></div>
-    <div className="job-summary"><span><GraduationCap size={14} />{job.education || 'Education not specified'}</span><span><Activity size={14} />{job.experience || 'Experience not specified'}</span><strong>{job.salaryMonthlyRm !== null ? money(job.salaryMonthlyRm) : 'Salary not disclosed'}<small>{job.salaryMonthlyRm !== null ? 'monthly' : 'in supplied record'}</small></strong></div>
+    <div className="job-summary"><span><GraduationCap size={14} />{job.education || 'Education not specified'}</span><span><Activity size={14} />{job.experience || 'Experience not specified'}</span><strong>{jobSalaryLabel(job)}<small>{hasDisclosedSalary(job) ? 'monthly' : 'in supplied record'}</small></strong></div>
     <div className="job-tags">{job.technicalSkills?.slice(0, 4).map((skill) => <span key={skill}>{skill}</span>)}{(job.technicalSkills?.length ?? 0) > 4 && <span className="tag-more">+{job.technicalSkills.length - 4}</span>}</div>
-    {expanded && <div className="job-details"><div className="detail-column"><div className="detail-label">Technical skills</div><div className="detail-copy">{job.technicalSkills?.length ? job.technicalSkills.join(' · ') : 'Not specified'}</div></div><div className="detail-column"><div className="detail-label">Soft skills</div><div className="detail-copy">{job.softSkills?.length ? job.softSkills.join(' · ') : 'Not specified'}</div></div><div className="detail-column"><div className="detail-label">Source</div><div className="detail-copy">{job.source || 'Not specified'}</div></div></div>}
+    {expanded && <div className="job-details"><div className="detail-column"><div className="detail-label">Technical skills</div><div className="detail-copy">{job.technicalSkills?.length ? job.technicalSkills.join(' · ') : 'Not specified'}</div></div><div className="detail-column"><div className="detail-label">Soft skills</div><div className="detail-copy">{job.softSkills?.length ? job.softSkills.join(' · ') : 'Not specified'}</div></div><div className="detail-column"><div className="detail-label">Source</div><div className="detail-copy">{job.source || 'Not specified'}{job.sourceUrl && <><br /><a href={job.sourceUrl} target="_blank" rel="noopener noreferrer">View source listing</a></>}</div></div></div>}
   </article>;
 }
 
@@ -278,10 +292,12 @@ function JobsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 8;
   const allJobs = query.data ?? [];
+  const careerCategories = [...new Set(allJobs.map((job) => job.sector))];
+  const distinctTitles = new Set(allJobs.map((job) => job.title.trim().replace(/\s+/g, ' ').toLowerCase())).size;
   const filtered = useMemo(() => allJobs.filter((job) => {
     const term = search.trim().toLowerCase();
     const matchesSearch = !term || [job.title, job.company, job.industry, job.education, job.experience, job.source, ...job.technicalSkills, ...job.softSkills].join(' ').toLowerCase().includes(term);
-    return matchesSearch && (sector === 'all' || job.sector === sector) && (salary === 'all' || (salary === 'disclosed' ? job.salaryMonthlyRm !== null : job.salaryMonthlyRm === null));
+    return matchesSearch && (sector === 'all' || job.sector === sector) && (salary === 'all' || (salary === 'disclosed' ? hasDisclosedSalary(job) : !hasDisclosedSalary(job)));
   }), [allJobs, search, sector, salary]);
   const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -289,17 +305,17 @@ function JobsPage() {
   const reset = () => { setSearch(''); setSector('all'); setSalary('all'); setPage(1); };
   return <div className="page-wrap jobs-page">
     <PageHeading eyebrow="02 / supplied workbook" title="Job record explorer">Search the supplied listings. Use the filters to inspect what is in this sample — not to infer national demand.</PageHeading>
-    <div className="sample-banner"><div className="banner-emblem"><BriefcaseBusiness size={18} /></div><div><strong>{query.data ? `${query.data.length} supplied records` : 'Supplied job records'}</strong><p>Job-level evidence only · Salary values shown as monthly RM</p></div><div className="banner-sectors"><span><i className="sector-dot software-dot" />Software</span><span><i className="sector-dot mechanical-dot" />Mechanical</span></div></div>
+    <div className="sample-banner"><div className="banner-emblem"><BriefcaseBusiness size={18} /></div><div><strong>{query.data ? `${query.data.length} supplied records` : 'Supplied job records'}</strong><p>Job-level evidence only · Salary values shown as monthly RM</p></div><div className="banner-sectors">{query.data && <span>{distinctTitles} distinct titles · {careerCategories.length} career categories</span>}</div></div>
     <div className="explorer-layout">
       <aside className="filter-panel">
         <div className="filter-heading"><div><SlidersHorizontal size={16} /><h2>Refine records</h2></div><button onClick={reset} className="reset-button" data-testid="button-reset-filters">Reset</button></div>
         <label className="field-label" htmlFor="job-search">Search roles</label>
         <div className="search-field"><Search size={16} /><input id="job-search" type="search" value={search} onChange={(e) => updateSearch(e.target.value)} placeholder="Title, company, skill…" data-testid="input-search-jobs" /></div>
-        <label className="field-label" htmlFor="sector-filter">Sector</label>
-        <div className="select-wrap"><select id="sector-filter" value={sector} onChange={(e) => { setSector(e.target.value); setPage(1); }} data-testid="select-sector-filter"><option value="all">All sectors</option><option value="software">Software</option><option value="mechanical">Mechanical</option></select><ChevronDown size={15} /></div>
+        <label className="field-label" htmlFor="sector-filter">Career category</label>
+        <div className="select-wrap"><select id="sector-filter" value={sector} onChange={(e) => { setSector(e.target.value); setPage(1); }} data-testid="select-sector-filter"><option value="all">All categories</option>{careerCategories.map((category) => <option key={category} value={category}>{careerCategoryLabels[category]}</option>)}</select><ChevronDown size={15} /></div>
         <label className="field-label" htmlFor="salary-filter">Salary disclosure</label>
         <div className="select-wrap"><select id="salary-filter" value={salary} onChange={(e) => { setSalary(e.target.value); setPage(1); }} data-testid="select-salary-filter"><option value="all">Any disclosure</option><option value="disclosed">Salary disclosed</option><option value="undisclosed">Not disclosed</option></select><ChevronDown size={15} /></div>
-        <div className="filter-footnote"><Info size={14} /><span>Location, posting date and source URL are absent from the supplied workbook.</span></div>
+        <div className="filter-footnote"><Info size={14} /><span>Categories are title-derived. Source URLs are supplied; locations and posting dates are absent.</span></div>
         <div className="filter-vertical-label">JOB-LEVEL RECORDS</div>
       </aside>
       <div className="results-column">

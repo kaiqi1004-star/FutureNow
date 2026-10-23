@@ -27,22 +27,37 @@ export interface SalaryRange {
   maximumMonthlyRm: number | null;
 }
 
+export interface CareerCategoryCount {
+  category: string;
+  count: number;
+}
+
 export interface FutureReadyOverview {
   totalJobs: number;
   softwareJobs: number;
   mechanicalJobs: number;
+  distinctJobTitles: number;
+  careerCategoryCount: number;
+  careerCategories: CareerCategoryCount[];
   disclosedSalaryCount: number;
   undisclosedSalaryCount: number;
   salaryRanges: SalaryRange[];
   dataNotes: string[];
 }
 
+/**
+ * Career category derived from the supplied job title; not the source Industry field.
+ */
 export type JobListingSector = typeof JobListingSector[keyof typeof JobListingSector];
 
 
 export const JobListingSector = {
   software: 'software',
   mechanical: 'mechanical',
+  'digital-marketing': 'digital-marketing',
+  'human-resources': 'human-resources',
+  'accounting-finance': 'accounting-finance',
+  'data-analytics': 'data-analytics',
 } as const;
 
 export interface JobListing {
@@ -54,9 +69,12 @@ export interface JobListing {
   education: string;
   /** @nullable */
   salaryMonthlyRm: number | null;
+  /** Original monthly RM salary cell, including disclosed ranges or Undisclosed. No midpoint is inferred. */
+  salaryText?: string;
   experience: string;
   technicalSkills: string[];
   softSkills: string[];
+  /** Career category derived from the supplied job title; not the source Industry field. */
   sector: JobListingSector;
   /** @nullable */
   location: string | null;

@@ -16,9 +16,12 @@ export interface JobListing {
   education: string;
   /** @nullable */
   salaryMonthlyRm: number | null;
+  /** Original monthly RM salary cell, including disclosed ranges or Undisclosed. No midpoint is inferred. */
+  salaryText?: string;
   experience: string;
   technicalSkills: string[];
   softSkills: string[];
+  /** Career category derived from the supplied job title; not the source Industry field. */
   sector: JobListingSector;
   /** @nullable */
   location: string | null;

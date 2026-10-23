@@ -640,7 +640,7 @@ button { cursor: pointer; }
 .job-card { padding: 14px 16px 13px; border-radius: 8px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); transition: border-color .18s, transform .18s, box-shadow .18s; }
 .job-card:hover { border-color: #b6c9bd; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(39,63,54,.045); }
 .job-card-top { display: flex; align-items: center; justify-content: space-between; }
-.sector-pill { padding: 4px 8px; border-radius: 100px; text-transform: capitalize; font-size: 9px; font-weight: 700; }
+.sector-pill { padding: 4px 8px; border-radius: 100px; text-transform: capitalize; font-size: 9px; font-weight: 700; color: #33776c; background: #e3f0e9; }
 .sector-pill.software { color: #33776c; background: #e3f0e9; }.sector-pill.mechanical { color: #987025; background: #f4edd9; }
 .job-id { color: #a4aaa0; font: 8px var(--app-font-mono); letter-spacing: .4px; }
 .job-title-line { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 8px; }
