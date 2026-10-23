@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import {
   useGetFutureReadyOverview,
@@ -19,18 +19,26 @@ import {
   ChevronRight, CircleAlert, Database, Download, Filter, GraduationCap, Info, Layers3,
   Menu, Moon, Printer, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Sun, X,
 } from 'lucide-react';
-import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer,
-  Tooltip, XAxis, YAxis,
-} from 'recharts';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import SkillGapPage from '@/pages/skill-gap';
-import SkillsProfilePage, { ComingSoonPage } from '@/pages/skills-profile';
-import FutureRoleMatchingPage from '@/pages/future-role-matching';
-import NotFound from '@/pages/not-found';
 import './index.css';
+
+// Keep feature forms, matching UI and charting out of the initial app download.
+const SkillGapPage = lazy(() => import('@/pages/skill-gap'));
+const SkillsProfilePage = lazy(() => import('@/pages/skills-profile'));
+const FutureRoleMatchingPage = lazy(() => import('@/pages/future-role-matching'));
+const ComingSoonPage = lazy(() => import('@/pages/coming-soon'));
+const NotFound = lazy(() => import('@/pages/not-found'));
+const OverviewChart = lazy(() => import('@/components/labor-charts').then((module) => ({ default: module.OverviewChart })));
+const UnemploymentChart = lazy(() => import('@/components/labor-charts').then((module) => ({ default: module.UnemploymentChart })));
+const WageChart = lazy(() => import('@/components/labor-charts').then((module) => ({ default: module.WageChart })));
+const UnderemploymentChart = lazy(() => import('@/components/labor-charts').then((module) => ({ default: module.UnderemploymentChart })));
+
+function PageLoadError() {
+  // React.lazy caches rejected imports; a full reload retries missing/stale chunks.
+  return <div className="page-wrap"><div className="state-box error-state" role="alert"><div className="state-symbol"><CircleAlert size={21} /></div><div><strong>Couldn’t load this page</strong><p>Check your connection, then reload. Your saved browser profile has not been changed.</p></div><button type="button" className="text-button" onClick={() => window.location.reload()}>Reload page <RefreshCw size={14} /></button></div></div>;
+}
 
 const careerCategoryLabels: Record<JobListing['sector'], string> = {
   software: 'Software',
@@ -256,7 +264,7 @@ function OverviewPage() {
         {unemployment.isError ? <QueryError label="unemployment data" retry={refresh} /> : unemployment.isLoading || unemployment.isFetching ? <LoadingLines /> : unemployment.data?.length ? <>
            <div className="chart-intro"><div><span className="chart-big">{latest ? fmt(latest.rateAge15To24) : '—'}</span><span className="chart-descriptor">15–24 unemployment rate<br />latest supplied value · unit as supplied</span></div><div className="chart-legend"><span><i className="legend-dot teal" />Age 15–24</span><span><i className="legend-dot gold" />Age 15–30</span></div></div>
           <div className="chart-area chart-short" role="img" aria-label="Line chart showing unemployment rates for ages 15 to 24 and 15 to 30">
-            <ResponsiveContainer width="100%" height="100%"><LineChart data={lastMonth} margin={{ top: 10, right: 8, left: -24, bottom: 0 }}><CartesianGrid stroke="var(--chart-grid)" vertical={false} /><XAxis dataKey="label" tick={{ fill: 'var(--chart-tick)', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={28} /><YAxis tick={{ fill: 'var(--chart-tick)', fontSize: 10 }} axisLine={false} tickLine={false} unit="%" /><Tooltip contentStyle={{ background: 'var(--tooltip-bg)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 12 }} /><Line type="monotone" dataKey="rateAge15To24" name="Age 15–24" stroke="var(--teal)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} /><Line type="monotone" dataKey="rateAge15To30" name="Age 15–30" stroke="var(--gold-deep)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} /></LineChart></ResponsiveContainer>
+            <Suspense fallback={<LoadingLines />}><OverviewChart data={lastMonth} /></Suspense>
           </div><div className="chart-footnote">Monthly observations · rate units as supplied</div>
         </> : <EmptyState title="No unemployment observations" text="No national unemployment series is currently available." />}
       </Panel>
@@ -363,14 +371,14 @@ function WorkforcePage() {
     <Panel title="Youth unemployment over time" kicker="MONTHLY OBSERVATIONS" action={<CsvDownload label="Download unemployment observations as CSV" filename="future-ready-unemployment-observations.csv" rows={jobless} testId="button-download-unemployment-csv" />}>
       {unemployment.isError ? <QueryError label="unemployment data" retry={refresh} /> : chartLoading ? <LoadingLines count={5} /> : jobless.length ? <div className="wide-chart" role="img" aria-label="Unemployment rates and counts for age groups 15 to 24 and 15 to 30">
         <div className="chart-legend"><span><i className="legend-dot teal" />Rate · age 15–24</span><span><i className="legend-dot gold" />Rate · age 15–30</span></div>
-         <ResponsiveContainer width="100%" height={290}><LineChart data={jobless.map((d) => ({ ...d, label: month(d.date) }))} margin={{ top: 10, right: 12, left: -12, bottom: 4 }}><CartesianGrid stroke="var(--chart-grid)" vertical={false} /><XAxis dataKey="label" tick={{ fill: 'var(--chart-tick)', fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={32} /><YAxis tick={{ fill: 'var(--chart-tick)', fontSize: 11 }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ background: 'var(--tooltip-bg)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 12 }} /><Line dataKey="rateAge15To24" name="Rate, age 15–24" stroke="var(--teal)" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} /><Line dataKey="rateAge15To30" name="Rate, age 15–30" stroke="var(--gold-deep)" strokeWidth={2.3} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} /></LineChart></ResponsiveContainer>
+          <Suspense fallback={<LoadingLines count={5} />}><UnemploymentChart data={jobless.map((d) => ({ ...d, label: month(d.date) }))} /></Suspense>
         <div className="supporting-series"><div><span className="mini-label">UNEMPLOYED · AGE 15–24</span><b>{fmt(jobless.at(-1)?.unemployedAge15To24 ?? 0)}</b></div><div><span className="mini-label">UNEMPLOYED · AGE 15–30</span><b>{fmt(jobless.at(-1)?.unemployedAge15To30 ?? 0)}</b></div><span className="units-inline">Counts and rates are distinct measures · units as supplied</span></div>
       </div> : <EmptyState title="No unemployment observations" text="No observations are available for this national series." />}
     </Panel>
      <div className="data-section-label section-spaced"><span>02</span><div><h2>Wages by category</h2><p>Median and mean values for the selected category type and year</p></div><span className="section-source">AGGREGATE CSV</span></div>
      <Panel title="Wage observations" kicker={`${selectedWageYear || 'YEAR'} · UNIT UNSPECIFIED`} action={<div className="panel-actions"><CsvDownload label={`Download displayed ${wageType} wage chart data as CSV`} filename={`future-ready-${wageType}-wages-${selectedWageYear || 'all-years'}.csv`} rows={wageRows} testId="button-download-wages-csv" /><label className="sr-only" htmlFor="wage-year">Wage data year</label><select className="year-select" id="wage-year" aria-label="Select wage data year" data-testid="select-wage-year" value={selectedWageYear} onChange={(event) => setWageYear(event.target.value)}>{wageYears.map((year) => <option key={year} value={year}>{year}</option>)}</select><div className="segmented-control" aria-label="Wage category type"><button className={wageType === 'occupation' ? 'segment-active' : ''} onClick={() => setWageType('occupation')} data-testid="button-wage-occupation">Occupation</button><button className={wageType === 'skill' ? 'segment-active' : ''} onClick={() => setWageType('skill')} data-testid="button-wage-skill">Skill</button></div></div>}>
       {wages.isError ? <QueryError label="wage data" retry={refresh} /> : wages.isLoading || wages.isFetching ? <LoadingLines count={5} /> : wageRows.length ? <div className="wage-layout">
-        <div className="wage-chart" role="img" aria-label={`Mean and median ${wageType} wage values for ${selectedWageYear}; units unspecified`}><ResponsiveContainer width="100%" height={310}><BarChart data={wageRows.map((d) => ({ ...d, label: d.category.length > 20 ? `${d.category.slice(0, 18)}…` : d.category }))} layout="vertical" margin={{ top: 2, right: 18, left: 8, bottom: 2 }}><CartesianGrid stroke="var(--chart-grid)" horizontal={false} /><XAxis type="number" tick={{ fill: 'var(--chart-tick)', fontSize: 10 }} axisLine={false} tickLine={false} /><YAxis type="category" dataKey="label" width={126} tick={{ fill: 'var(--chart-tick)', fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ background: 'var(--tooltip-bg)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 12 }} /><Bar dataKey="medianWage" name="Median wage" fill="var(--teal)" radius={[0, 4, 4, 0]} isAnimationActive={false} /><Bar dataKey="meanWage" name="Mean wage" fill="var(--gold-deep)" radius={[0, 4, 4, 0]} isAnimationActive={false} /></BarChart></ResponsiveContainer></div>
+        <div className="wage-chart" role="img" aria-label={`Mean and median ${wageType} wage values for ${selectedWageYear}; units unspecified`}><Suspense fallback={<LoadingLines count={5} />}><WageChart data={wageRows.map((d) => ({ ...d, label: d.category.length > 20 ? `${d.category.slice(0, 18)}…` : d.category }))} /></Suspense></div>
         <div className="wage-aside"><div className="unit-warning"><Info size={15} /><span>Wage units are not specified in the supplied CSV. Values are shown without a currency or time-period label.</span></div><div className="wage-table-wrap"><table className="data-table"><thead><tr><th>Category</th><th>Median</th><th>Mean</th></tr></thead><tbody>{wageRows.slice(0, 8).map((row, i) => <tr key={`${row.date}-${row.category}-${i}`} data-testid={`row-wage-${i}`}><td>{row.category}</td><td>{fmt(row.medianWage)}</td><td>{fmt(row.meanWage)}</td></tr>)}</tbody></table></div></div>
       </div> : <EmptyState title="No wage observations" text="No observations are available for this category." />}
     </Panel>
@@ -378,7 +386,7 @@ function WorkforcePage() {
     <Panel title="Underemployment by age" kicker="AGE GROUP COMPARISON" action={<div className="panel-actions"><CsvDownload label={`Download displayed underemployment ${measure} chart data as CSV`} filename={`future-ready-underemployment-${measure}.csv`} rows={underByDate.map(({ label: _label, ...row }) => row)} testId="button-download-underemployment-csv" /><div className="segmented-control" aria-label="Underemployment measure"><button className={measure === 'rate' ? 'segment-active' : ''} onClick={() => setMeasure('rate')} data-testid="button-underemployment-rate">Rate</button><button className={measure === 'persons' ? 'segment-active' : ''} onClick={() => setMeasure('persons')} data-testid="button-underemployment-persons">Persons</button></div></div>}>
       {underemployment.isError ? <QueryError label="underemployment data" retry={refresh} /> : underemployment.isLoading || underemployment.isFetching ? <LoadingLines count={5} /> : underByDate.length ? <div className="under-chart" role="img" aria-label={`Skills-related underemployment ${measure} by age group`}>
         <div className="chart-legend"><span><i className="legend-dot teal" />15–24</span><span><i className="legend-dot gold" />25–34</span><span><i className="legend-dot blue" />35–44</span><span><i className="legend-dot coral" />45+</span><span><i className="legend-dot plum" />Overall</span></div>
-        <ResponsiveContainer width="100%" height={280}><AreaChart data={underByDate} margin={{ top: 12, right: 10, left: -10, bottom: 2 }}><CartesianGrid stroke="var(--chart-grid)" vertical={false} /><XAxis dataKey="label" tick={{ fill: 'var(--chart-tick)', fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={30} /><YAxis tick={{ fill: 'var(--chart-tick)', fontSize: 11 }} axisLine={false} tickLine={false} /><Tooltip contentStyle={{ background: 'var(--tooltip-bg)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 12 }} /><Area type="monotone" dataKey="15-24" name="Age 15–24" stroke="var(--teal)" fill="var(--teal-soft)" strokeWidth={2} dot={false} isAnimationActive={false} /><Area type="monotone" dataKey="25-34" name="Age 25–34" stroke="var(--gold-deep)" fill="var(--gold-soft)" strokeWidth={2} dot={false} isAnimationActive={false} /><Area type="monotone" dataKey="35-44" name="Age 35–44" stroke="var(--blue)" fill="var(--blue-soft)" strokeWidth={2} dot={false} isAnimationActive={false} /><Area type="monotone" dataKey="45+" name="Age 45+" stroke="var(--coral)" fill="var(--coral-soft)" strokeWidth={2} dot={false} isAnimationActive={false} /><Area type="monotone" dataKey="overall" name="Overall" stroke="var(--plum)" fill="var(--plum-soft)" strokeWidth={2.5} dot={false} isAnimationActive={false} /></AreaChart></ResponsiveContainer>
+        <Suspense fallback={<LoadingLines count={5} />}><UnderemploymentChart data={underByDate} /></Suspense>
         <div className="under-table-wrap"><table className="data-table"><thead><tr><th>Period</th><th>Age 15–24</th><th>25–34</th><th>35–44</th><th>45+</th><th>Overall</th></tr></thead><tbody>{underByDate.slice(-6).map((row, i) => <tr key={String(row.date)} data-testid={`row-underemployment-${i}`}><td>{String(row.label)}</td>{['15-24', '25-34', '35-44', '45+', 'overall'].map((age) => <td key={age}>{typeof row[age] === 'number' ? fmt(row[age] as number) : '—'}</td>)}</tr>)}</tbody></table></div>
       </div> : <EmptyState title="No underemployment observations" text={`No ${measure} observations are available for this series.`} />}
       {underRows.length > 0 && <div className="chart-footnote">Measure: {measure} · Age groups and values as supplied · CSV units not further specified</div>}
@@ -389,7 +397,7 @@ function WorkforcePage() {
 
 function Router() {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route path="/skill-gap" component={SkillGapPage} /><Route path="/skills-profile" component={SkillsProfilePage} /><Route path="/future-role-matching" component={FutureRoleMatchingPage} /><Route path="/reskilling-pathway">{() => <ComingSoonPage title="Personalised Reskilling Pathway" description="Planned: a prioritised learning plan with time, cost and resource information." />}</Route><Route path="/market-intelligence">{() => <ComingSoonPage title="AI & Job-Market Intelligence" description="Planned: sourced, dated AI-trend and job-market signals with clear uncertainty labels." />}</Route><Route path="/scenario-planning">{() => <ComingSoonPage title="Scenario Planning & Workforce Insights" description="Planned: comparison of labelled hypothetical scenarios, not predictions." />}</Route><Route component={NotFound} /></Switch></Shell></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><ErrorBoundary resetKey={location} FallbackComponent={PageLoadError}><Suspense key={location} fallback={<div className="page-wrap"><LoadingLines /></div>}><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route path="/skill-gap" component={SkillGapPage} /><Route path="/skills-profile" component={SkillsProfilePage} /><Route path="/future-role-matching" component={FutureRoleMatchingPage} /><Route path="/reskilling-pathway">{() => <ComingSoonPage title="Personalised Reskilling Pathway" description="Planned: a prioritised learning plan with time, cost and resource information." />}</Route><Route path="/market-intelligence">{() => <ComingSoonPage title="AI & Job-Market Intelligence" description="Planned: sourced, dated AI-trend and job-market signals with clear uncertainty labels." />}</Route><Route path="/scenario-planning">{() => <ComingSoonPage title="Scenario Planning & Workforce Insights" description="Planned: comparison of labelled hypothetical scenarios, not predictions." />}</Route><Route component={NotFound} /></Switch></Suspense></ErrorBoundary></Shell></ErrorBoundary>;
 }
 
 function App() {
