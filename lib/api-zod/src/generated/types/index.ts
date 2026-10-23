@@ -6,11 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './apiError';
 export * from './careerCategoryCount';
 export * from './futureReadyOverview';
 export * from './healthStatus';
 export * from './jobListing';
 export * from './jobListingSector';
+export * from './labourMarketData';
+export * from './labourMarketDataCacheState';
+export * from './labourMarketObservation';
 export * from './roleMatch';
 export * from './roleMatchInput';
 export * from './roleMatchResults';

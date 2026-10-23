@@ -338,3 +338,60 @@ export interface UnderemploymentObservation {
   value: number;
 }
 
+export interface LabourMarketObservation {
+  /** Monthly observation date. Day is 01 in the source. */
+  date: string;
+  /** Labour force size, thousands of persons. */
+  lf: number;
+  /** Employed persons, thousands. */
+  lf_employed: number;
+  /** Unemployed persons, thousands. */
+  lf_unemployed: number;
+  /** Persons outside the labour force, thousands. */
+  lf_outside: number;
+  /** Labour force participation rate, percent. */
+  p_rate: number;
+  /** Employment-population ratio, percent. */
+  ep_ratio: number;
+  /** Unemployment rate, percent. */
+  u_rate: number;
+}
+
+export type LabourMarketDataCacheState = typeof LabourMarketDataCacheState[keyof typeof LabourMarketDataCacheState];
+
+
+export const LabourMarketDataCacheState = {
+  fresh: 'fresh',
+  stale: 'stale',
+} as const;
+
+export interface LabourMarketData {
+  sourceName: string;
+  datasetName: string;
+  catalogueUrl: string;
+  csvUrl: string;
+  latestObservationDate: string;
+  /** @nullable */
+  catalogueLastUpdated: string | null;
+  /** @nullable */
+  catalogueNextUpdate: string | null;
+  /** @nullable */
+  catalogueMetadataError: string | null;
+  retrievedAt: string;
+  cacheState: LabourMarketDataCacheState;
+  /** @nullable */
+  refreshError: string | null;
+  /** @minimum 0 */
+  rowsReceived: number;
+  /** @minimum 1 */
+  rowsValid: number;
+  /** @minimum 0 */
+  rejectedRows: number;
+  ignoredColumns: string[];
+  observations: LabourMarketObservation[];
+}
+
+export interface ApiError {
+  error: string;
+}
+

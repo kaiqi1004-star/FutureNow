@@ -276,6 +276,84 @@ export const GetFutureReadyUnemploymentResponse = zod.array(GetFutureReadyUnempl
 
 
 /**
+ * @summary Retrieve and cache the current OpenDOSM monthly labour-force dataset
+ */
+export const getFutureReadyLabourMarketResponseRowsReceivedMin = 0;
+
+
+export const getFutureReadyLabourMarketResponseRejectedRowsMin = 0;
+
+
+
+export const GetFutureReadyLabourMarketResponse = zod.object({
+  "sourceName": zod.string(),
+  "datasetName": zod.string(),
+  "catalogueUrl": zod.string().url(),
+  "csvUrl": zod.string().url(),
+  "latestObservationDate": zod.coerce.date(),
+  "catalogueLastUpdated": zod.string().nullable(),
+  "catalogueNextUpdate": zod.string().nullable(),
+  "catalogueMetadataError": zod.string().nullable(),
+  "retrievedAt": zod.coerce.date(),
+  "cacheState": zod.enum(['fresh', 'stale']),
+  "refreshError": zod.string().nullable(),
+  "rowsReceived": zod.number().int().min(getFutureReadyLabourMarketResponseRowsReceivedMin),
+  "rowsValid": zod.number().int().min(1),
+  "rejectedRows": zod.number().int().min(getFutureReadyLabourMarketResponseRejectedRowsMin),
+  "ignoredColumns": zod.array(zod.string()),
+  "observations": zod.array(zod.object({
+  "date": zod.coerce.date().describe('Monthly observation date. Day is 01 in the source.'),
+  "lf": zod.number().describe('Labour force size, thousands of persons.'),
+  "lf_employed": zod.number().describe('Employed persons, thousands.'),
+  "lf_unemployed": zod.number().describe('Unemployed persons, thousands.'),
+  "lf_outside": zod.number().describe('Persons outside the labour force, thousands.'),
+  "p_rate": zod.number().describe('Labour force participation rate, percent.'),
+  "ep_ratio": zod.number().describe('Employment-population ratio, percent.'),
+  "u_rate": zod.number().describe('Unemployment rate, percent.')
+}))
+})
+
+
+/**
+ * @summary Force a fresh retrieval of the OpenDOSM dataset
+ */
+export const refreshFutureReadyLabourMarketResponseRowsReceivedMin = 0;
+
+
+export const refreshFutureReadyLabourMarketResponseRejectedRowsMin = 0;
+
+
+
+export const RefreshFutureReadyLabourMarketResponse = zod.object({
+  "sourceName": zod.string(),
+  "datasetName": zod.string(),
+  "catalogueUrl": zod.string().url(),
+  "csvUrl": zod.string().url(),
+  "latestObservationDate": zod.coerce.date(),
+  "catalogueLastUpdated": zod.string().nullable(),
+  "catalogueNextUpdate": zod.string().nullable(),
+  "catalogueMetadataError": zod.string().nullable(),
+  "retrievedAt": zod.coerce.date(),
+  "cacheState": zod.enum(['fresh', 'stale']),
+  "refreshError": zod.string().nullable(),
+  "rowsReceived": zod.number().int().min(refreshFutureReadyLabourMarketResponseRowsReceivedMin),
+  "rowsValid": zod.number().int().min(1),
+  "rejectedRows": zod.number().int().min(refreshFutureReadyLabourMarketResponseRejectedRowsMin),
+  "ignoredColumns": zod.array(zod.string()),
+  "observations": zod.array(zod.object({
+  "date": zod.coerce.date().describe('Monthly observation date. Day is 01 in the source.'),
+  "lf": zod.number().describe('Labour force size, thousands of persons.'),
+  "lf_employed": zod.number().describe('Employed persons, thousands.'),
+  "lf_unemployed": zod.number().describe('Unemployed persons, thousands.'),
+  "lf_outside": zod.number().describe('Persons outside the labour force, thousands.'),
+  "p_rate": zod.number().describe('Labour force participation rate, percent.'),
+  "ep_ratio": zod.number().describe('Employment-population ratio, percent.'),
+  "u_rate": zod.number().describe('Unemployment rate, percent.')
+}))
+})
+
+
+/**
  * @summary Get annual wage observations by occupation or skill category
  */
 export const GetFutureReadyWagesResponseItem = zod.object({

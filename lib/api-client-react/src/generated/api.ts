@@ -25,9 +25,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiError,
   FutureReadyOverview,
   HealthStatus,
   JobListing,
+  LabourMarketData,
   RoleMatchInput,
   RoleMatchResults,
   SkillGapAnalysis,
@@ -646,6 +648,181 @@ export function useGetFutureReadyUnemployment<TData = Awaited<ReturnType<typeof 
 
 
 
+
+export const getGetFutureReadyLabourMarketUrl = () => {
+
+
+
+
+  return `/api/future-ready/labour-market`
+}
+
+/**
+ * @summary Retrieve and cache the current OpenDOSM monthly labour-force dataset
+ */
+export const getFutureReadyLabourMarket = async ( options?: Parameters<typeof customFetch>[1]): Promise<LabourMarketData> => {
+
+  return customFetch<LabourMarketData>(getGetFutureReadyLabourMarketUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFutureReadyLabourMarketQueryKey = () => {
+    return [
+    `/api/future-ready/labour-market`
+    ] as const;
+    }
+
+
+export const getGetFutureReadyLabourMarketQueryOptions = <TData = Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError = ErrorType<ApiError>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFutureReadyLabourMarketQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>> = ({ signal }) => getFutureReadyLabourMarket({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetFutureReadyLabourMarketQueryResult = NonNullable<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>>
+export type GetFutureReadyLabourMarketQueryError = ErrorType<ApiError>
+
+
+export function useGetFutureReadyLabourMarket<TData = Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError = ErrorType<ApiError>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFutureReadyLabourMarket>>,
+          TError,
+          Awaited<ReturnType<typeof getFutureReadyLabourMarket>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFutureReadyLabourMarket<TData = Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError = ErrorType<ApiError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getFutureReadyLabourMarket>>,
+          TError,
+          Awaited<ReturnType<typeof getFutureReadyLabourMarket>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetFutureReadyLabourMarket<TData = Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError = ErrorType<ApiError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Retrieve and cache the current OpenDOSM monthly labour-force dataset
+ */
+
+export function useGetFutureReadyLabourMarket<TData = Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError = ErrorType<ApiError>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getFutureReadyLabourMarket>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetFutureReadyLabourMarketQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRefreshFutureReadyLabourMarketUrl = () => {
+
+
+
+
+  return `/api/future-ready/labour-market/refresh`
+}
+
+/**
+ * @summary Force a fresh retrieval of the OpenDOSM dataset
+ */
+export const refreshFutureReadyLabourMarket = async ( options?: Parameters<typeof customFetch>[1]): Promise<LabourMarketData> => {
+
+  return customFetch<LabourMarketData>(getRefreshFutureReadyLabourMarketUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRefreshFutureReadyLabourMarketMutationKey = () => ['refreshFutureReadyLabourMarket'] as const;
+
+export const getRefreshFutureReadyLabourMarketMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshFutureReadyLabourMarket>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refreshFutureReadyLabourMarket>>, TError,void, TContext> => {
+
+const mutationKey = getRefreshFutureReadyLabourMarketMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refreshFutureReadyLabourMarket>>, void> = () => {
+
+
+          return  refreshFutureReadyLabourMarket(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefreshFutureReadyLabourMarketMutationResult = NonNullable<Awaited<ReturnType<typeof refreshFutureReadyLabourMarket>>>
+
+    export type RefreshFutureReadyLabourMarketMutationError = ErrorType<ApiError>
+
+
+    /**
+ * @summary Force a fresh retrieval of the OpenDOSM dataset
+ */
+export const useRefreshFutureReadyLabourMarket = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refreshFutureReadyLabourMarket>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof refreshFutureReadyLabourMarket>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRefreshFutureReadyLabourMarketMutationOptions(options), queryClient);
+    }
 
 export const getGetFutureReadyWagesUrl = () => {
 

@@ -14,6 +14,7 @@ import {
   GetFutureReadyWagesResponse,
 } from "@workspace/api-zod";
 import { buildFutureReadyOverview } from "../lib/job-summary";
+import { labourMarketRepository } from "../lib/labour-market";
 import { calculateSkillGap } from "../lib/skill-gap";
 import { matchRoles } from "../lib/role-matching";
 
@@ -178,6 +179,28 @@ router.get("/future-ready/underemployment", (_req, res): void => {
   res.json(
     GetFutureReadyUnderemploymentResponse.parse(loadUnderemployment()),
   );
+});
+
+router.get("/future-ready/labour-market", async (req, res): Promise<void> => {
+  try {
+    res.json(await labourMarketRepository.getData());
+  } catch (error) {
+    req.log.error({ err: error }, "Could not retrieve OpenDOSM labour-force data");
+    res.status(502).json({
+      error: "OpenDOSM labour-force data could not be retrieved or validated. Try again later.",
+    });
+  }
+});
+
+router.post("/future-ready/labour-market/refresh", async (req, res): Promise<void> => {
+  try {
+    res.json(await labourMarketRepository.getData(true));
+  } catch (error) {
+    req.log.error({ err: error }, "OpenDOSM labour-force refresh failed");
+    res.status(502).json({
+      error: "OpenDOSM refresh failed and no successful cached data is available.",
+    });
+  }
 });
 
 export default router;

@@ -29,6 +29,7 @@ const SkillGapPage = lazy(() => import('@/pages/skill-gap'));
 const SkillsProfilePage = lazy(() => import('@/pages/skills-profile'));
 const FutureRoleMatchingPage = lazy(() => import('@/pages/future-role-matching'));
 const ReskillingPathwayPage = lazy(() => import('@/pages/reskilling-pathway'));
+const MarketIntelligencePage = lazy(() => import('@/pages/market-intelligence'));
 const ComingSoonPage = lazy(() => import('@/pages/coming-soon'));
 const NotFound = lazy(() => import('@/pages/not-found'));
 const OverviewChart = lazy(() => import('@/components/labor-charts').then((module) => ({ default: module.OverviewChart })));
@@ -127,7 +128,7 @@ function Shell({ children }: { children: ReactNode }) {
     '/skills-profile': { title: 'Skills Profile', description: 'Build a skills profile with FutureNow. Saved only in this browser.' },
     '/future-role-matching': { title: 'Future-Role Matching', description: 'Rank supplied Malaysian job records by estimated skill fit with your saved FutureNow profile, with SDG context. Not a hiring prediction.' },
     '/reskilling-pathway': { title: 'Personalised Reskilling Pathway', description: 'Build a learning pathway from saved skills and the requirements listed in a supplied job record.' },
-    '/market-intelligence': { title: 'AI & Job-Market Intelligence (Coming Soon)', description: 'Planned FutureNow module, not yet available.' },
+    '/market-intelligence': { title: 'AI & Job-Market Intelligence', description: 'Explore official monthly labour-force data, dated research on AI at work, and a clearly labelled snapshot of the supplied job records.' },
     '/scenario-planning': { title: 'Scenario Planning (Coming Soon)', description: 'Planned FutureNow module, not yet available.' },
   };
   const currentPage = pageDetails[path] ?? { title: 'Page not found', description: 'This FutureNow page is not available.' };
@@ -158,7 +159,7 @@ function Shell({ children }: { children: ReactNode }) {
     { href: '/skills-profile', label: 'Skills Profile', icon: UserRound, soon: false },
     { href: '/future-role-matching', label: 'Future-Role Matching', icon: Compass, soon: false },
     { href: '/reskilling-pathway', label: 'Reskilling Pathway', icon: Route_, soon: false },
-    { href: '/market-intelligence', label: 'AI & Market Intelligence', icon: Radar, soon: true },
+    { href: '/market-intelligence', label: 'AI & Market Intelligence', icon: Radar, soon: false },
     { href: '/scenario-planning', label: 'Scenario Planning', icon: Telescope, soon: true },
   ];
   const nav = [
@@ -398,7 +399,7 @@ function WorkforcePage() {
 
 function Router() {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}><Shell><ErrorBoundary resetKey={location} FallbackComponent={PageLoadError}><Suspense key={location} fallback={<div className="page-wrap"><LoadingLines /></div>}><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route path="/skill-gap" component={SkillGapPage} /><Route path="/skills-profile" component={SkillsProfilePage} /><Route path="/future-role-matching" component={FutureRoleMatchingPage} /><Route path="/reskilling-pathway" component={ReskillingPathwayPage} /><Route path="/market-intelligence">{() => <ComingSoonPage title="AI & Job-Market Intelligence" description="Planned: sourced, dated AI-trend and job-market signals with clear uncertainty labels." />}</Route><Route path="/scenario-planning">{() => <ComingSoonPage title="Scenario Planning & Workforce Insights" description="Planned: comparison of labelled hypothetical scenarios, not predictions." />}</Route><Route component={NotFound} /></Switch></Suspense></ErrorBoundary></Shell></ErrorBoundary>;
+  return <ErrorBoundary resetKey={location}><Shell><ErrorBoundary resetKey={location} FallbackComponent={PageLoadError}><Suspense key={location} fallback={<div className="page-wrap"><LoadingLines /></div>}><Switch><Route path="/" component={OverviewPage} /><Route path="/jobs" component={JobsPage} /><Route path="/workforce-data" component={WorkforcePage} /><Route path="/skill-gap" component={SkillGapPage} /><Route path="/skills-profile" component={SkillsProfilePage} /><Route path="/future-role-matching" component={FutureRoleMatchingPage} /><Route path="/reskilling-pathway" component={ReskillingPathwayPage} /><Route path="/market-intelligence" component={MarketIntelligencePage} /><Route path="/scenario-planning">{() => <ComingSoonPage title="Scenario Planning & Workforce Insights" description="Planned: comparison of labelled hypothetical scenarios, not predictions." />}</Route><Route component={NotFound} /></Switch></Suspense></ErrorBoundary></Shell></ErrorBoundary>;
 }
 
 function App() {

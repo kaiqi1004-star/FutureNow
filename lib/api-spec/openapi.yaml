@@ -110,6 +110,42 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UnemploymentObservation"
+  /future-ready/labour-market:
+    get:
+      operationId: getFutureReadyLabourMarket
+      tags: [futureReady]
+      summary: Retrieve and cache the current OpenDOSM monthly labour-force dataset
+      responses:
+        "200":
+          description: Validated observations and source/retrieval metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabourMarketData"
+        "502":
+          description: The current dataset could not be fetched or validated and no cached copy is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /future-ready/labour-market/refresh:
+    post:
+      operationId: refreshFutureReadyLabourMarket
+      tags: [futureReady]
+      summary: Force a fresh retrieval of the OpenDOSM dataset
+      responses:
+        "200":
+          description: Refreshed observations or the last successful cached observations marked stale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabourMarketData"
+        "502":
+          description: Refresh failed and no successful cached copy is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /future-ready/wages:
     get:
       operationId: getFutureReadyWages
@@ -511,4 +547,87 @@ components:
         value:
           type: number
       required: [date, measure, age, value]
+    LabourMarketObservation:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Monthly observation date. Day is 01 in the source.
+        lf:
+          type: number
+          description: Labour force size, thousands of persons.
+        lf_employed:
+          type: number
+          description: Employed persons, thousands.
+        lf_unemployed:
+          type: number
+          description: Unemployed persons, thousands.
+        lf_outside:
+          type: number
+          description: Persons outside the labour force, thousands.
+        p_rate:
+          type: number
+          description: Labour force participation rate, percent.
+        ep_ratio:
+          type: number
+          description: Employment-population ratio, percent.
+        u_rate:
+          type: number
+          description: Unemployment rate, percent.
+      required: [date, lf, lf_employed, lf_unemployed, lf_outside, p_rate, ep_ratio, u_rate]
+    LabourMarketData:
+      type: object
+      properties:
+        sourceName:
+          type: string
+        datasetName:
+          type: string
+        catalogueUrl:
+          type: string
+          format: uri
+        csvUrl:
+          type: string
+          format: uri
+        latestObservationDate:
+          type: string
+          format: date
+        catalogueLastUpdated:
+          type: ["string", "null"]
+        catalogueNextUpdate:
+          type: ["string", "null"]
+        catalogueMetadataError:
+          type: ["string", "null"]
+        retrievedAt:
+          type: string
+          format: date-time
+        cacheState:
+          type: string
+          enum: [fresh, stale]
+        refreshError:
+          type: ["string", "null"]
+        rowsReceived:
+          type: integer
+          minimum: 0
+        rowsValid:
+          type: integer
+          minimum: 1
+        rejectedRows:
+          type: integer
+          minimum: 0
+        ignoredColumns:
+          type: array
+          items:
+            type: string
+        observations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LabourMarketObservation"
+      required: [sourceName, datasetName, catalogueUrl, csvUrl, latestObservationDate, catalogueLastUpdated, catalogueNextUpdate, catalogueMetadataError, retrievedAt, cacheState, refreshError, rowsReceived, rowsValid, rejectedRows, ignoredColumns, observations]
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
 
