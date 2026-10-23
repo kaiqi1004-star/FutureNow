@@ -99,14 +99,14 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await t('button-open-navigation').click();
     await t('link-module-future-role-matching').click();
-    await t('coming-soon').waitFor();
+    await t('text-privacy-disclosure').waitFor();
     await page.goto(`${baseURL}/skills-profile`);
     await t('button-open-navigation').click();
     await page.keyboard.press('Escape');
     assert.equal(await t('button-open-navigation').getAttribute('aria-expanded'), 'false');
     await page.screenshot({ path: new URL('mobile-summary.png', out).pathname, fullPage: true });
   });
-  await check('Existing routes and planned module destinations', async () => {
+  await check('Existing routes and active module destinations', async () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     for (const path of ['/', '/jobs', '/workforce-data', '/skill-gap', '/future-role-matching', '/reskilling-pathway', '/market-intelligence', '/scenario-planning']) {
       await page.goto(`${baseURL}${path}`);
@@ -114,9 +114,10 @@ try {
       if (['/', '/jobs', '/workforce-data', '/skill-gap'].includes(path)) {
         await page.waitForLoadState('networkidle');
       }
-      assert.ok((await page.locator('main').innerText()).length > 100, path);
-      if (path.includes('matching') || path.includes('pathway') || path.includes('intelligence') || path.includes('scenario')) assert.match(await page.locator('main').innerText(), /Coming soon/i);
-      else assert.equal(await page.getByText('Something went wrong', { exact: false }).count(), 0);
+      const content = await page.locator('.page-wrap').first().innerText();
+      assert.ok(content.length > 100, path);
+      assert.doesNotMatch(content, /Coming soon/i);
+      assert.equal(await page.getByText('Something went wrong', { exact: false }).count(), 0);
     }
   });
   await check('Dark-mode profile and mobile keyboard navigation', async () => {
