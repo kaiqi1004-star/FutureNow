@@ -603,6 +603,13 @@ components:
           items:
             type: string
             maxLength: 120
+        practiceSkills:
+          type: array
+          description: Explicitly selected listed requirements to include in the learning roadmap; does not change coverage.
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 120
       required: [sector, jobId, currentSkills]
     SkillGapSkill:
       type: object

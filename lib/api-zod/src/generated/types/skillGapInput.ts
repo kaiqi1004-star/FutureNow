@@ -19,4 +19,10 @@ export interface SkillGapInput {
      * @items.maxLength 120
      */
   currentSkills: string[];
+  /**
+     * Explicitly selected listed requirements to include in the learning roadmap; does not change coverage.
+     * @maxItems 100
+     * @items.maxLength 120
+     */
+  practiceSkills?: string[];
 }

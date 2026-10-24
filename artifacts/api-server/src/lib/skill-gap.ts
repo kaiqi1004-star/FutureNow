@@ -269,6 +269,7 @@ function resourceFor(skill: string): SkillGapLearningResource | null {
 export function calculateSkillGap(
   selectedJob: JobListing,
   inputSkills: string[],
+  practiceSkills: string[] = [],
 ): SkillGapAnalysis {
   const requirements = distinctRequirements(selectedJob);
   const uniqueInputs: string[] = [];
@@ -304,7 +305,22 @@ export function calculateSkillGap(
     requiredCount === 0
       ? null
       : Math.round((matchedCount / requiredCount) * 1000) / 10;
-  const roadmap = orderRoadmap(missingSkills).map((step, index) => ({
+  const missingKeys = new Set(
+    missingSkills.map(({ skill }) => canonicalSkill(skill)),
+  );
+  const selectedPracticeKeys = new Set(
+    practiceSkills.map(canonicalSkill).filter(Boolean),
+  );
+  const selectedPracticeRequirements = new Set(
+    matchedSkills
+      .filter(({ skill }) => selectedPracticeKeys.has(canonicalSkill(skill)))
+      .map(({ skill }) => canonicalSkill(skill)),
+  );
+  const plannedSkills = requirements.filter(({ skill }) => {
+    const key = canonicalSkill(skill);
+    return missingKeys.has(key) || selectedPracticeRequirements.has(key);
+  });
+  const roadmap = orderRoadmap(plannedSkills).map((step, index) => ({
     step: index + 1,
     skill: step.skill,
     category: step.category,
@@ -326,7 +342,7 @@ export function calculateSkillGap(
     coverageFormula:
       "Matched distinct listed requirements ÷ total distinct listed requirements × 100, rounded to 1 decimal place.",
     roadmapNote:
-      "Known prerequisites are placed first. Other skills remain in the order used by the job record. This is a suggested sequence, not an employer-provided learning plan.",
+      "The roadmap includes requirements not recorded in your profile and any listed skills you chose to practise. Known prerequisites are placed first; other skills follow the job record order. This is a planning suggestion, not an employer priority or hiring prediction.",
     estimateNote:
       "These are rough planning estimates for a first guided practice only (technical skills: 8–16 study hours; soft skills: 3–8 practice hours). They are not course durations or guarantees of proficiency or job readiness.",
     roadmap,

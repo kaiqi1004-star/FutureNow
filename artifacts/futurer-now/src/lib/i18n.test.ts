@@ -19,3 +19,16 @@ test('translated templates interpolate user values and unknown messages fall bac
   assert.ok(!rendered.includes('{skill}'));
   assert.equal(translateMessage('Uncatalogued English fallback', 'CN'), 'Uncatalogued English fallback');
 });
+
+test('Skill Gap Navigator copy is localized in all supported languages while listing names stay verbatim', () => {
+  const sourceSkill = 'Power BI';
+  const key = 'The selected listing names “{skill}” as a requirement.';
+  for (const language of ['EN', 'BM', 'CN'] satisfies Language[]) {
+    const copy = translateMessage(key, language, { skill: sourceSkill });
+    assert.ok(copy.includes(sourceSkill));
+    assert.ok(!copy.includes('{skill}'));
+    assert.ok(copy.trim());
+  }
+  assert.notEqual(translateMessage('Choose a career goal', 'BM'), 'Choose a career goal');
+  assert.notEqual(translateMessage('Choose a career goal', 'CN'), 'Choose a career goal');
+});

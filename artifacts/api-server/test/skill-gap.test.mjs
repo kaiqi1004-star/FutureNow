@@ -88,6 +88,53 @@ test("orders known prerequisites first and preserves the source order for other 
   assert.match(result.estimateNote, /rough planning estimates/i);
 });
 
+test("adds explicitly selected listed skills to the roadmap without changing coverage", () => {
+  const job = makeJob({
+    technicalSkills: ["React", "JavaScript", "HTML"],
+    softSkills: ["Communication"],
+  });
+  const comparison = calculateSkillGap(job, ["React"]);
+  const planned = calculateSkillGap(job, ["React"], [
+    "React JS",
+    "not a listed requirement",
+  ]);
+
+  assert.equal(planned.matchedCount, comparison.matchedCount);
+  assert.equal(planned.requiredCount, comparison.requiredCount);
+  assert.equal(planned.coveragePercent, comparison.coveragePercent);
+  assert.deepEqual(planned.missingSkills, comparison.missingSkills);
+  assert.deepEqual(
+    planned.roadmap.map((step) => step.skill),
+    ["HTML", "JavaScript", "React", "Communication"],
+  );
+  assert.match(planned.roadmapNote, /not an employer priority/i);
+});
+
+test("counts soft-only listings and ignores missing experience or salary in coverage", () => {
+  const job = makeJob({
+    technicalSkills: [],
+    softSkills: ["Communication", "Teamwork"],
+    experience: "",
+    salaryMonthlyRm: null,
+  });
+  const baseline = calculateSkillGap(job, ["Communication"]);
+  const withContext = calculateSkillGap(
+    {
+      ...job,
+      experience: "Minimum 5 years of relevant experience",
+      salaryMonthlyRm: 12000,
+    },
+    ["Communication"],
+  );
+
+  assert.equal(baseline.requiredCount, 2);
+  assert.equal(baseline.matchedCount, 1);
+  assert.equal(baseline.coveragePercent, 50);
+  assert.deepEqual(baseline.matchedSkills, withContext.matchedSkills);
+  assert.deepEqual(baseline.missingSkills, withContext.missingSkills);
+  assert.equal(baseline.coveragePercent, withContext.coveragePercent);
+});
+
 test("empty input yields zero coverage and every listed skill as a gap", () => {
   const job = jobs.find((item) => item.id === "J1");
   const result = calculateSkillGap(job, []);

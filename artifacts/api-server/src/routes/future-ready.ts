@@ -188,7 +188,11 @@ router.post("/future-ready/skill-gap", (req, res): void => {
 
   res.json(
     AnalyzeFutureReadySkillGapResponse.parse(
-      calculateSkillGap(selectedJob, parsed.data.currentSkills),
+      calculateSkillGap(
+        selectedJob,
+        parsed.data.currentSkills,
+        parsed.data.practiceSkills ?? [],
+      ),
     ),
   );
 });
