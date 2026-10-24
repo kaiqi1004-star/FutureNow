@@ -40,6 +40,9 @@
 .sp-span { grid-column: 1 / -1; }
 .sp-stack { display: grid; gap: 22px; }
 .sp-field { display: grid; gap: 6px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.sp-language-skills { display: grid; gap: 8px; min-width: 0; margin: 14px 0 18px; padding: 14px; border: 1px solid var(--sp-line); border-radius: 11px; background: var(--sp-card); }
+.sp-language-skills legend { padding: 0 4px; }
+.sp-language-other { margin-top: 4px; }
 .sp-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--sp-ink); padding: 0; }
 .sp-req, .sp-optional { font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 10px; }
 .sp-req { background: #FDF3D0; color: #5C4A0B; }

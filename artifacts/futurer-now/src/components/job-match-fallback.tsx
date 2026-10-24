@@ -23,7 +23,7 @@ export function JobMatchFallback({ skills }: { skills: string[] }) {
     <ol className="rm-list">{jobs.slice((safePage - 1) * 6, safePage * 6).map((job) => <li className="rm-result" key={job.id} data-testid={`fallback-job-${job.id}`}>
       <div className="rm-result-main">
         <h3>{job.title}</h3><p>{t('Company')}: {job.company || t('Not supplied')}</p>
-        <p>{t('Source platform')}: {job.source || t('Not supplied')}</p>
+        {job.source.trim() && <p>{t('Source platform')}: {job.source}</p>}
         <p>{t('Salary (original)')}: {job.salaryText || (job.salaryMonthlyRm !== null ? `RM ${job.salaryMonthlyRm}` : t('Not supplied'))}</p>
         <details><summary>{t('Original job requirements')}</summary><p>{t('Experience')}: {job.experience || t('Not supplied')}</p><p>{t('Education')}: {job.education || t('Not supplied')}</p><p>{t('Technical skills')}: {job.technicalSkills.join(', ') || t('Not supplied')}</p><p>{t('Soft skills')}: {job.softSkills.join(', ') || t('Not supplied')}</p></details>
         {job.sourceUrl && <a href={job.sourceUrl} target="_blank" rel="noopener noreferrer">{t('Source listing')}</a>}

@@ -155,7 +155,11 @@ try {
   ]) {
     const card = await openRoleCard(role);
     const cardText = await card.innerText();
-    assert.ok(cardText.includes(role.job.source || 'Not supplied'), `card should use the actual source platform for ${role.job.id}`);
+    if (role.job.source.trim()) {
+      assert.ok(cardText.includes(`Source platform: ${role.job.source}`), `card should use the actual source platform for ${role.job.id}`);
+    } else {
+      assert.ok(!cardText.includes('Source platform:'), `missing source platform row should be omitted for ${role.job.id}`);
+    }
     const rawUrl = role.job.sourceUrl?.trim();
     let expectedUrl = null;
     try {
@@ -169,12 +173,17 @@ try {
     await page.getByTestId(`detail-match-${role.job.id}`).waitFor();
     assert.equal(await page.getByRole('heading', { name: 'Which supplied roles fit your skills?' }).count(), 0, 'detail must not repeat the page introduction');
     assert.equal(await page.getByTestId('text-privacy-disclosure').count(), 0, 'detail must not repeat the full privacy introduction');
+    const companyLine = await page.getByTestId('text-detail-company').innerText();
+    assert.equal(companyLine.includes('Source platform:'), Boolean(role.job.source.trim()));
     const technicalLabel = await page.getByTestId('text-detail-technical-coverage').innerText();
     if (expectedTechnicalLabel) assert.equal(technicalLabel, expectedTechnicalLabel);
     else assert.match(technicalLabel, /^\d+ \/ \d+ \(\d+(\.\d+)?%\)$/);
     const detailLink = page.getByTestId('link-detail-source');
     assert.equal(await detailLink.count(), expectedUrl ? 1 : 0);
     if (expectedUrl) assert.equal(await detailLink.getAttribute('href'), expectedUrl);
+    await page.getByTestId('section-original-job-information').locator('summary').click();
+    const originalDetails = await page.getByTestId('section-original-job-information').innerText();
+    assert.equal(originalDetails.includes('Source platform'), Boolean(role.job.source.trim()));
     await page.getByTestId('button-back-to-results').click();
   }
   const noSkillRequirementsRole = payload.results.find((role) => role.requiredCount === 0);
@@ -195,16 +204,26 @@ try {
   await page.getByTestId('button-back-to-results').click();
   await page.getByTestId('button-view-details-J45').click();
   await page.getByTestId('section-sdg-connections').waitFor();
-  assert.equal(await page.getByTestId('details-score-breakdown').getAttribute('open'), null);
   assert.equal(await page.getByTestId('details-matched-skills').getAttribute('open'), null);
   assert.equal(await page.getByTestId('details-missing-skills').getAttribute('open'), null);
   assert.equal(await page.getByTestId('section-original-job-information').getAttribute('open'), null);
-  await page.getByTestId('details-score-breakdown').locator('summary').click();
-  const breakdownRows = page.getByTestId('details-score-breakdown').locator('tbody tr');
-  assert.ok((await breakdownRows.count()) <= 5);
-  const breakdownText = await breakdownRows.allInnerTexts();
-  assert.ok(breakdownText.every((row) => !/Evidence|Broad Technical Areas/.test(row)), 'non-scoring rows must not appear as score contributions');
-  assert.ok(!breakdownText.join(' ').includes('This wording is preserved for review'));
+  const breakdown = page.getByTestId('section-score-breakdown');
+  assert.ok(await breakdown.isVisible(), 'category coverage visualization is visible by default');
+  assert.equal(await breakdown.locator('table').count(), 0, 'the technical score table is removed');
+  assert.equal(await page.getByTestId('text-breakdown-overall').innerText(), `${payload.results.find((row) => row.job.id === 'J45').overallScore}%`);
+  for (const item of payload.results.find((row) => row.job.id === 'J45').scoreBreakdown) {
+    const isSkillCategory = ['industry-specific', 'technical', 'digital', 'soft'].includes(item.category);
+    const row = page.getByTestId(`coverage-row-${item.category}`);
+    assert.equal(await row.count(), isSkillCategory && item.status === 'scored' ? 1 : 0, `only applicable skill categories appear: ${item.category}`);
+    if (isSkillCategory && item.status === 'scored') {
+      assert.ok((await row.innerText()).includes(`${item.matchedCount} / ${item.requiredCount} matched requirements · ${item.coverage}%`));
+      assert.equal(Number(await row.locator('[role="progressbar"]').getAttribute('aria-valuenow')), item.coverage);
+    }
+  }
+  assert.equal(await page.getByTestId('row-experience-score').count(), 0, 'unscorable preferred experience is omitted from score dimensions');
+  await page.getByTestId('details-matched-skills').locator('summary').click();
+  const matchedDetailsText = await page.getByTestId('details-matched-skills').innerText();
+  assert.ok(!/Exact name match|Matched by your|Matched by name|Configured equivalent name/.test(matchedDetailsText), 'internal matching provenance must not appear in role details');
   await page.getByTestId('section-original-job-information').locator('summary').click();
   assert.equal(await page.getByTestId('text-detail-experience-source').innerText(), 'Internship');
   assert.ok(await page.getByTestId('section-experience-assessment').isVisible());
@@ -221,7 +240,7 @@ try {
       '[data-testid="list-skill-gaps-preview"]',
       '[data-testid="section-experience-assessment"]',
       '[data-testid="section-original-job-information"]',
-      '[data-testid="details-score-breakdown"]',
+      '[data-testid="section-score-breakdown"]',
       '[data-testid="section-sdg-connections"]',
       '[data-testid="section-next-steps"]',
     ];
@@ -237,6 +256,17 @@ try {
   const sdgIds = await page.getByTestId('section-sdg-connections').locator('[data-testid^="sdg-goal-"]').evaluateAll(elements => elements.map(el => el.getAttribute('data-testid')));
   assert.equal(new Set(sdgIds).size, sdgIds.length, 'each SDG goal is consolidated once per role');
 
+  await page.route('**/api/future-ready/role-matches', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    const roleWithoutUrl = body.results.find((row) => row.job.id === 'J43');
+    const roleWithInvalidUrl = body.results.find((row) => row.job.id === 'J44');
+    assert.ok(roleWithoutUrl, 'J43 should remain available for the missing-link case');
+    assert.ok(roleWithInvalidUrl, 'J44 should remain available for the invalid-link case');
+    roleWithoutUrl.job.sourceUrl = null;
+    roleWithInvalidUrl.job.sourceUrl = 'javascript:alert(1)';
+    await route.fulfill({ response, body: JSON.stringify(body) });
+  });
   await page.reload();
   await page.getByTestId('text-privacy-disclosure').waitFor();
   const refreshResponsePromise = page.waitForResponse((nextResponse) =>
@@ -253,6 +283,23 @@ try {
     experienceSummary: row.experienceFit.summary,
     educationSummary: row.educationFit.summary,
   })), rankingSnapshot);
+  const noSourceUrlRole = refreshedPayload.results.find((row) => row.job.id === 'J43');
+  assert.equal(noSourceUrlRole.job.sourceUrl, null);
+  const noSourceUrlCard = await openRoleCard(payload.results.find((row) => row.job.id === 'J43'));
+  assert.ok(!(await noSourceUrlCard.innerText()).includes('Source platform:'), 'missing platform metadata should be omitted');
+  assert.equal(await noSourceUrlCard.getByTestId('link-match-source-J43').count(), 0, 'missing original URL must not produce a card link');
+  await noSourceUrlCard.getByTestId('button-view-details-J43').click();
+  assert.equal(await page.getByTestId('link-detail-source').count(), 0, 'missing original URL must not produce a detail link');
+  await page.getByTestId('section-original-job-information').locator('summary').click();
+  assert.ok(!(await page.getByTestId('section-original-job-information').innerText()).includes('Source platform'), 'missing source and URL should omit the source row entirely');
+  await page.getByTestId('button-back-to-results').click();
+  const invalidUrlCard = await openRoleCard(payload.results.find((row) => row.job.id === 'J44'));
+  assert.equal(await invalidUrlCard.getByTestId('link-match-source-J44').count(), 0, 'an unsafe original URL must not produce a card link');
+  await invalidUrlCard.getByTestId('button-view-details-J44').click();
+  assert.equal(await page.getByTestId('link-detail-source').count(), 0, 'an unsafe original URL must not produce a detail link');
+  await page.getByTestId('section-original-job-information').locator('summary').click();
+  const invalidUrlDetails = await page.getByTestId('section-original-job-information').innerText();
+  assert.ok(!invalidUrlDetails.includes('Original listing') && !invalidUrlDetails.includes('Source platform'), 'invalid source metadata and URLs should not leave an empty listing row');
 
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

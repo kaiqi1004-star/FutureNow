@@ -28,6 +28,13 @@ const savedTime = (iso: string, locale: string) => new Intl.DateTimeFormat(local
 const toNum = (v: string): number | '' => (v.trim() === '' ? '' : Number(v));
 const displayedSkillCategory = (skill: ProfileSkill) =>
   isBroadTechnicalArea(skill.name) ? 'Broad Technical Areas' : skill.category;
+const languageChoices = [
+  { label: 'Bahasa Melayu', name: 'Bahasa Melayu', aliases: ['Bahasa Melayu'] },
+  { label: 'English', name: 'English Communication', aliases: ['English', 'English Communication'] },
+  { label: 'Mandarin Chinese', name: 'Mandarin', aliases: ['Mandarin', 'Mandarin Chinese'] },
+] as const;
+const skillNameKey = (name: string) =>
+  name.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
 const relevantExperienceLevel = (years: number | '') => {
   if (years === '') return '';
   if (years === 0) return 'Level 0 · 0 years';
@@ -99,7 +106,47 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
   const [editing, setEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [msg, setMsg] = useState<{ key: string; values?: Record<string, string | number> } | null>(null);
+  const [otherLanguageOpen, setOtherLanguageOpen] = useState(false);
+  const [otherLanguageName, setOtherLanguageName] = useState('');
+  const [languageError, setLanguageError] = useState('');
   const has = (n: string, except?: string) => skills.some((s) => s.id !== except && s.name.trim().toLowerCase() === n.trim().toLowerCase());
+  const languageEntries = (aliases: readonly string[]) => {
+    const names = new Set(aliases.map(skillNameKey));
+    return skills.filter((skill) =>
+      skill.category === 'Soft Skills & Languages' && names.has(skillNameKey(skill.name)),
+    );
+  };
+  const toggleLanguage = (choice: (typeof languageChoices)[number]) => {
+    const existing = languageEntries(choice.aliases);
+    if (existing.length) {
+      const removeIds = new Set(existing.map((skill) => skill.id));
+      onChange(skills.filter((skill) => !removeIds.has(skill.id)));
+      return;
+    }
+    if (skills.length >= 150) {
+      setLanguageError('You can save up to 150 skills. Remove a skill before adding another.');
+      return;
+    }
+    onChange([...skills, {
+      id: uid(), name: choice.name, category: 'Soft Skills & Languages',
+      proficiency: 'Beginner', custom: false,
+    }]);
+    setLanguageError('');
+  };
+  const addOtherLanguage = () => {
+    const value = otherLanguageName.trim();
+    if (!value) return setLanguageError('Type a value before adding.');
+    if (value.length > 100) return setLanguageError('Skill names must be 100 characters or fewer.');
+    if (has(value)) return setLanguageError('That option already exists. Select it above.');
+    if (skills.length >= 150) return setLanguageError('You can save up to 150 skills. Remove a skill before adding another.');
+    onChange([...skills, {
+      id: uid(), name: value, category: 'Soft Skills & Languages',
+      proficiency: 'Beginner', custom: true,
+    }]);
+    setOtherLanguageName('');
+    setOtherLanguageOpen(false);
+    setLanguageError('');
+  };
   const togglePreset = (n: string, c: (typeof categories)[number]) => {
     const found = skills.find((s) => s.name.toLowerCase() === n.toLowerCase());
     if (!found && skills.length >= 150) return setMsg({ key: 'You can save up to 150 skills. Remove a skill before adding another.' });
@@ -128,6 +175,30 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
         <span>{t('Choose only skills you have. Broad areas never add specific skills automatically.')}</span>
       </div>
     </div>
+    <fieldset className="sp-language-skills" data-testid="language-skills">
+      <legend className="sp-label">{t('Language skills')} <span className="sp-optional">{t('Optional')}</span></legend>
+      <p className="sp-hint">{t('Choose languages you use. Existing saved language skills remain in your profile.')}</p>
+      <div className="sp-chips">
+        {languageChoices.map((choice) => {
+          const selected = languageEntries(choice.aliases).length > 0;
+          return <button
+            type="button"
+            key={choice.label}
+            className={`sp-chip ${selected ? 'is-on' : ''}`}
+            aria-pressed={selected}
+            onClick={() => toggleLanguage(choice)}
+            data-testid={`chip-language-${choice.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+          >{selected && <Check size={13} />}{t(choice.label)}</button>;
+        })}
+        <button type="button" className={`sp-chip ${otherLanguageOpen ? 'is-on' : ''}`} aria-pressed={otherLanguageOpen} onClick={() => { setOtherLanguageOpen((open) => !open); setLanguageError(''); }} data-testid="button-language-other">{t('Other')}</button>
+      </div>
+      {otherLanguageOpen && <div className="sp-inline-add sp-language-other">
+        <label className="sr-only" htmlFor="other-language-name">{t('Other language name')}</label>
+        <input id="other-language-name" className="sp-input" maxLength={100} value={otherLanguageName} onChange={(event) => setOtherLanguageName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addOtherLanguage(); } }} placeholder={t('Enter a language name')} data-testid="input-other-language" />
+        <button type="button" className="sp-btn sp-btn-ghost" onClick={addOtherLanguage} data-testid="button-add-language"><Plus size={14} />{t('Add language')}</button>
+      </div>}
+      {languageError && <p className="sp-error" role="alert" data-testid="error-language-skills"><CircleAlert size={13} />{t(languageError)}</p>}
+    </fieldset>
     {skills.length > 0 && <section className="sp-selected-review" aria-label={t('Selected skills')} data-testid="selected-skill-review">
       <div className="sp-selected-head">
         <div><strong>{t('Review selected skills')}</strong><span>{t('Remove any skill that does not describe your experience.')}</span></div>

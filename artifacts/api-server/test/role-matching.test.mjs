@@ -56,6 +56,42 @@ test("aliases and duplicate profile skill names never inflate coverage or imply 
   assert.equal(result.skillGaps[0].skill, "Laravel");
 });
 
+test("Senior Data Analyst example reconciles 40 profile names, category coverage, and the 59.7% weighted score", () => {
+  const job = jobs.find((entry) => entry.id === "J46");
+  assert.ok(job);
+  const matchedSkills = ["Power BI", "MySQL", "Excel", "Critical thinking", "Problem-solving"];
+  const unrelatedSkills = Array.from({ length: 35 }, (_, index) => `Unrelated profile skill ${index + 1}`);
+  const response = matchRoles([job], [...matchedSkills, ...unrelatedSkills]);
+  const result = response.results[0];
+  const byCategory = Object.fromEntries(result.scoreBreakdown.map((item) => [item.category, item]));
+
+  assert.equal(result.requiredCount, 9);
+  assert.equal(result.matchedCount, 5);
+  assert.equal(result.skillCoverage, 55.6);
+  assert.deepEqual(
+    ["technical", "digital", "soft"].map((category) => [
+      byCategory[category].matchedCount,
+      byCategory[category].requiredCount,
+      byCategory[category].coverage,
+    ]),
+    [[2, 5, 40], [1, 1, 100], [2, 3, 66.7]],
+  );
+  assert.equal(response.inputSkillCount, 40);
+  assert.equal(result.overallScore, 59.7);
+  assert.equal(result.experienceFit.requirementType, "preferred");
+  assert.equal(result.experienceFit.suitabilityScore, null);
+  assert.equal(byCategory.experience.status, "not-scorable");
+  assert.equal(
+    result.scoreBreakdown.filter((item) => item.status === "scored")
+      .reduce((sum, item) => sum + item.effectiveWeight, 0),
+    100,
+  );
+  assert.ok(Math.abs(
+    result.scoreBreakdown.reduce((sum, item) => sum + (item.contribution ?? 0), 0)
+      - result.overallScore,
+  ) < 0.001);
+});
+
 test("empty input, blank names, no requirements and unknown fields remain safe", () => {
   const empty = matchRoles(jobs, [" ", ""]);
   assert.equal(empty.inputSkillCount, 0);

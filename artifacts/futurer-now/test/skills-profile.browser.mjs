@@ -40,7 +40,7 @@ try {
   await t('input-relevant-years').fill('1.5');
   await t('input-direction').fill('Build accessible software');
   await t('button-next-section').click();
-  await check('Skill selection, custom creation, rename, proficiency and removal', async () => {
+  await check('Language selection, skill creation, rename, proficiency and removal', async () => {
     const categoryIds = await page.locator('[data-testid^="skill-category-"]').evaluateAll(elements => elements.map(el => el.getAttribute('data-testid')));
     assert.deepEqual(categoryIds, [
       'skill-category-broad-technical-areas',
@@ -51,18 +51,27 @@ try {
     ]);
     assert.equal(await page.locator('.sp-chip.is-on').count(), 0, 'opening the catalogue must not auto-select skills');
     assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 0');
+    for (const language of ['bahasa-melayu', 'english', 'mandarin-chinese']) {
+      await t(`chip-language-${language}`).click();
+      assert.equal(await t(`chip-language-${language}`).getAttribute('aria-pressed'), 'true');
+    }
+    await t('button-language-other').click();
+    await t('input-other-language').fill('Korean');
+    await t('button-add-language').click();
+    assert.equal(await t('button-language-other').getAttribute('aria-pressed'), 'false');
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 4');
     await t('input-search-skills').fill('Python');
     await t('chip-skill-python').waitFor();
     await t('chip-skill-python').click();
     assert.equal(await t('chip-skill-python').getAttribute('aria-pressed'), 'true', 'search results should be selectable');
-    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 1');
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 5');
     await t('input-search-skills').fill('');
     await t('button-remove-selected-python').click();
-    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 0', 'selected skills should be removable from the review area');
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 4', 'selected skills should be removable from the review area');
     await t('chip-skill-programming').click();
     await page.getByTestId('skill-category-soft-skills-languages').locator(':scope > summary').click();
     await t('chip-skill-communication').click();
-    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 2');
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 6');
     await t('input-custom-skill').fill('CNC machining');
     await t('select-custom-skill-category').selectOption('Industry-Specific Skills');
     await t('select-custom-skill-proficiency').selectOption('Advanced');
@@ -82,6 +91,13 @@ try {
     await t('status-save-banner').filter({ hasText: 'Draft saved' }).waitFor();
     await page.reload();
     assert.equal(await page.getByLabel('Proficiency for CAD modelling').inputValue(), 'Expert');
+    const savedSkillNames = await page.evaluate(() => {
+      const profile = JSON.parse(localStorage.getItem('futurenow.skills-profile.v1'));
+      return profile.profile.skills.map((skill) => skill.name);
+    });
+    for (const language of ['Bahasa Melayu', 'English Communication', 'Mandarin', 'Korean']) {
+      assert.ok(savedSkillNames.includes(language), `Expected saved language ${language} to persist`);
+    }
     await t('button-step-0').click();
     assert.equal(await t('input-field').inputValue(), 'Software engineering');
     await t('button-step-1').click();
