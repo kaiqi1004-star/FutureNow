@@ -29,10 +29,18 @@ test('catalogue is grouped, duplicate-free and specific additions are evidenced 
   const names = skillGroups.flatMap((group) => group.skills);
   assert.equal(new Set(names.map((skill) => skill.toLowerCase())).size, names.length);
   const source = jobs.flatMap((job) => [...job.technicalSkills, ...job.softSkills]).map((skill) => skill.toLowerCase());
+  const broadDigitalPresets = new Set(['Digital literacy', 'Productivity tools', 'Online collaboration']);
   for (const group of skillGroups.filter((item) => !item.broad)) {
     for (const skill of group.skills) {
-      // Java is explicitly present as a source-listed one-of alternative.
-      assert.ok(source.includes(skill.toLowerCase()) || (['Java', 'TypeScript'].includes(skill) && source.some((text) => text.includes('java/python/c#/javascript/typescript (at least one)'))), skill);
+      // These broad digital starters are preserved for exploration; Java and
+      // TypeScript are present in an explicit source-listed one-of alternative.
+      assert.ok(
+        source.includes(skill.toLowerCase())
+        || broadDigitalPresets.has(skill)
+        || (skill === 'Mandarin' && jobs.some((job) => /Mandarin/i.test(job.title)))
+        || (['Java', 'TypeScript'].includes(skill) && source.some((text) => text.includes('java/python/c#/javascript/typescript (at least one)'))),
+        skill,
+      );
     }
   }
   assert.ok(names.includes('Mandarin') && jobs.some((job) => /Mandarin Speaking/.test(job.title)));

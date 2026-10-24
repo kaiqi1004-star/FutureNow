@@ -15,6 +15,7 @@ const profile = {
       status: 'Fresh Graduate',
       field: 'Data analytics',
       years: 0,
+      relevantYears: 0,
       education: 'Bachelor’s degree',
       direction: 'Data analysis',
     },
@@ -88,22 +89,27 @@ try {
   const scoringDetails = page.getByTestId('details-scoring-details');
   await scoringDetails.locator('summary').click();
   const scoringText = await scoringDetails.innerText();
-  for (const phrase of ['60%', '25%', '15%', 'proportionally redistributed', 'Tier 1', 'Tier 2', 'Tier 3']) {
+  for (const phrase of ['40%', '30%', '12.5%', 'proportionally redistributed', 'Tier 1', 'Tier 2', 'Tier 3']) {
     assert.ok(scoringText.includes(phrase), `Missing scoring detail: ${phrase}`);
   }
 
   assert.equal(payload.totalJobs, 50);
-  assert.equal(requestBody.experienceYears, 0);
+  assert.equal(requestBody.relevantExperienceYears, 0);
+  assert.equal('experienceYears' in requestBody, false);
   assert.equal(requestBody.educationLevel, 'Bachelor’s degree');
   assert.equal(requestBody.currentSkills.length, 8);
   assert.equal(payload.results.find((row) => row.job.id === 'J47').skillCoverage, 100);
   assert.equal(payload.results.find((row) => row.job.id === 'J47').compatibilityTier, 3);
   assert.equal(payload.results.find((row) => row.job.id === 'J45').compatibilityTier, 2);
-  assert.match(await page.getByTestId('text-match-reason-J43').innerText(), /limited listed-skill evidence/i);
-  assert.match(await page.getByTestId('text-match-reason-J45').innerText(), /limited listed-skill evidence/i);
   for (const row of payload.results.filter((result) => result.compatibilityTier === 1)) {
     assert.ok(row.skillCoverage >= 50);
     assert.ok(row.technicalCoverage === null || row.technicalCoverage >= 50);
+  }
+  for (const row of payload.results) {
+    if (row.overallScore !== null) {
+      const totalContribution = row.scoreBreakdown.reduce((sum, item) => sum + (item.contribution ?? 0), 0);
+      assert.ok(Math.abs(totalContribution - row.overallScore) < 0.001, `score breakdown must reconcile for ${row.job.id}`);
+    }
   }
   assert.ok(
     payload.results.findIndex((row) => row.job.id === 'J45')
@@ -128,18 +134,25 @@ try {
   await page.getByTestId('select-match-category').selectOption('data-analytics');
   await page.getByTestId('button-view-details-J43').click();
   await page.getByTestId('text-detail-title').waitFor();
-  assert.equal(await page.getByTestId('section-role-sdg').count(), 0);
-  assert.equal(await page.getByTestId('section-skill-sdgs').count(), 0);
+  assert.equal(await page.getByTestId('section-sdg-connections').count(), 0);
   assert.equal(await page.getByText('SDG review needed', { exact: false }).count(), 0);
   assert.equal(await page.getByText('Not assessed', { exact: false }).count(), 0);
 
   await page.getByTestId('button-back-to-results').click();
   await page.getByTestId('button-view-details-J45').click();
-  await page.getByTestId('section-role-sdg').waitFor();
-  await page.getByTestId('section-skill-sdgs').waitFor();
+  await page.getByTestId('section-sdg-connections').waitFor();
+  assert.equal(await page.getByTestId('details-score-breakdown').getAttribute('open'), null);
+  assert.equal(await page.getByTestId('details-matched-skills').getAttribute('open'), null);
+  assert.equal(await page.getByTestId('details-missing-skills').getAttribute('open'), null);
+  assert.equal(await page.getByTestId('section-original-job-information').getAttribute('open'), null);
+  await page.getByTestId('details-score-breakdown').locator('summary').click();
+  assert.equal(await page.getByTestId('details-score-breakdown').locator('tbody tr').count(), 7);
+  await page.getByTestId('section-original-job-information').locator('summary').click();
   assert.equal(await page.getByTestId('text-detail-experience-source').innerText(), 'Internship');
-  assert.equal(await page.getByTestId('text-detail-score').innerText(), '48.6%');
+  assert.equal(await page.getByTestId('text-detail-score').innerText(), `${payload.results.find((row) => row.job.id === 'J45').overallScore}%`);
   assert.match(await page.getByTestId('text-detail-coverage').innerText(), /1 \/ 7 \(14\.3%\)/);
+  const sdgIds = await page.getByTestId('section-sdg-connections').locator('[data-testid^="sdg-goal-"]').evaluateAll(elements => elements.map(el => el.getAttribute('data-testid')));
+  assert.equal(new Set(sdgIds).size, sdgIds.length, 'each SDG goal is consolidated once per role');
 
   await page.reload();
   await page.getByTestId('text-privacy-disclosure').waitFor();

@@ -31,10 +31,27 @@ try {
   await t('select-education').selectOption('Diploma');
   await t('input-field').fill('Software engineering');
   await t('input-years').fill('0');
+  await t('input-relevant-years').fill('1.5');
+  assert.match(await t('text-relevant-experience-level').innerText(), /Level 1/);
+  await t('input-relevant-years').fill('2');
+  assert.match(await t('text-relevant-experience-level').innerText(), /Level 2/);
+  await t('input-relevant-years').fill('5');
+  assert.match(await t('text-relevant-experience-level').innerText(), /Level 3/);
+  await t('input-relevant-years').fill('1.5');
   await t('input-direction').fill('Build accessible software');
   await page.getByRole('button', { name: 'Next', exact: false }).click();
   await check('Skill selection, custom creation, rename, proficiency and removal', async () => {
+    const categoryIds = await page.locator('[data-testid^="skill-category-"]').evaluateAll(elements => elements.map(el => el.getAttribute('data-testid')));
+    assert.deepEqual(categoryIds, [
+      'skill-category-broad-technical-areas',
+      'skill-category-technical-skills',
+      'skill-category-industry-specific-skills',
+      'skill-category-digital-skills',
+      'skill-category-soft-skills-languages',
+    ]);
+    assert.equal(await page.locator('.sp-chip.is-on').count(), 0, 'opening the catalogue must not auto-select skills');
     await t('chip-skill-programming').click();
+    await page.getByTestId('skill-category-soft-skills-languages').locator('details > summary').first().click();
     await t('chip-skill-communication').click();
     await t('input-custom-skill').fill('CNC machining');
     await t('select-custom-skill-category').selectOption('Industry-Specific Skills');
@@ -117,12 +134,15 @@ try {
     }
     assert.ok(hasJ43, 'J43 should remain available in the supplied data');
     await t('button-view-details-J43').click();
+    await t('details-matched-skills').locator('summary').click();
     await t('evidence-for-communication').waitFor();
     const linked = await t('evidence-for-communication').innerText();
     assert.match(linked, /University data project/);
     assert.match(linked, /not independently verified/i);
     assert.match(linked, /does not change the suitability score/i);
-    assert.deepEqual(Object.keys(matchBodies[0]).sort(), ['currentSkills', 'educationLevel', 'experienceYears']);
+    assert.deepEqual(Object.keys(matchBodies[0]).sort(), ['currentSkills', 'educationLevel', 'relevantExperienceYears']);
+    assert.equal(matchBodies[0].relevantExperienceYears, 1.5);
+    assert.equal('experienceYears' in matchBodies[0], false);
   });
   await check('Saved summary refresh, edit and resave', async () => {
     await page.goto(`${baseURL}/skills-profile`);

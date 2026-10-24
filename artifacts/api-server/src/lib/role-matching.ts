@@ -23,9 +23,15 @@ export interface MatchProfileContext {
 }
 
 const scoreCategories: ScoredSkillCategory[] = ["industry-specific", "technical", "digital", "soft"];
+const supportedProfileFields = new Set(["currentSkills", "relevantExperienceYears", "educationLevel"]);
 const emptyCounts = () => Object.fromEntries(
   scoreCategories.map((category) => [category, { matchedCount: 0, requiredCount: 0 }]),
 ) as Record<ScoredSkillCategory, { matchedCount: number; requiredCount: number }>;
+
+export function hasUnexpectedMatchInputFields(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.keys(value).some((key) => !supportedProfileFields.has(key));
+}
 
 export function matchRoles(
   jobs: readonly JobListing[],

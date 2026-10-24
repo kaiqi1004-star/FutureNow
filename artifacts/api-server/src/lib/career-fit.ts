@@ -33,6 +33,9 @@ const digitalSkillKeys = new Set([
   "microsoft word",
   "google sheets",
   "gantt charts",
+  "digital literacy",
+  "productivity tools",
+  "online collaboration",
 ]);
 
 const broadAreaKeys = new Set([
@@ -384,19 +387,29 @@ export function buildScoreBreakdown(
   const baseTotal = active.reduce((sum, item) => sum + item.baseWeight, 0);
   if (baseTotal === 0) return { scoreBreakdown: pending, overallScore: null };
 
-  let contributionTotal = 0;
+  const overallScore = round1(active.reduce(
+    (sum, item) => sum + (item.coverage ?? 0) * (item.baseWeight / baseTotal),
+    0,
+  ));
+  const effectiveWeights = active.map((item) => round2(item.baseWeight / baseTotal * 100));
+  effectiveWeights[effectiveWeights.length - 1] = round2(
+    100 - effectiveWeights.slice(0, -1).reduce((sum, weight) => sum + weight, 0),
+  );
+  const contributions = active.map((item) =>
+    round2((item.coverage ?? 0) * (item.baseWeight / baseTotal)),
+  );
+  contributions[contributions.length - 1] = round2(
+    overallScore - contributions.slice(0, -1).reduce((sum, contribution) => sum + contribution, 0),
+  );
+  const scoredValues = new Map(active.map((item, index) => [item.category, {
+    effectiveWeight: effectiveWeights[index],
+    contribution: contributions[index],
+  }]));
   const scoreBreakdown = pending.map((item) => {
-    if (item.status !== "scored") return item;
-    const effectiveWeight = item.baseWeight / baseTotal * 100;
-    const contribution = (item.coverage ?? 0) * effectiveWeight / 100;
-    contributionTotal += contribution;
-    return {
-      ...item,
-      effectiveWeight: round2(effectiveWeight),
-      contribution: round2(contribution),
-    };
+    const values = scoredValues.get(item.category);
+    return values ? { ...item, ...values } : item;
   });
-  return { scoreBreakdown, overallScore: round1(contributionTotal) };
+  return { scoreBreakdown, overallScore };
 }
 
 export function overallMatchScore(scoreBreakdown: ScoreBreakdownItem[]): number | null {

@@ -138,8 +138,8 @@ test("per-role scoring omits empty categories and reconciles breakdown contribut
   const experience = assessExperienceFit("Analyst", "Minimum 3 years", 2);
   const result = buildScoreBreakdown(counts, experience);
   const scored = result.scoreBreakdown.filter((item) => item.status === "scored");
-  assert.equal(result.overallScore, 50);
-  assert.equal(scored.reduce((sum, item) => sum + item.effectiveWeight, 0), 100);
+  assert.equal(result.overallScore, 51.8);
+  assert.ok(Math.abs(scored.reduce((sum, item) => sum + item.effectiveWeight, 0) - 100) < 0.001);
   assert.equal(scored.reduce((sum, item) => sum + item.contribution, 0), result.overallScore);
   assert.equal(overallMatchScore(result.scoreBreakdown), result.overallScore);
   for (const category of ["industry-specific", "digital"]) {

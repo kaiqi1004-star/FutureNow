@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { emptyProfile, loadProfile, saveProfile, validateProfile, validateSection, missingInformation, transferableStrengths, PROFILE_KEY, type SkillsProfile } from './skills-profile.ts';
+import { emptyProfile, loadProfile, profileSchema, saveProfile, validateProfile, validateSection, missingInformation, transferableStrengths, PROFILE_KEY, type SkillsProfile } from './skills-profile.ts';
 
 function complete(): SkillsProfile {
   const p = emptyProfile();
-  p.basic = { status: 'Student', field: 'Engineering', years: 0, education: 'Diploma', direction: 'Build products' };
-  p.skills = [{ id: 'skill-1', name: 'Communication', category: 'Soft Skills', proficiency: 'Advanced', custom: false }];
+  p.basic = { status: 'Student', field: 'Engineering', years: 0, relevantYears: '', education: 'Diploma', direction: 'Build products' };
+  p.skills = [{ id: 'skill-1', name: 'Communication', category: 'Soft Skills & Languages', proficiency: 'Advanced', custom: false }];
   p.interests = { industries: ['Engineering'], activities: ['Design'], priorities: ['Impact'], willingness: 4, weeklyHours: 0, budget: 'Free only' };
   p.readiness = { technology: 4, problemApproach: 'Research and ask for help', adaptability: 5, realisticHours: 0 };
   return p;
@@ -41,6 +41,35 @@ test('draft and submitted profiles roundtrip and edits replace previous save', (
   p.basic.field = 'Updated field'; saveProfile(p, 0, true, storage);
   assert.equal(loadProfile(storage).saved?.profile.basic.field, 'Updated field');
   assert.ok(data.has(PROFILE_KEY));
+});
+test('legacy version-1 skill categories migrate without changing names, IDs or evidence references', () => {
+  const base = emptyProfile();
+  const parsed = profileSchema.safeParse({
+    ...base,
+    basic: { ...base.basic, relevantYears: undefined },
+    skills: [
+      { id: 'soft-legacy', name: 'Communication', category: 'Soft Skills', proficiency: 'Advanced', custom: false },
+      { id: 'excel-legacy', name: 'Microsoft Excel', category: 'Technical Skills', proficiency: 'Intermediate', custom: false },
+      { id: 'custom-legacy', name: 'My custom skill', category: 'Technical Skills', proficiency: 'Beginner', custom: true },
+    ],
+    experience: {
+      ...base.experience,
+      evidenceItems: [{
+        id: 'evidence-legacy', kind: 'Academic project', title: 'Coursework',
+        skills: [{ skillId: 'soft-legacy', skillName: 'Communication' }],
+        description: '', outcome: '', timing: '', reference: '',
+      }],
+    },
+  });
+  assert.equal(parsed.success, true);
+  if (!parsed.success) return;
+  assert.equal(parsed.data.basic.relevantYears, undefined);
+  assert.deepEqual(parsed.data.skills.map(({ id, name, category }) => ({ id, name, category })), [
+    { id: 'soft-legacy', name: 'Communication', category: 'Soft Skills & Languages' },
+    { id: 'excel-legacy', name: 'Microsoft Excel', category: 'Digital Skills' },
+    { id: 'custom-legacy', name: 'My custom skill', category: 'Technical Skills' },
+  ]);
+  assert.deepEqual(parsed.data.experience.evidenceItems[0].skills, [{ skillId: 'soft-legacy', skillName: 'Communication' }]);
 });
 test('structured evidence is optional, editable, and roundtrips with skill references', () => {
   const data = new Map<string, string>();

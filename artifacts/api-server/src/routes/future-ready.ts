@@ -16,7 +16,7 @@ import {
 import { buildFutureReadyOverview } from "../lib/job-summary";
 import { labourMarketRepository } from "../lib/labour-market";
 import { calculateSkillGap } from "../lib/skill-gap";
-import { matchRoles } from "../lib/role-matching";
+import { hasUnexpectedMatchInputFields, matchRoles } from "../lib/role-matching";
 import { resolveDataDirectory } from "../lib/data-directory";
 
 const router: IRouter = Router();
@@ -134,6 +134,11 @@ router.get("/future-ready/jobs", (req, res): void => {
 });
 
 router.post("/future-ready/role-matches", (req, res): void => {
+  if (hasUnexpectedMatchInputFields(req.body)) {
+    req.log.warn({ code: "INVALID_MATCH_PROFILE" }, "Matching request included unsupported fields");
+    res.status(400).json({ error: "The matching request contains unsupported profile fields.", code: "INVALID_MATCH_PROFILE" });
+    return;
+  }
   const parsed = MatchFutureReadyRolesBody.safeParse(req.body);
   if (!parsed.success) {
     req.log.warn({ code: "INVALID_MATCH_PROFILE" }, "Matching request validation failed");

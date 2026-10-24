@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { matchingProfileInput } from "./matching-profile.ts";
 import { emptyProfile, saveProfile, loadProfile, type SavedProfile } from "./skills-profile.ts";
+import { skillCategories, skillGroups } from "./skill-catalogue.ts";
 
 test("Feature 2 reuses the saved Feature 1 envelope without rewriting it", () => {
   const data = new Map<string, string>();
@@ -34,4 +35,23 @@ test("missing and incomplete saved profiles produce useful prompts without inven
   const saved: SavedProfile = { version: 1, profile: emptyProfile(), step: 0, submitted: false, savedAt: new Date().toISOString() };
   assert.deepEqual(matchingProfileInput(saved).currentSkills, []);
   assert.ok(matchingProfileInput(saved).missingFields.length);
+});
+
+test("the five displayed skill categories stay ordered and broad areas never reach matching", () => {
+  assert.deepEqual(skillCategories, [
+    "Broad Technical Areas",
+    "Technical Skills",
+    "Industry-Specific Skills",
+    "Digital Skills",
+    "Soft Skills & Languages",
+  ]);
+  assert.deepEqual([...new Set(skillGroups.map((group) => group.category))], skillCategories);
+  const profile = emptyProfile();
+  profile.skills = [
+    { id: "broad", name: "Programming", category: "Broad Technical Areas", proficiency: "Beginner", custom: false },
+    { id: "custom-broad", name: "Cybersecurity", category: "Technical Skills", proficiency: "Beginner", custom: true },
+    { id: "specific", name: "SQL", category: "Technical Skills", proficiency: "Intermediate", custom: true },
+  ];
+  const saved: SavedProfile = { version: 1, profile, step: 1, submitted: false, savedAt: new Date().toISOString() };
+  assert.deepEqual(matchingProfileInput(saved).currentSkills, ["SQL"]);
 });

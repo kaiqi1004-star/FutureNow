@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { matchRoles } from "../src/lib/role-matching.ts";
+import { hasUnexpectedMatchInputFields, matchRoles } from "../src/lib/role-matching.ts";
 import { calculateSkillGap } from "../src/lib/skill-gap.ts";
 import { mapSkillToSdgs, mapRoleToSdgs, SDG_GOALS } from "../src/lib/sdg-mapping.ts";
 import { MatchFutureReadyRolesBody, MatchFutureReadyRolesResponse } from "../../../lib/api-zod/src/generated/api.ts";
@@ -74,8 +74,8 @@ test("salary bands and blank source names survive; salary/category never affect 
   const result = matchRoles([ranged], ["Communication"], profile).results[0];
   assert.equal(result.job.salaryText, "3500-4999");
   assert.equal(result.job.salaryMonthlyRm, null);
-  const changedContext = { ...ranged, salaryText: "999999", salaryMonthlyRm: 999999, sector: "software" };
-  const changedResult = matchRoles([changedContext], ["Communication"], profile).results[0];
+  const changedSalary = { ...ranged, salaryText: "999999", salaryMonthlyRm: 999999 };
+  const changedResult = matchRoles([changedSalary], ["Communication"], profile).results[0];
   assert.equal(changedResult.score, result.score);
   assert.equal(changedResult.overallScore, result.overallScore);
   assert.equal(changedResult.compatibilityTier, result.compatibilityTier);
@@ -185,7 +185,10 @@ test("API contract handles empty skills and rejects oversized or malformed input
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], relevantExperienceYears: 0, educationLevel: "Bachelor’s degree" }).success, true);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], relevantExperienceYears: -1 }).success, false);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], relevantExperienceYears: 81 }).success, false);
-  assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], experienceYears: 0 }).success, false);
+  const oldTotalYearsRequest = { currentSkills: ["SQL"], experienceYears: 0 };
+  assert.equal(MatchFutureReadyRolesBody.safeParse(oldTotalYearsRequest).success, true);
+  assert.equal(hasUnexpectedMatchInputFields(oldTotalYearsRequest), true, "the HTTP route rejects total experience and other undeclared fields");
+  assert.equal(hasUnexpectedMatchInputFields({ currentSkills: ["SQL"], relevantExperienceYears: 0 }), false);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], educationLevel: "x".repeat(81) }).success, false);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: "SQL" }).success, false);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: Array(151).fill("SQL") }).success, false);
