@@ -8,6 +8,12 @@
 
 export * from './apiError';
 export * from './careerCategoryCount';
+export * from './careerLevel';
+export * from './compatibilityTier';
+export * from './educationRequirementBasis';
+export * from './educationRequirementType';
+export * from './experienceRequirementBasis';
+export * from './experienceRequirementType';
 export * from './futureReadyOverview';
 export * from './healthStatus';
 export * from './jobListing';
@@ -16,6 +22,10 @@ export * from './labourMarketData';
 export * from './labourMarketDataCacheState';
 export * from './labourMarketDataRetrievalMode';
 export * from './labourMarketObservation';
+export * from './matchDimensionStatus';
+export * from './matchWeights';
+export * from './roleEducationFit';
+export * from './roleExperienceFit';
 export * from './roleMatch';
 export * from './roleMatchInput';
 export * from './roleMatchResults';

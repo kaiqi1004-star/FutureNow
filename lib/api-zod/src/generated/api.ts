@@ -67,23 +67,36 @@ export const GetFutureReadyJobsResponse = zod.array(GetFutureReadyJobsResponseIt
 
 
 /**
- * Stateless deterministic skill coverage. No profile is stored and no hiring probability is predicted.
- * @summary Rank supplied job records using explicitly saved profile skills
+ * Stateless deterministic profile-to-role estimates. No profile is stored and no hiring probability is predicted.
+ * @summary Rank supplied job records using selected profile skills and structured fit context
  */
 export const matchFutureReadyRolesBodyCurrentSkillsItemMax = 100;
 
 export const matchFutureReadyRolesBodyCurrentSkillsMax = 150;
 
+export const matchFutureReadyRolesBodyExperienceYearsMin = 0;
+export const matchFutureReadyRolesBodyExperienceYearsMax = 80;
+
+export const matchFutureReadyRolesBodyEducationLevelMax = 80;
+
 
 
 export const MatchFutureReadyRolesBody = zod.object({
-  "currentSkills": zod.array(zod.string().max(matchFutureReadyRolesBodyCurrentSkillsItemMax)).max(matchFutureReadyRolesBodyCurrentSkillsMax)
+  "currentSkills": zod.array(zod.string().max(matchFutureReadyRolesBodyCurrentSkillsItemMax)).max(matchFutureReadyRolesBodyCurrentSkillsMax),
+  "experienceYears": zod.number().min(matchFutureReadyRolesBodyExperienceYearsMin).max(matchFutureReadyRolesBodyExperienceYearsMax).optional().describe('Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.'),
+  "educationLevel": zod.string().max(matchFutureReadyRolesBodyEducationLevelMax).optional().describe('Optional selected education level from the saved profile. No free-text profile answers are sent.')
 })
 
 export const MatchFutureReadyRolesResponse = zod.object({
   "totalJobs": zod.number().int(),
   "inputSkillCount": zod.number().int(),
-  "formula": zod.string(),
+  "formula": zod.string().describe('Skill coverage formula retained for backward compatibility.'),
+  "overallFormula": zod.string(),
+  "weights": zod.object({
+  "skillCoverage": zod.number(),
+  "experienceSuitability": zod.number(),
+  "educationSuitability": zod.number()
+}),
   "scoringNotes": zod.array(zod.string()),
   "sdgNotice": zod.string(),
   "results": zod.array(zod.object({
@@ -106,7 +119,37 @@ export const MatchFutureReadyRolesResponse = zod.object({
 }),
   "matchedCount": zod.number().int(),
   "requiredCount": zod.number().int(),
-  "score": zod.number().nullable(),
+  "skillCoverage": zod.number().nullable(),
+  "score": zod.number().nullable().describe('Backward-compatible alias for skillCoverage.'),
+  "overallScore": zod.number().nullable(),
+  "compatibilityTier": zod.union([zod.literal(1),zod.literal(2),zod.literal(3)]),
+  "compatibilityLabel": zod.string(),
+  "compatibilityReasons": zod.array(zod.string()),
+  "experienceFit": zod.object({
+  "roleLevel": zod.enum(['internship', 'entry', 'mid', 'senior', 'lead', 'manager', 'unspecified']),
+  "requirementType": zod.enum(['mandatory', 'preferred', 'source_range', 'conditional', 'qualitative', 'explicit_none', 'inferred', 'unavailable']),
+  "sourceText": zod.string(),
+  "basis": zod.enum(['source', 'title_guideline', 'unavailable']),
+  "sourceMinimumYears": zod.number().nullable(),
+  "guidelineYears": zod.number().nullable(),
+  "userYears": zod.number().nullable(),
+  "suitabilityScore": zod.number().nullable(),
+  "status": zod.enum(['meets', 'gap', 'uncertain', 'not_provided', 'not_stated', 'not_required', 'unavailable']),
+  "summary": zod.string(),
+  "reason": zod.string()
+}),
+  "educationFit": zod.object({
+  "requirementType": zod.enum(['mandatory', 'conditional', 'not_stated', 'unrecognized']),
+  "sourceText": zod.string(),
+  "basis": zod.enum(['source', 'conditional', 'unavailable']),
+  "minimumLevel": zod.number().int().nullable(),
+  "userLevel": zod.number().int().nullable(),
+  "userEducation": zod.string().nullable(),
+  "suitabilityScore": zod.number().nullable(),
+  "status": zod.enum(['meets', 'gap', 'uncertain', 'not_provided', 'not_stated', 'not_required', 'unavailable']),
+  "summary": zod.string(),
+  "reason": zod.string()
+}),
   "matchedSkills": zod.array(zod.object({
   "skill": zod.string(),
   "category": zod.enum(['technical', 'soft']),

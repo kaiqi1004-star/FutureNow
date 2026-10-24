@@ -5,12 +5,16 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MatchWeights } from './matchWeights';
 import type { RoleMatch } from './roleMatch';
 
 export interface RoleMatchResults {
   totalJobs: number;
   inputSkillCount: number;
+  /** Skill coverage formula retained for backward compatibility. */
   formula: string;
+  overallFormula: string;
+  weights: MatchWeights;
   scoringNotes: string[];
   sdgNotice: string;
   results: RoleMatch[];

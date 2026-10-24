@@ -5,7 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { CompatibilityTier } from './compatibilityTier';
 import type { JobListing } from './jobListing';
+import type { RoleEducationFit } from './roleEducationFit';
+import type { RoleExperienceFit } from './roleExperienceFit';
 import type { RoleMatchSkill } from './roleMatchSkill';
 import type { SdgAssessment } from './sdgAssessment';
 
@@ -14,7 +17,19 @@ export interface RoleMatch {
   matchedCount: number;
   requiredCount: number;
   /** @nullable */
+  skillCoverage: number | null;
+  /**
+     * Backward-compatible alias for skillCoverage.
+     * @nullable
+     */
   score: number | null;
+  /** @nullable */
+  overallScore: number | null;
+  compatibilityTier: CompatibilityTier;
+  compatibilityLabel: string;
+  compatibilityReasons: string[];
+  experienceFit: RoleExperienceFit;
+  educationFit: RoleEducationFit;
   matchedSkills: RoleMatchSkill[];
   skillGaps: RoleMatchSkill[];
   unmatchedProfileSkills: string[];

@@ -5,8 +5,7 @@ import type { JobListing, RoleMatch } from '@workspace/api-client-react';
 import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Compass, ExternalLink, Info, Lock, RefreshCw, Sparkles, UserRound } from 'lucide-react';
 import { loadProfile, type SavedProfile } from '@/lib/skills-profile';
 import { matchingProfileInput } from '@/lib/matching-profile';
-import { assessExperience } from '@/lib/experience-fit';
-import { SdgTags, SdgDetail, UnassessedSdg } from '@/components/sdg-assessment';
+import { SdgTags, SdgDetail } from '@/components/sdg-assessment';
 import { useTranslation } from '@/lib/i18n';
 import './future-role-matching.css';
 
@@ -23,9 +22,25 @@ const salaryLabel = (job: JobListing, t: (key: string) => string) => {
   return raw ? `${raw} (${t('as supplied')})` : t('Salary not disclosed');
 };
 
+function cardReason(r: RoleMatch): string | null {
+  if (r.compatibilityTier === 1) {
+    return r.experienceFit.status === 'not_required' ? r.experienceFit.summary : null;
+  }
+  return r.compatibilityReasons[0] ?? null;
+}
+
 function readProfile() {
   const r = loadProfile();
-  return { saved: r.saved, error: r.error, key: JSON.stringify(matchingProfileInput(r.saved).currentSkills) };
+  const profile = r.saved?.profile;
+  return {
+    saved: r.saved,
+    error: r.error,
+    key: JSON.stringify({
+      skills: matchingProfileInput(r.saved).currentSkills,
+      years: typeof profile?.basic.years === 'number' ? profile.basic.years : null,
+      education: profile?.basic.education || null,
+    }),
+  };
 }
 
 export default function FutureRoleMatchingPage() {
@@ -78,17 +93,24 @@ export default function FutureRoleMatchingPage() {
     }
   }, [detailId]);
 
-  const generate = () => { setDetailId(null); setPage(1); setCategory('all'); match.mutate({ data: { currentSkills: skills } }); };
   const p = saved?.profile;
+  const generate = () => {
+    setDetailId(null); setPage(1); setCategory('all');
+    match.mutate({ data: {
+      currentSkills: skills,
+      experienceYears: typeof p?.basic.years === 'number' ? p.basic.years : undefined,
+      educationLevel: p?.basic.education || undefined,
+    } });
+  };
 
   return <div className="page-wrap rm-page">
     <div className="rm-head">
       <div><div className="rm-eyebrow">{t('Module 02 · Future-Role Matching')}</div><h1>{t('Which supplied roles fit your skills?')}</h1>
-        <p>{t('FutureNow compares the skill names in your saved profile with the skills listed in real supplied job records. Results show an estimated skill fit, not a hiring prediction, job security signal or measure of national demand.')}</p></div>
-      <div className="rm-privacy" data-testid="text-privacy-disclosure"><Lock size={16} /><span>{t('Only your skill names are sent to a stateless matcher. Your other answers stay in this browser and do not affect the score.')}</span></div>
+        <p>{t('FutureNow compares your selected skills with real supplied job records and considers available experience and education information. Results estimate profile-to-role suitability; they are not hiring predictions, job security signals, or measures of national demand.')}</p></div>
+      <div className="rm-privacy" data-testid="text-privacy-disclosure"><Lock size={16} /><span>{t('Only your selected skill names, stated years of experience, and education level are sent to a stateless matcher. Your other profile answers stay in this browser.')}</span></div>
     </div>
 
-    {detail && data ? <Detail r={detail} experienceYears={saved?.profile.basic.years} formula={data.formula} sdgNotice={data.sdgNotice} rank={rankOf(detail)} headRef={detailHead} onBack={() => { returnFocus.current = detail.job.id; setDetailId(null); }} /> : <>
+    {detail && data ? <Detail r={detail} rank={rankOf(detail)} headRef={detailHead} onBack={() => { returnFocus.current = detail.job.id; setDetailId(null); }} /> : <>
       <section className="rm-card" aria-labelledby="rm-profile-h">
         <div className="rm-toolbar"><div><div className="rm-eyebrow">{t('Your saved profile')}</div><h2 id="rm-profile-h">{t('Skills used for matching')}</h2></div>
           <button type="button" className="rm-btn" onClick={refresh} data-testid="button-refresh-profile"><RefreshCw size={14} />{t('Reload saved profile')}</button></div>
@@ -99,9 +121,8 @@ export default function FutureRoleMatchingPage() {
             {incomplete > 0 && <div className="rm-note" data-testid="status-incomplete-profile"><Info size={16} /><p>{t('This is a {status} profile with {count} required {answerLabel} still missing ({fields}). Matching works with your skills, but', { status: t(input.isDraft ? 'draft' : 'saved'), count: incomplete, answerLabel: t(incomplete === 1 ? 'answer' : 'answers'), fields: input.missingFields.join(' ') })} <Link href="/skills-profile">{t('completing your profile')}</Link> {t('keeps your context accurate.')}</p></div>}
             <div className="rm-profile">
               <div><p className="rm-muted">{t('{count} skill {label} will be sent. Proficiency is shown for your reference and is not weighted.', { count: skills.length, label: t(skills.length === 1 ? 'name' : 'names') })}</p>
-                <p className="rm-muted">{t('Profile terms are not yet assessed for SDG contribution here. Each job provides its own source-supported context.')}</p>
-                <div className="rm-chips" data-testid="list-profile-skills">{saved.profile.skills.map((s) => <span key={s.id} className="rm-chip"><span>{s.name}</span><small>{t(s.proficiency)}</small><UnassessedSdg /></span>)}</div></div>
-              <div className="rm-context"><h3>{t('Local context (not scored)')}</h3><dl>
+                <div className="rm-chips" data-testid="list-profile-skills">{saved.profile.skills.map((s) => <span key={s.id} className="rm-chip"><span>{s.name}</span><small>{t(s.proficiency)}</small></span>)}</div></div>
+               <div className="rm-context"><h3>{t('Profile context')}</h3><p className="rm-muted">{t('Years and education are used for the separate suitability estimate. Interests, direction, evidence, readiness, and proficiency do not affect scores.')}</p><dl>
                 <dt>{t('Experience')}</dt><dd>{p?.basic.years === '' ? t('Not provided') : `${p?.basic.years} ${t('years')}`}</dd>
                 <dt>{t('Education')}</dt><dd>{p?.basic.education ? t(p.basic.education) : t('Not provided')}</dd>
                 <dt>{t('Direction')}</dt><dd>{p?.basic.direction || t('Not provided')}</dd>
@@ -116,28 +137,56 @@ export default function FutureRoleMatchingPage() {
        {match.isPending && <div className="rm-list" role="status" aria-label={t('Loading matches')}>{[0, 1, 2].map((i) => <div key={i} className="rm-skel" />)}</div>}
        {match.isError && <div className="rm-note is-warn" role="alert" data-testid="status-match-error"><AlertTriangle size={16} /><p>{t('Matches could not be generated. No sample results are shown.')} <button type="button" className="rm-btn" onClick={generate} data-testid="button-retry-matches">{t('Try again')}</button></p></div>}
       {data && !match.isPending && <>
-        <section className="rm-card" aria-labelledby="rm-method-h">
-           <div className="rm-eyebrow">{t('How the estimate works')}</div><h2 id="rm-method-h">{t('Estimated profile-to-job skill fit')}</h2>
-           <div className="rm-method"><div><code data-testid="text-formula">{t(data.formula)}</code><p className="rm-muted">{t('Ranked in the order returned by the matcher across {count} supplied records using {skills} of your skills. This is not a hiring probability.', { count: data.totalJobs, skills: data.inputSkillCount })}</p></div>
-             <ul data-testid="list-scoring-notes">{data.scoringNotes.map((n) => <li key={n}>{t(n)}</li>)}</ul></div>
-          <div className="rm-note" style={{ marginTop: 14, marginBottom: 0 }} data-testid="text-sdg-notice"><Info size={16} /><p>{t(data.sdgNotice)}</p></div>
-        </section>
+         <details className="rm-card rm-method-disclosure" aria-label={t('How matching works')} data-testid="details-matching-method">
+           <summary className="rm-method-summary">
+             <span className="rm-eyebrow">{t('How matching works')}</span>
+             <span className="rm-method-preview">
+               <span><b>{t('Skills')}:</b> {t('Compares the skills in your saved profile with each role’s listed requirements.')}</span>
+               <span><b>{t('Experience and education')}:</b> {t('Uses stated requirements and clearly labelled estimates based on role seniority.')}</span>
+               <span><b>{t('Ranking')}:</b> {t('Prioritises career-stage compatibility, then overall suitability; skill coverage stays separate.')}</span>
+               <span className="rm-muted">{t('Results are estimates based on available information, not hiring predictions. A skill not found in your profile is not proof that you lack it.')}</span>
+             </span>
+           </summary>
+           <div className="rm-method-expanded">
+             <p className="rm-muted">{t('These results compare your saved profile with {count} supplied records using {skills} selected skills.', { count: data.totalJobs, skills: data.inputSkillCount })}</p>
+             <details className="rm-scoring-details" data-testid="details-scoring-details">
+               <summary>{t('View scoring details')}</summary>
+               <p><b>{t('Weights')}:</b> {t('Skills')} {data.weights.skillCoverage}%, {t('experience suitability')} {data.weights.experienceSuitability}%, {t('education suitability')} {data.weights.educationSuitability}%.</p>
+               <p>{t('Unavailable dimensions are excluded and the remaining weights are proportionally redistributed; missing information is not treated as a pass or failure.')}</p>
+               <p>{t('Internal experience guidelines when the source gives no comparable years: internship/entry 0, mid/senior 2, lead 3, manager 4. These are estimates, not employer requirements.')}</p>
+               <p>{t('Tier 1: no unmet mandatory requirement identified. Tier 2: stretch or unresolved information. Tier 3: clear shortfall against a mandatory source requirement.')}</p>
+               <p className="rm-muted"><b>{t('Skill coverage')}:</b> <code data-testid="text-formula">{t(data.formula)}</code></p>
+               <p className="rm-muted"><b>{t('Overall score')}:</b> {t(data.overallFormula)}</p>
+             </details>
+           </div>
+         </details>
          {!data.results.length ? <div className="rm-card rm-empty" data-testid="status-no-results"><Compass size={26} /><h3>{t('No roles returned')}</h3><p className="rm-muted">{t('The matcher returned no records for these skills.')}</p></div>
            : data.results.every((r) => r.matchedCount === 0) ? <div className="rm-note is-warn" data-testid="status-no-coverage"><AlertTriangle size={16} /><p>{t('None of your skill names matched any listed requirement. Roles are still listed below so you can see what the records ask for.')}</p></div> : null}
         {data.results.length > 0 && <section aria-labelledby="rm-results-h">
            <div className="rm-toolbar"><div><div className="rm-eyebrow">{t('Ranked results')}</div><h2 id="rm-results-h" ref={resultsHead} tabIndex={-1} style={{ margin: '4px 0 0' }}>{t('{count} roles', { count: filtered.length })}</h2></div>
              <div><label className="rm-label" htmlFor="rm-cat">{t('Career category')}</label><select id="rm-cat" className="rm-select" value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} data-testid="select-match-category"><option value="all">{t('All categories')}</option>{categories.map((c) => <option key={c} value={c}>{t(categoryLabels[c] ?? c)}</option>)}</select></div></div>
-          <ol className="rm-list">{visible.map((r) => <li key={r.job.id} className="rm-result" data-testid={`card-match-${r.job.id}`}>
-            <span className="rm-rank" aria-label={t('Rank {rank}', { rank: rankOf(r) })}>#{rankOf(r)}</span>
-             <div><h3 data-testid={`text-match-title-${r.job.id}`}>{r.job.title}</h3><div className="rm-meta">{r.job.company} · {t(categoryLabels[r.job.sector])}</div>
-                <div className="rm-meta">{salaryLabel(r.job, t)}</div>
-                <div className="rm-meta" title={r.job.experience}>{r.job.experience || t('Experience: not provided')}</div>
-                {r.job.sourceUrl && <a className="rm-meta" href={r.job.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-match-source-${r.job.id}`}>{t('Source listing')} <ExternalLink size={11} /></a>}
-               <div className="rm-meta">{t('Role SDG:')} <SdgTags a={r.roleSdg} id={`role-${r.job.id}`} /></div></div>
-             <div className="rm-fit"><strong data-testid={`text-match-score-${r.job.id}`}>{r.score === null ? 'n/a' : `${r.score}%`}</strong><small>{t('estimated skill fit')}</small>
-              <div className="rm-bar" aria-hidden="true"><span style={{ transform: `scaleX(${(r.score ?? 0) / 100})` }} /></div>
-               <small data-testid={`text-match-count-${r.job.id}`}>{t('{matched} of {required} listed skills', { matched: r.matchedCount, required: r.requiredCount })}</small>
-               <button type="button" className="rm-btn" style={{ marginTop: 8 }} onClick={() => setDetailId(r.job.id)} data-testid={`button-view-details-${r.job.id}`}>{t('View details')}<ChevronRight size={14} /></button></div>
+           <ol className="rm-list">{visible.map((r) => <li key={r.job.id} className="rm-result" data-testid={`card-match-${r.job.id}`}>
+             <span className="rm-rank" aria-label={t('Rank {rank}', { rank: rankOf(r) })}>#{rankOf(r)}</span>
+              <div className="rm-result-main"><h3 data-testid={`text-match-title-${r.job.id}`}>{r.job.title}</h3><div className="rm-meta">{r.job.company} · {t(categoryLabels[r.job.sector])}</div></div>
+              <div className="rm-fit">
+                <div className="rm-overall">
+                  <strong data-testid={`text-match-score-${r.job.id}`}>{r.overallScore === null ? 'n/a' : `${r.overallScore}%`}</strong>
+                  <small>{t('estimated profile-to-role suitability')}</small>
+                  <div className="rm-bar" aria-hidden="true"><span style={{ transform: `scaleX(${(r.overallScore ?? 0) / 100})` }} /></div>
+                </div>
+                <div className="rm-coverage" data-testid={`text-match-count-${r.job.id}`}>
+                  <strong>{r.requiredCount ? t('{matched} of {required} listed skills matched', { matched: r.matchedCount, required: r.requiredCount }) : t('No listed skill requirements')}</strong>
+                  {r.skillCoverage !== null && <small>{r.skillCoverage}% {t('skill coverage')}</small>}
+                </div>
+                <span className={`rm-tier rm-tier-${r.compatibilityTier}`} data-testid={`text-match-tier-${r.job.id}`} data-tier={r.compatibilityTier}>{t(r.compatibilityLabel)}</span>
+                {cardReason(r) && <p className="rm-result-reason" data-testid={`text-match-reason-${r.job.id}`}>{t(cardReason(r)!)}</p>}
+                <div className="rm-result-meta">
+                  {(r.job.salaryText || typeof r.job.salaryMonthlyRm === 'number') && <span>{salaryLabel(r.job, t)}</span>}
+                  {r.job.source && <span>{t('Source:')} {r.job.source}</span>}
+                  {r.job.sourceUrl && <a href={r.job.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-match-source-${r.job.id}`}>{t('Source listing')} <ExternalLink size={11} /></a>}
+                </div>
+                <button type="button" className="rm-btn" onClick={() => setDetailId(r.job.id)} data-testid={`button-view-details-${r.job.id}`}>{t('View details')}<ChevronRight size={14} /></button>
+              </div>
           </li>)}</ol>
            {filtered.length > PAGE_SIZE && <div className="rm-pager"><span>{t('Showing')} {(page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filtered.length)} {t('of')} {filtered.length}</span><div>
              <button type="button" className="rm-btn" aria-label={t('Previous page')} disabled={page === 1} onClick={() => setPage((x) => x - 1)} data-testid="button-matches-prev"><ChevronLeft size={15} /></button><span>{page} / {pages}</span>
@@ -148,49 +197,77 @@ export default function FutureRoleMatchingPage() {
   </div>;
 }
 
-function Detail({ r, rank, formula, sdgNotice, experienceYears, headRef, onBack }: { r: RoleMatch; rank: number; formula: string; sdgNotice: string; experienceYears: number | "" | undefined; headRef: RefObject<HTMLHeadingElement | null>; onBack: () => void }) {
+function Detail({ r, rank, headRef, onBack }: { r: RoleMatch; rank: number; headRef: RefObject<HTMLHeadingElement | null>; onBack: () => void }) {
   const { t } = useTranslation();
   const j = r.job;
-  const experienceFit = assessExperience(experienceYears, j.experience);
-  const experienceMessageKey = experienceFit.status === 'not_provided'
-    ? 'Experience comparison unavailable: add your stated years of experience to your profile. The skill score is unchanged.'
-    : experienceFit.status === 'not_comparable'
-      ? 'Experience needs manual comparison: the source is unspecified, non-numeric, preferred, conditional, or describes alternative paths. No numerical experience-fit conclusion is made.'
-      : experienceFit.status === 'below_requirement'
-        ? 'Experience-fit warning: you stated {years} years; this listing states a minimum or range starting at {minimumYears} years. Your total stated experience is below that threshold. The skill score is unchanged; review the original listing for exceptions and relevant-domain requirements.'
-        : 'Your stated {years} years meets the numeric threshold of {minimumYears} years only. This does not verify relevant-domain experience, leadership, portfolio requirements, or eligibility.';
+  const hasMappedSkillSdgs = [...r.matchedSkills, ...r.skillGaps].some((skill) => skill.sdg.status === 'mapped');
+  const statusLabel: Record<string, string> = {
+    meets: 'Meets stated threshold',
+    gap: 'Potential requirement gap',
+    uncertain: 'Needs manual comparison',
+    not_provided: 'Not provided in profile',
+    not_stated: 'Not stated in source',
+    not_required: 'No experience requirement stated',
+    unavailable: 'Not comparable from available information',
+  };
+  const coverage = r.skillCoverage === null
+    ? t('Not calculable')
+    : `${r.matchedCount} / ${r.requiredCount} (${r.skillCoverage}%)`;
+  const FitFact = ({ title, fit }: { title: string; fit: RoleMatch['experienceFit'] | RoleMatch['educationFit'] }) => (
+    <div className="rm-fact" data-state={fit.status}>
+      <span>{t(title)}</span>
+      <strong>{t(statusLabel[fit.status] ?? 'Unavailable')}</strong>
+      <p>{t(fit.summary)}</p>
+      <small>{t(fit.reason)}</small>
+    </div>
+  );
   return <section className="rm-detail" aria-labelledby="rm-detail-h" data-testid={`detail-match-${j.id}`}>
-     <button type="button" className="rm-btn" onClick={onBack} data-testid="button-back-to-results"><ArrowLeft size={14} />{t('Back to ranked results')}</button>
+    <button type="button" className="rm-btn" onClick={onBack} data-testid="button-back-to-results"><ArrowLeft size={14} />{t('Back to ranked results')}</button>
     <div className="rm-card" style={{ marginTop: 14 }}>
-       <div className="rm-eyebrow">{t('Rank')} #{rank} · {t(categoryLabels[j.sector])}</div>
+      <div className="rm-eyebrow">{t('Rank')} #{rank} · {t(categoryLabels[j.sector])}</div>
       <h2 id="rm-detail-h" ref={headRef} tabIndex={-1} data-testid="text-detail-title">{j.title}</h2>
       <div className="rm-meta" data-testid="text-detail-company">{j.company} · {j.industry}</div>
       <div className="rm-detail-grid">
-         <div className="rm-fact"><span>{t('Estimated skill fit')}</span><div className="rm-score-line"><strong data-testid="text-detail-score">{r.score === null ? t('Not calculable') : `${r.score}%`}</strong><small>{t('{matched} of {required} listed skills', { matched: r.matchedCount, required: r.requiredCount })}</small></div></div>
-         <div className="rm-fact"><span>{t('Experience (source wording)')}</span>{j.experience || t('Not specified')}</div>
-         <div className="rm-fact"><span>{t('Education (source wording)')}</span>{j.education || t('Not specified')}</div>
-          <div className="rm-fact"><span>{t('Salary (original)')}</span><span data-testid="text-detail-salary" style={{ textTransform: 'none', fontSize: 13, color: 'inherit', letterSpacing: 0 }}>{salaryLabel(j, t)}</span></div>
+        <div className="rm-fact"><span>{t('Estimated overall match score')}</span><strong data-testid="text-detail-score">{r.overallScore === null ? t('Not calculable') : `${r.overallScore}%`}</strong><small>{t('Estimate of profile-to-role suitability; not a probability of hiring.')}</small></div>
+        <div className="rm-fact"><span>{t('Skill coverage')}</span><strong data-testid="text-detail-coverage">{coverage}</strong><small>{t('Distinct listed requirements found in your saved profile.')}</small></div>
+        <div className="rm-fact"><span>{t('Career-stage compatibility')}</span><strong data-testid="text-detail-tier">{t(r.compatibilityLabel)}</strong>{r.compatibilityReasons.map((reason) => <small key={reason}>{t(reason)}</small>)}</div>
+        <FitFact title="Experience suitability" fit={r.experienceFit} />
+        <FitFact title="Education suitability" fit={r.educationFit} />
       </div>
-      <div className={`rm-note ${experienceFit.status === 'below_requirement' ? 'is-warn' : ''}`} role={experienceFit.status === 'below_requirement' ? 'alert' : 'note'} data-testid="experience-fit" data-state={experienceFit.status}>
-          {experienceFit.status === 'below_requirement' ? <AlertTriangle size={16} /> : <Info size={16} />}<p>{t(experienceMessageKey, { years: experienceYears ?? 0, minimumYears: experienceFit.minimumYears ?? 0 })}</p>
+      <div className="rm-detail-source" data-testid="section-original-job-information">
+        <h3>{t('Original job information')}</h3>
+        <dl>
+          <dt>{t('Company')}</dt><dd>{j.company}</dd>
+          <dt>{t('Industry (source)')}</dt><dd>{j.industry || t('Not specified')}</dd>
+          <dt>{t('Career category')}</dt><dd>{t(categoryLabels[j.sector])}</dd>
+          <dt>{t('Experience (original source wording)')}</dt><dd data-testid="text-detail-experience-source">{j.experience || t('Not specified')}</dd>
+          <dt>{t('Education (original source wording)')}</dt><dd data-testid="text-detail-education-source">{j.education || t('Not specified')}</dd>
+          <dt>{t('Salary (original)')}</dt><dd data-testid="text-detail-salary">{salaryLabel(j, t)}</dd>
+          {j.location && <><dt>{t('Location (source)')}</dt><dd>{j.location}</dd></>}
+          {j.postingDate && <><dt>{t('Posting date (source)')}</dt><dd>{j.postingDate}</dd></>}
+          <dt>{t('Source')}</dt><dd>{j.source || t('Not specified')}{j.sourceUrl && <> · <a href={j.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="link-detail-source">{t('View source listing')} <ExternalLink size={13} /></a></>}</dd>
+        </dl>
       </div>
-       <p className="rm-muted" data-testid="text-detail-formula">{t(formula)} {t('The profile is self-reported; this is not a hiring probability. Experience, education, interests, proficiency and salary are not scored.')}</p>
-       <div className="rm-actions">{j.sourceUrl ? <a className="rm-btn" href={j.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="link-detail-source">{t('View source listing')} ({j.source || t('source name not provided')})<ExternalLink size={13} /></a> : <span className="rm-muted">{t('Source:')} {j.source || t('not specified')}, {t('no URL supplied')}.</span>}</div>
     </div>
-    <section className="rm-card" aria-labelledby="rm-role-sdg-h">
-       <div className="rm-toolbar"><h3 id="rm-role-sdg-h">{t('Role SDG mapping')}</h3><SdgTags a={r.roleSdg} id={`detail-role-${j.id}`} /></div>
-       <p className="rm-muted">{t(sdgNotice)}</p><SdgDetail a={r.roleSdg} id={`role-${j.id}`} />
-    </section>
-     <h3 className="rm-section-heading">{t('Individual skill SDG assessments')}</h3>
-     <p className="rm-muted">{t('Compact tags show mapped goals. Open an assessment for its explanation, conditions, source context, and official UN reference. Neutral “Not assessed” labels are not review warnings.')}</p>
     <div className="rm-two">
-       <div className="rm-card"><h3>{t('Matched skills ({count})', { count: r.matchedSkills.length })}</h3><p className="rm-muted">{t('Listed requirements that match a skill name in your profile.')}</p>
-         {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong><SdgTags a={s.sdg} id={`m-${slug(s.skill)}`} /></header><div className="rm-meta">{t(s.category)} {t('skill')}{s.matchedBy ? ` · ${t('matched by your "{skill}"', { skill: s.matchedBy })}` : ''}</div><SdgDetail a={s.sdg} id={`m-${slug(s.skill)}`} collapsed /></li>)}</ul> : <p className="rm-muted">{t('No listed skills matched.')}</p>}</div>
-       <div className="rm-card"><h3>{t('Skills not found in your saved profile ({count})', { count: r.skillGaps.length })}</h3><p className="rm-muted">{t('This does not mean you definitely lack them; you may simply not have listed them.')}</p>
-         {r.skillGaps.length ? <ul className="rm-skill-table">{r.skillGaps.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-gap-${slug(s.skill)}`}><header><strong>{s.skill}</strong><SdgTags a={s.sdg} id={`g-${slug(s.skill)}`} /></header><div className="rm-meta">{t(s.category)} {t('skill')}</div><SdgDetail a={s.sdg} id={`g-${slug(s.skill)}`} collapsed /></li>)}</ul> : <p className="rm-muted">{t('No gaps against listed skills.')}</p>}</div>
+      <div className="rm-card"><h3>{t('Matched skills ({count})', { count: r.matchedSkills.length })}</h3><p className="rm-muted">{t('Listed requirements that match a skill name in your profile.')}</p>
+        {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(s.category)} {t('skill')}{s.matchedBy ? ` · ${t('matched by your "{skill}"', { skill: s.matchedBy })}` : ''}</div></li>)}</ul> : <p className="rm-muted">{t('No listed skills matched.')}</p>}</div>
+      <div className="rm-card"><h3>{t('Skills not found in your saved profile ({count})', { count: r.skillGaps.length })}</h3><p className="rm-muted">{t('This does not mean you definitely lack them; you may simply not have listed them.')}</p>
+        {r.skillGaps.length ? <ul className="rm-skill-table">{r.skillGaps.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-gap-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(s.category)} {t('skill')}</div></li>)}</ul> : <p className="rm-muted">{t('No gaps against listed skills.')}</p>}</div>
     </div>
-    <div className="rm-card"><h3>{t('Suggested improvement')}</h3><p data-testid="text-detail-improvement">{t(r.improvement)}</p>
-       {r.unmatchedProfileSkills.length > 0 && <><h3>{t('Your skills not listed for this role')}</h3><p className="rm-muted">{t("These terms do not contribute to this score and have not been assessed in this role's requirements.")}</p><div className="rm-chips">{r.unmatchedProfileSkills.map((s) => <span key={s} className="rm-chip is-plain"><span>{s}</span><UnassessedSdg /></span>)}</div></>}</div>
+    {r.roleSdg.status === 'mapped' && <section className="rm-card" aria-labelledby="rm-role-sdg-h" data-testid="section-role-sdg">
+      <div className="rm-toolbar"><h3 id="rm-role-sdg-h">{t('Supported role-level SDG mapping')}</h3><SdgTags a={r.roleSdg} id={`detail-role-${j.id}`} /></div>
+      <SdgDetail a={r.roleSdg} id={`role-${j.id}`} />
+    </section>}
+    {hasMappedSkillSdgs && <section className="rm-card" aria-labelledby="rm-skill-sdg-h" data-testid="section-skill-sdgs">
+      <h3 id="rm-skill-sdg-h">{t('Supported individual skill SDG mappings')}</h3>
+      <p className="rm-muted">{t('Only source-supported mapped goals are shown. Open a mapping for its explanation, conditions, source context, and official UN reference.')}</p>
+      {[...r.matchedSkills, ...r.skillGaps].filter((skill) => skill.sdg.status === 'mapped').map((skill) => <div className="rm-sdg-skill" key={`${skill.category}:${skill.skill}`}><strong>{skill.skill}</strong><SdgTags a={skill.sdg} id={`detail-${slug(skill.skill)}`} /><SdgDetail a={skill.sdg} id={`detail-${slug(skill.skill)}`} collapsed /></div>)}
+    </section>}
+    <section className="rm-card" data-testid="section-next-steps">
+      <h3>{t('Suggested next steps')}</h3><p data-testid="text-detail-improvement">{t(r.improvement)}</p>
+      {r.unmatchedProfileSkills.length > 0 && <><h3>{t('Your skills not listed for this role')}</h3><p className="rm-muted">{t("These terms do not contribute to the skill coverage and were not found among this role's listed requirements.")}</p><div className="rm-chips">{r.unmatchedProfileSkills.map((skill) => <span key={skill} className="rm-chip is-plain"><span>{skill}</span></span>)}</div></>}
+    </section>
     <button type="button" className="rm-btn" onClick={onBack} data-testid="button-back-to-results-bottom"><ArrowLeft size={14} />{t('Back to ranked results')}</button>
   </section>;
 }

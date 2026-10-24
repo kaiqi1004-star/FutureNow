@@ -70,11 +70,15 @@ test("empty input, blank names, no requirements and unknown fields remain safe",
 
 test("salary bands and blank source names survive; salary/category never affect skill scores", () => {
   const ranged = jobs.find((job) => job.id === "J36");
-  const result = matchRoles([ranged], ["Communication"]).results[0];
+  const profile = { experienceYears: 0, educationLevel: "Bachelor’s degree" };
+  const result = matchRoles([ranged], ["Communication"], profile).results[0];
   assert.equal(result.job.salaryText, "3500-4999");
   assert.equal(result.job.salaryMonthlyRm, null);
   const changedContext = { ...ranged, salaryText: "999999", salaryMonthlyRm: 999999, sector: "software" };
-  assert.equal(matchRoles([changedContext], ["Communication"]).results[0].score, result.score);
+  const changedResult = matchRoles([changedContext], ["Communication"], profile).results[0];
+  assert.equal(changedResult.score, result.score);
+  assert.equal(changedResult.overallScore, result.overallScore);
+  assert.equal(changedResult.compatibilityTier, result.compatibilityTier);
   assert.equal(matchRoles([jobs.find((job) => job.id === "J43")], []).results[0].job.source, "");
 });
 
@@ -178,7 +182,79 @@ test("the real dataset includes mapped roles and a defensibly reviewed role with
 test("API contract handles empty skills and rejects oversized or malformed input", () => {
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: [] }).success, true);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"] }).success, true);
+  assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], experienceYears: 0, educationLevel: "Bachelor’s degree" }).success, true);
+  assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], experienceYears: -1 }).success, false);
+  assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], experienceYears: 81 }).success, false);
+  assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["SQL"], educationLevel: "x".repeat(81) }).success, false);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: "SQL" }).success, false);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: Array(151).fill("SQL") }).success, false);
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["x".repeat(101)] }).success, false);
+});
+
+test("real zero-experience profile gets entry and internship roles before a higher-overlap senior role", () => {
+  const senior = jobs.find((job) => job.id === "J47");
+  const profileSkills = [...senior.technicalSkills, ...senior.softSkills];
+  const result = matchRoles(jobs, profileSkills, { experienceYears: 0, educationLevel: "Bachelor’s degree" });
+  const intern = result.results.find((row) => row.job.id === "J45");
+  const graduate = result.results.find((row) => row.job.id === "J43");
+  const explicitSenior = result.results.find((row) => row.job.id === "J47");
+  const inferredSenior = result.results.find((row) => row.job.id === "J49");
+
+  assert.equal(intern.experienceFit.roleLevel, "internship");
+  assert.equal(intern.compatibilityTier, 1);
+  assert.equal(graduate.experienceFit.requirementType, "explicit_none");
+  assert.equal(graduate.compatibilityTier, 1);
+  assert.equal(explicitSenior.experienceFit.requirementType, "mandatory");
+  assert.equal(explicitSenior.experienceFit.sourceMinimumYears, 3);
+  assert.equal(explicitSenior.compatibilityTier, 3);
+  assert.equal(inferredSenior.experienceFit.requirementType, "inferred");
+  assert.equal(inferredSenior.experienceFit.guidelineYears, 2);
+  assert.notEqual(inferredSenior.compatibilityTier, 3);
+  assert.ok(result.results.indexOf(intern) < result.results.indexOf(explicitSenior));
+  assert.ok(result.results.indexOf(graduate) < result.results.indexOf(explicitSenior));
+  assert.ok(explicitSenior.skillCoverage > intern.skillCoverage);
+  assert.equal(explicitSenior.score, explicitSenior.skillCoverage);
+});
+
+test("conditional education/experience paths are not collapsed into mandatory single thresholds", () => {
+  const role = jobs.find((job) => job.id === "J21");
+  const result = matchRoles([role], [], { experienceYears: 0, educationLevel: "Diploma" }).results[0];
+  assert.equal(result.experienceFit.requirementType, "conditional");
+  assert.equal(result.experienceFit.suitabilityScore, null);
+  assert.equal(result.educationFit.requirementType, "conditional");
+  assert.equal(result.educationFit.suitabilityScore, null);
+  assert.equal(result.compatibilityTier, 2);
+});
+
+test("missing dimensions are excluded, remain visible, and do not become a confirmed mismatch", () => {
+  const senior = jobs.find((job) => job.id === "J47");
+  const skills = [...senior.technicalSkills, ...senior.softSkills];
+  const result = matchRoles([senior], skills).results[0];
+  assert.equal(result.skillCoverage, 100);
+  assert.equal(result.overallScore, 100);
+  assert.equal(result.experienceFit.suitabilityScore, null);
+  assert.equal(result.experienceFit.status, "not_provided");
+  assert.equal(result.educationFit.suitabilityScore, null);
+  assert.equal(result.educationFit.status, "not_provided");
+  assert.equal(result.compatibilityTier, 2);
+
+  const noRequirements = { ...fixture("NO-SKILLS", []), title: "Unclassified role", experience: "Not specified", education: "" };
+  const noScore = matchRoles([noRequirements], [], {}).results[0];
+  assert.equal(noScore.skillCoverage, null);
+  assert.equal(noScore.score, null);
+  assert.equal(noScore.overallScore, null);
+  assert.equal(noScore.compatibilityTier, 2);
+});
+
+test("ranking uses compatibility tier, then overall score, then skill coverage and ID deterministically", () => {
+  const source = [
+    { ...fixture("J10", ["PHP", "SQL"]), experience: "Minimum 5 years required" },
+    fixture("J3", ["PHP", "SQL"]),
+    fixture("J2", ["PHP", "SQL"]),
+    fixture("J1", ["PHP"]),
+  ];
+  const input = { experienceYears: 0, educationLevel: "Bachelor’s degree" };
+  const first = matchRoles(source, ["PHP"], input);
+  assert.deepEqual(first.results.map((item) => item.job.id), ["J1", "J2", "J3", "J10"]);
+  assert.deepEqual(matchRoles([...source].reverse(), ["PHP"], input), first);
 });

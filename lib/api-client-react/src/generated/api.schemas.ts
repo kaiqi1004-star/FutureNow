@@ -11,6 +11,17 @@ export interface RoleMatchInput {
      * @items.maxLength 100
      */
   currentSkills: string[];
+  /**
+     * Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.
+     * @minimum 0
+     * @maximum 80
+     */
+  experienceYears?: number;
+  /**
+     * Optional selected education level from the saved profile. No free-text profile answers are sent.
+     * @maxLength 80
+     */
+  educationLevel?: string;
 }
 
 export type SdgConnectionGoalNumber = typeof SdgConnectionGoalNumber[keyof typeof SdgConnectionGoalNumber];
@@ -71,6 +82,124 @@ export interface RoleMatchSkill {
   sdg: SdgAssessment;
 }
 
+export type CareerLevel = typeof CareerLevel[keyof typeof CareerLevel];
+
+
+export const CareerLevel = {
+  internship: 'internship',
+  entry: 'entry',
+  mid: 'mid',
+  senior: 'senior',
+  lead: 'lead',
+  manager: 'manager',
+  unspecified: 'unspecified',
+} as const;
+
+export type MatchDimensionStatus = typeof MatchDimensionStatus[keyof typeof MatchDimensionStatus];
+
+
+export const MatchDimensionStatus = {
+  meets: 'meets',
+  gap: 'gap',
+  uncertain: 'uncertain',
+  not_provided: 'not_provided',
+  not_stated: 'not_stated',
+  not_required: 'not_required',
+  unavailable: 'unavailable',
+} as const;
+
+export type ExperienceRequirementType = typeof ExperienceRequirementType[keyof typeof ExperienceRequirementType];
+
+
+export const ExperienceRequirementType = {
+  mandatory: 'mandatory',
+  preferred: 'preferred',
+  source_range: 'source_range',
+  conditional: 'conditional',
+  qualitative: 'qualitative',
+  explicit_none: 'explicit_none',
+  inferred: 'inferred',
+  unavailable: 'unavailable',
+} as const;
+
+export type ExperienceRequirementBasis = typeof ExperienceRequirementBasis[keyof typeof ExperienceRequirementBasis];
+
+
+export const ExperienceRequirementBasis = {
+  source: 'source',
+  title_guideline: 'title_guideline',
+  unavailable: 'unavailable',
+} as const;
+
+export type EducationRequirementType = typeof EducationRequirementType[keyof typeof EducationRequirementType];
+
+
+export const EducationRequirementType = {
+  mandatory: 'mandatory',
+  conditional: 'conditional',
+  not_stated: 'not_stated',
+  unrecognized: 'unrecognized',
+} as const;
+
+export type EducationRequirementBasis = typeof EducationRequirementBasis[keyof typeof EducationRequirementBasis];
+
+
+export const EducationRequirementBasis = {
+  source: 'source',
+  conditional: 'conditional',
+  unavailable: 'unavailable',
+} as const;
+
+export interface RoleExperienceFit {
+  roleLevel: CareerLevel;
+  requirementType: ExperienceRequirementType;
+  sourceText: string;
+  basis: ExperienceRequirementBasis;
+  /** @nullable */
+  sourceMinimumYears: number | null;
+  /** @nullable */
+  guidelineYears: number | null;
+  /** @nullable */
+  userYears: number | null;
+  /** @nullable */
+  suitabilityScore: number | null;
+  status: MatchDimensionStatus;
+  summary: string;
+  reason: string;
+}
+
+export interface RoleEducationFit {
+  requirementType: EducationRequirementType;
+  sourceText: string;
+  basis: EducationRequirementBasis;
+  /** @nullable */
+  minimumLevel: number | null;
+  /** @nullable */
+  userLevel: number | null;
+  /** @nullable */
+  userEducation: string | null;
+  /** @nullable */
+  suitabilityScore: number | null;
+  status: MatchDimensionStatus;
+  summary: string;
+  reason: string;
+}
+
+export type CompatibilityTier = typeof CompatibilityTier[keyof typeof CompatibilityTier];
+
+
+export const CompatibilityTier = {
+  NUMBER_1: 1,
+  NUMBER_2: 2,
+  NUMBER_3: 3,
+} as const;
+
+export interface MatchWeights {
+  skillCoverage: number;
+  experienceSuitability: number;
+  educationSuitability: number;
+}
+
 /**
  * Career category derived from the supplied job title; not the source Industry field.
  */
@@ -115,7 +244,19 @@ export interface RoleMatch {
   matchedCount: number;
   requiredCount: number;
   /** @nullable */
+  skillCoverage: number | null;
+  /**
+     * Backward-compatible alias for skillCoverage.
+     * @nullable
+     */
   score: number | null;
+  /** @nullable */
+  overallScore: number | null;
+  compatibilityTier: CompatibilityTier;
+  compatibilityLabel: string;
+  compatibilityReasons: string[];
+  experienceFit: RoleExperienceFit;
+  educationFit: RoleEducationFit;
   matchedSkills: RoleMatchSkill[];
   skillGaps: RoleMatchSkill[];
   unmatchedProfileSkills: string[];
@@ -126,7 +267,10 @@ export interface RoleMatch {
 export interface RoleMatchResults {
   totalJobs: number;
   inputSkillCount: number;
+  /** Skill coverage formula retained for backward compatibility. */
   formula: string;
+  overallFormula: string;
+  weights: MatchWeights;
   scoringNotes: string[];
   sdgNotice: string;
   results: RoleMatch[];

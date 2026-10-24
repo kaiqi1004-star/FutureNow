@@ -379,8 +379,8 @@ export const getMatchFutureReadyRolesUrl = () => {
 }
 
 /**
- * Stateless deterministic skill coverage. No profile is stored and no hiring probability is predicted.
- * @summary Rank supplied job records using explicitly saved profile skills
+ * Stateless deterministic profile-to-role estimates. No profile is stored and no hiring probability is predicted.
+ * @summary Rank supplied job records using selected profile skills and structured fit context
  */
 export const matchFutureReadyRoles = async (roleMatchInput: RoleMatchInput, options?: Parameters<typeof customFetch>[1]): Promise<RoleMatchResults> => {
 
@@ -446,7 +446,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type MatchFutureReadyRolesMutationVariables = {data: BodyType<RoleMatchInput>}
 
     /**
- * @summary Rank supplied job records using explicitly saved profile skills
+ * @summary Rank supplied job records using selected profile skills and structured fit context
  */
 export const useMatchFutureReadyRoles = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof matchFutureReadyRoles>>, TError,MatchFutureReadyRolesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

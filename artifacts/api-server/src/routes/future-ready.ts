@@ -133,7 +133,10 @@ router.post("/future-ready/role-matches", (req, res): void => {
     res.status(400).json({ error: "Provide up to 150 saved skill names, each no longer than 100 characters." });
     return;
   }
-  res.json(MatchFutureReadyRolesResponse.parse(matchRoles(loadJobs(), parsed.data.currentSkills)));
+  res.json(MatchFutureReadyRolesResponse.parse(matchRoles(loadJobs(), parsed.data.currentSkills, {
+    experienceYears: parsed.data.experienceYears,
+    educationLevel: parsed.data.educationLevel,
+  })));
 });
 
 router.post("/future-ready/skill-gap", (req, res): void => {

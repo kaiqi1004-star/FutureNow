@@ -12,4 +12,15 @@ export interface RoleMatchInput {
      * @items.maxLength 100
      */
   currentSkills: string[];
+  /**
+     * Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.
+     * @minimum 0
+     * @maximum 80
+     */
+  experienceYears?: number;
+  /**
+     * Optional selected education level from the saved profile. No free-text profile answers are sent.
+     * @maxLength 80
+     */
+  educationLevel?: string;
 }

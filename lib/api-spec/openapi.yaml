@@ -56,8 +56,8 @@ paths:
     post:
       operationId: matchFutureReadyRoles
       tags: [futureReady]
-      summary: Rank supplied job records using explicitly saved profile skills
-      description: Stateless deterministic skill coverage. No profile is stored and no hiring probability is predicted.
+      summary: Rank supplied job records using selected profile skills and structured fit context
+      description: Stateless deterministic profile-to-role estimates. No profile is stored and no hiring probability is predicted.
       requestBody:
         required: true
         content:
@@ -185,6 +185,15 @@ components:
           items:
             type: string
             maxLength: 100
+        experienceYears:
+          type: number
+          minimum: 0
+          maximum: 80
+          description: Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.
+        educationLevel:
+          type: string
+          maxLength: 80
+          description: Optional selected education level from the saved profile. No free-text profile answers are sent.
       required: [currentSkills]
     SdgConnection:
       type: object
@@ -243,6 +252,87 @@ components:
         sdg:
           $ref: "#/components/schemas/SdgAssessment"
       required: [skill, category, matchedBy, sdg]
+    CareerLevel:
+      type: string
+      enum: [internship, entry, mid, senior, lead, manager, unspecified]
+    MatchDimensionStatus:
+      type: string
+      enum: [meets, gap, uncertain, not_provided, not_stated, not_required, unavailable]
+    ExperienceRequirementType:
+      type: string
+      enum: [mandatory, preferred, source_range, conditional, qualitative, explicit_none, inferred, unavailable]
+    ExperienceRequirementBasis:
+      type: string
+      enum: [source, title_guideline, unavailable]
+    EducationRequirementType:
+      type: string
+      enum: [mandatory, conditional, not_stated, unrecognized]
+    EducationRequirementBasis:
+      type: string
+      enum: [source, conditional, unavailable]
+    RoleExperienceFit:
+      type: object
+      properties:
+        roleLevel:
+          $ref: "#/components/schemas/CareerLevel"
+        requirementType:
+          $ref: "#/components/schemas/ExperienceRequirementType"
+        sourceText:
+          type: string
+        basis:
+          $ref: "#/components/schemas/ExperienceRequirementBasis"
+        sourceMinimumYears:
+          type: ["number", "null"]
+        guidelineYears:
+          type: ["number", "null"]
+        userYears:
+          type: ["number", "null"]
+        suitabilityScore:
+          type: ["number", "null"]
+        status:
+          $ref: "#/components/schemas/MatchDimensionStatus"
+        summary:
+          type: string
+        reason:
+          type: string
+      required: [roleLevel, requirementType, sourceText, basis, sourceMinimumYears, guidelineYears, userYears, suitabilityScore, status, summary, reason]
+    RoleEducationFit:
+      type: object
+      properties:
+        requirementType:
+          $ref: "#/components/schemas/EducationRequirementType"
+        sourceText:
+          type: string
+        basis:
+          $ref: "#/components/schemas/EducationRequirementBasis"
+        minimumLevel:
+          type: ["integer", "null"]
+        userLevel:
+          type: ["integer", "null"]
+        userEducation:
+          type: ["string", "null"]
+        suitabilityScore:
+          type: ["number", "null"]
+        status:
+          $ref: "#/components/schemas/MatchDimensionStatus"
+        summary:
+          type: string
+        reason:
+          type: string
+      required: [requirementType, sourceText, basis, minimumLevel, userLevel, userEducation, suitabilityScore, status, summary, reason]
+    CompatibilityTier:
+      type: integer
+      enum: [1, 2, 3]
+    MatchWeights:
+      type: object
+      properties:
+        skillCoverage:
+          type: number
+        experienceSuitability:
+          type: number
+        educationSuitability:
+          type: number
+      required: [skillCoverage, experienceSuitability, educationSuitability]
     RoleMatch:
       type: object
       properties:
@@ -252,8 +342,25 @@ components:
           type: integer
         requiredCount:
           type: integer
+        skillCoverage:
+          type: ["number", "null"]
         score:
           type: ["number", "null"]
+          description: Backward-compatible alias for skillCoverage.
+        overallScore:
+          type: ["number", "null"]
+        compatibilityTier:
+          $ref: "#/components/schemas/CompatibilityTier"
+        compatibilityLabel:
+          type: string
+        compatibilityReasons:
+          type: array
+          items:
+            type: string
+        experienceFit:
+          $ref: "#/components/schemas/RoleExperienceFit"
+        educationFit:
+          $ref: "#/components/schemas/RoleEducationFit"
         matchedSkills:
           type: array
           items:
@@ -270,7 +377,7 @@ components:
           $ref: "#/components/schemas/SdgAssessment"
         improvement:
           type: string
-      required: [job, matchedCount, requiredCount, score, matchedSkills, skillGaps, unmatchedProfileSkills, roleSdg, improvement]
+      required: [job, matchedCount, requiredCount, skillCoverage, score, overallScore, compatibilityTier, compatibilityLabel, compatibilityReasons, experienceFit, educationFit, matchedSkills, skillGaps, unmatchedProfileSkills, roleSdg, improvement]
     RoleMatchResults:
       type: object
       properties:
@@ -280,6 +387,11 @@ components:
           type: integer
         formula:
           type: string
+          description: Skill coverage formula retained for backward compatibility.
+        overallFormula:
+          type: string
+        weights:
+          $ref: "#/components/schemas/MatchWeights"
         scoringNotes:
           type: array
           items:
@@ -290,7 +402,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleMatch"
-      required: [totalJobs, inputSkillCount, formula, scoringNotes, sdgNotice, results]
+      required: [totalJobs, inputSkillCount, formula, overallFormula, weights, scoringNotes, sdgNotice, results]
     HealthStatus:
       type: object
       properties:
