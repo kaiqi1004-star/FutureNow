@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAnalyzeFutureReadySkillGap, useGetFutureReadyJobs } from '@workspace/api-client-react';
 import type { JobListing, SkillGapAnalysis, SkillGapRoadmapStep } from '@workspace/api-client-react';
-import { Activity, AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, Clock3, ExternalLink, Info, LoaderCircle, RotateCcw, ShieldCheck } from 'lucide-react';
+import { Activity, AlertCircle, ArrowLeft, ArrowRight, BookOpen, Check, CheckCircle2, Clock3, ExternalLink, Info, LoaderCircle, RotateCcw, Search, ShieldCheck } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslation, type Language } from '@/lib/i18n';
+import { categoryMessage, deriveCategoryCounts, formatIsoDate, formatNumber, localizeSkill } from '@/lib/skill-gap-localization';
 import { loadProfile, PROFILE_KEY } from '@/lib/skills-profile';
 import { matchingProfileInput } from '@/lib/matching-profile';
 import { assessExperience } from '@/lib/experience-fit';
@@ -34,6 +35,11 @@ function hasListedEducation(job: JobListing) {
   return Boolean(value && !/^(?:n\/?a|not (?:specified|stated|available)|undisclosed|unknown|-)$/i.test(value));
 }
 
+function SkillName({ name, language, t }: { name: string; language: Language; t: (message: string, values?: Record<string, string | number>) => string }) {
+  const localized = localizeSkill(name, language);
+  return <>{localized.label}{localized.label !== localized.original && <small className="gap-original-term" data-testid="text-original-skill">{t('Listing term: {original}', { original: localized.original })}</small>}</>;
+}
+
 function makeExercise(skill: string, category: string, t: (message: string, values?: Record<string, string | number>) => string) {
   return category === 'soft'
     ? t('Practise {skill} in a realistic team scenario: agree on a goal, explain your approach, invite feedback, and write down what changed.', { skill })
@@ -48,15 +54,19 @@ function resourceFor(skill: string) {
 }
 
 export default function SkillGapPage() {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  // Validation messages are stable message IDs translated at render, so a language switch never loses or freezes an error.
   const formSchema = useMemo(() => z.object({
-    skillsText: z.string().max(12000, t('Keep the skills list under 12,000 characters.')),
-    yearsText: z.string().refine((value) => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 80), t('Enter a number from 0 to 80.')),
-  }), [t]);
+    skillsText: z.string().max(12000, 'Keep the skills list under 12,000 characters.'),
+    yearsText: z.string().refine((value) => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 80), 'Enter a number from 0 to 80.'),
+  }), []);
   const jobsQuery = useGetFutureReadyJobs();
   const analyze = useAnalyzeFutureReadySkillGap();
   const jobs = jobsQuery.data ?? [];
-  const [sector, setSector] = useState<'software' | 'mechanical'>('software');
+  const [sector, setSector] = useState<string>('all');
+  const [jobFilter, setJobFilter] = useState('');
+  const categoryCounts = useMemo(() => deriveCategoryCounts(jobs), [jobs]);
+  const fmt = (value: number) => formatNumber(value, language);
   const [jobId, setJobId] = useState('');
   const form = useForm<FormValues>({ resolver: zodResolver(formSchema), mode: 'onChange', defaultValues: { skillsText: '', yearsText: '' } });
   const skillsText = form.watch('skillsText');
@@ -71,7 +81,14 @@ export default function SkillGapPage() {
   const [profileError, setProfileError] = useState('');
   const [profileFeedbackValues, setProfileFeedbackValues] = useState<Record<string, string | number>>({});
   const selectedJob = jobs.find((job) => job.id === jobId);
-  const sectorJobs = useMemo(() => jobs.filter((job) => job.sector === sector), [jobs, sector]);
+  const sectorJobs = useMemo(() => {
+    const query = jobFilter.trim().toLocaleLowerCase('en');
+    return jobs.filter((job) => (sector === 'all' || job.sector === sector)
+      && (!query || [job.title, job.company, job.source, job.id].some((value) => (value ?? '').toLocaleLowerCase('en').includes(query))));
+  }, [jobs, sector, jobFilter]);
+  const categoryTotal = sector === 'all' ? jobs.length : categoryCounts.find((item) => item.category === sector)?.count ?? 0;
+  const selectedRequirementCount = selectedJob ? new Set([...(selectedJob.technicalSkills ?? []), ...(selectedJob.softSkills ?? [])].map((name) => name.trim()).filter(Boolean)).size : 0;
+  const listingOptions = selectedJob && !sectorJobs.some((job) => job.id === selectedJob.id) ? [selectedJob, ...sectorJobs] : sectorJobs;
   const currentSkills = useMemo(() => parseSkills(skillsText), [skillsText]);
   const inputIssue = skillsText.length > 12000
     ? t('Keep the skills list under 12,000 characters.')
@@ -80,7 +97,7 @@ export default function SkillGapPage() {
     : currentSkills.some((skill) => skill.length > 120)
       ? t('Each skill name must be 120 characters or fewer.')
       : '';
-  const fingerprint = JSON.stringify({ sector, jobId, currentSkills });
+  const fingerprint = JSON.stringify({ jobId, currentSkills });
   const result = analysis && fingerprint === resultFingerprint ? analysis : null;
   const requirements = useMemo(() => result ? [...result.matchedSkills, ...result.missingSkills] : [], [result]);
   const baselineAssessments = useMemo(
@@ -93,13 +110,13 @@ export default function SkillGapPage() {
 
   useEffect(() => {
     if (!jobs.length) return;
-    if (!jobs.some((job) => job.id === jobId && job.sector === sector)) {
+    if (jobId && !jobs.some((job) => job.id === jobId)) {
       setJobId('');
       setAnalysis(null);
       setResultFingerprint('');
       setRoadmapBuilt(false);
     }
-  }, [jobs, jobId, sector]);
+  }, [jobs, jobId]);
 
   useEffect(() => {
     if (!jobId) return;
@@ -163,10 +180,10 @@ export default function SkillGapPage() {
     if (!selectedJob) return;
     const sentSkills = parseSkills(skillsText);
     const sentPractice = forRoadmap ? [...new Set(practiceSkills)] : [];
-    analyze.mutate({ data: { sector, jobId: selectedJob.id, currentSkills: sentSkills, ...(forRoadmap ? { practiceSkills: sentPractice } : {}) } }, {
+    analyze.mutate({ data: { sector: selectedJob.sector, jobId: selectedJob.id, currentSkills: sentSkills, ...(forRoadmap ? { practiceSkills: sentPractice } : {}) } }, {
       onSuccess: (response) => {
         setAnalysis(response);
-        setResultFingerprint(JSON.stringify({ sector, jobId, currentSkills: sentSkills }));
+        setResultFingerprint(JSON.stringify({ jobId: selectedJob.id, currentSkills: sentSkills }));
         const loaded = loadSkillGapPlan(selectedJob.id);
         const explicitPractice = Object.fromEntries(
           Object.entries(loaded.state.assessments).filter(([, status]) => status === 'practice'),
@@ -181,8 +198,9 @@ export default function SkillGapPage() {
     });
   };
 
-  const chooseSector = (next: 'software' | 'mechanical') => {
+  const chooseSector = (next: string) => {
     setSector(next);
+    if (next !== 'all' && selectedJob?.sector === next) return;
     setJobId('');
     setAnalysis(null);
     setResultFingerprint('');
@@ -199,12 +217,12 @@ export default function SkillGapPage() {
       ? t('Cannot compare: the listing does not provide one clear numeric experience threshold. Skill coverage is unchanged.')
       : t('Add your relevant years to compare experience separately. Skill coverage is unchanged.'),
     not_comparable: t('Cannot compare: the listing does not provide one clear numeric experience threshold. Skill coverage is unchanged.'),
-    below_requirement: t('Your stated {years} years is below the listing threshold of {minimum} years. This is not an eligibility decision; skill coverage is unchanged.', { years, minimum: experienceFit.minimumYears ?? '' }),
-    meets_numeric_minimum: t('Your stated {years} years meets the numeric threshold only; it does not verify relevance or eligibility.', { years }),
+    below_requirement: t('Your stated {years} years is below the listing threshold of {minimum} years. This is not an eligibility decision; skill coverage is unchanged.', { years: years === '' ? '' : fmt(years), minimum: experienceFit.minimumYears == null ? '' : fmt(experienceFit.minimumYears) }),
+    meets_numeric_minimum: t('Your stated {years} years meets the numeric threshold only; it does not verify relevance or eligibility.', { years: years === '' ? '' : fmt(years) }),
   }[experienceFit.status]) : '';
   const exactFormula = result?.requiredCount
-    ? `${result.matchedCount} ÷ ${result.requiredCount} × 100 = ${result.coveragePercent === null ? t('not available') : `${result.coveragePercent}%`}`
-    : result ? t('{matched} matched / {required} distinct listed requirements', { matched: result.matchedCount, required: result.requiredCount }) : '';
+    ? `${fmt(result.matchedCount)} ÷ ${fmt(result.requiredCount)} × 100 = ${result.coveragePercent === null ? t('not available') : `${fmt(result.coveragePercent)}%`}`
+    : result ? t('{matched} matched / {required} distinct listed requirements', { matched: fmt(result.matchedCount), required: fmt(result.requiredCount) }) : '';
 
   const listedRoadmap = useMemo(() => {
     if (!result) return [];
@@ -252,24 +270,43 @@ export default function SkillGapPage() {
                 {activeStep === 1 && <section className="gap-wizard-card panel" aria-labelledby="goal-title" data-testid="step-choose-goal">
                   <div className="gap-step-overline"><span>{t('STEP 01')}</span><span>{t('One role at a time')}</span></div><h2 id="goal-title">{t('Choose a career goal')}</h2><p className="gap-step-intro">{t('Start with a real record from the supplied job sample.')}</p>
                   <label className="gap-field-label">{t('Career area')}</label>
-                  <div className="gap-sector-picker" role="group" aria-label={t('Choose career area')}>
-                    {(['software', 'mechanical'] as const).map((value) => <button type="button" key={value} className={sector === value ? 'selected' : ''} aria-pressed={sector === value} onClick={() => chooseSector(value)} data-testid={`button-sector-${value}`}><span className="gap-sector-symbol">{value === 'software' ? 'S' : 'M'}</span><span><b>{t(value)}</b><small>{t(value === 'software' ? 'Digital products & systems' : 'Engineering & manufacturing')}</small></span>{sector === value && <Check size={16} />}</button>)}
+                  <div className="gap-sector-picker" role="group" aria-label={t('Choose career area')} data-testid="sector-picker">
+                    {[{ category: 'all', count: jobs.length }, ...categoryCounts].map(({ category, count }) => {
+                      const info = category === 'all' ? { label: 'All categories', description: 'Every supplied record', symbol: '∗' } : categoryMessage(category);
+                      return <button type="button" key={category} className={sector === category ? 'selected' : ''} aria-pressed={sector === category} onClick={() => chooseSector(category)} data-testid={`button-sector-${category}`}>
+                        <span className="gap-sector-symbol" aria-hidden="true">{info.symbol}</span>
+                        <span><b>{t(info.label)}</b><small>{t(info.description)}</small></span>
+                        <em className="gap-sector-count" data-testid={`text-sector-count-${category}`}>{fmt(count)}</em>
+                      </button>;
+                    })}
                   </div>
+                  <p className="gap-input-hint gap-picker-note">{t('Categories and counts come from the supplied records. Titles, companies and sources are shown as supplied.')}</p>
+                  <label className="gap-field-label" htmlFor="skill-job-filter">{t('Filter listings')}</label>
+                  <div className="gap-filter-field"><Search size={14} aria-hidden="true" /><input id="skill-job-filter" type="search" value={jobFilter} onChange={(event) => setJobFilter(event.target.value)} placeholder={t('Title, company or source…')} data-testid="input-skill-job-filter" /></div>
+                  <p className="gap-input-hint" data-testid="text-listing-filter-count">{sectorJobs.length ? t('Showing {shown} of {total} records in this category.', { shown: fmt(sectorJobs.length), total: fmt(categoryTotal) }) : t('No listings match this filter.')}</p>
                   <label className="gap-field-label" htmlFor="skill-job-select">{t('Supplied job listing')}</label>
                   <select id="skill-job-select" className="gap-select" value={jobId} onChange={(event) => { setJobId(event.target.value); setAnalysis(null); setResultFingerprint(''); setRoadmapBuilt(false); }} data-testid="select-skill-gap-job">
-                    <option value="">{t('Choose a {sector} listing…', { sector: t(sector === 'software' ? 'Software' : 'Mechanical') })}</option>
-                    {sectorJobs.map((job) => <option key={job.id} value={job.id}>{job.title} — {job.company} · {t('Record')} {job.id}</option>)}
+                    <option value="">{sector === 'all' ? t('Choose a listing…') : t('Choose a {sector} listing…', { sector: t(categoryMessage(sector).label) })}</option>
+                    {(sector === 'all' ? categoryCounts.map((item) => item.category) : [sector]).map((category) => {
+                      const options = listingOptions.filter((job) => job.sector === category || (job.id === selectedJob?.id && sector !== 'all' && category === sector));
+                      if (!options.length) return null;
+                      return <optgroup key={category} label={t(categoryMessage(category).label)}>
+                        {options.map((job) => <option key={job.id} value={job.id}>{job.title.replace(/\s+/g, ' ').trim()} — {job.company.trim()}{job.source ? ` · ${job.source}` : ''} · {t('Record')} {job.id}</option>)}
+                      </optgroup>;
+                    })}
                   </select>
                   {selectedJob && <article className="gap-role-card" data-testid="selected-role-summary">
-                    <div className="gap-role-top"><span>{t(selectedJob.sector === 'software' ? 'Software' : 'Mechanical')}</span><code>{t('RECORD / {id}', { id: selectedJob.id })}</code></div><h3>{selectedJob.title}</h3><p>{selectedJob.company} · {selectedJob.industry}</p>
+                    <div className="gap-role-top"><span>{t(categoryMessage(selectedJob.sector).label)}</span><code>{t('RECORD / {id}', { id: selectedJob.id })}</code></div><h3>{selectedJob.title}</h3><p>{selectedJob.company} · {selectedJob.industry}</p>
                     <div className="gap-context-grid">
+                      <div><small>{t('Distinct requirements')}</small><b data-testid="text-selected-requirement-count">{t('{count} listed requirements', { count: fmt(selectedRequirementCount) })}</b></div>
                       <div><small>{t('LISTED EXPERIENCE')}</small><b>{selectedJob.experience || t('Not stated')}</b></div>
                       {hasListedEducation(selectedJob) && <div><small>{t('EDUCATION')}</small><b>{selectedJob.education}</b></div>}
                       {hasDisclosedSalary(selectedJob) && <div><small>{t('SALARY · CONTEXT ONLY')}</small><b>{salaryContext(selectedJob, t('Not disclosed'))}</b></div>}
                     </div>
                     {(selectedJob.source || selectedJob.sourceUrl) && <div className="gap-source-row"><span>{selectedJob.source || t('Supplied listing source')}</span>{selectedJob.sourceUrl && <a href={selectedJob.sourceUrl} target="_blank" rel="noreferrer noopener" data-testid="link-selected-job-source">{t('Open listing')} <ExternalLink size={13} /></a>}</div>}
                   </article>}
-                  <div className="gap-step-actions"><button className="gap-primary-action" type="button" disabled={!selectedJob} onClick={() => setActiveStep(2)} data-testid="button-next-assess">{t('Continue to skills')} <ArrowRight size={16} /></button></div>
+                  {selectedJob && selectedRequirementCount === 0 && <div className="gap-state gap-no-requirements" role="status" data-testid="status-no-requirements"><AlertCircle size={18} /><div><strong>{t('No usable skill requirements')}</strong><p>{t('This record does not list any technical or soft skills, so no coverage, gaps or learning tasks can be produced. Nothing has been inferred.')}</p></div></div>}
+                  <div className="gap-step-actions"><button className="gap-primary-action" type="button" disabled={!selectedJob || selectedRequirementCount === 0} onClick={() => setActiveStep(2)} data-testid="button-next-assess">{t('Continue to skills')} <ArrowRight size={16} /></button></div>
                 </section>}
 
                 {activeStep === 2 && <section className="gap-wizard-card panel" aria-labelledby="assess-title" data-testid="step-assess-skills">
@@ -279,7 +316,7 @@ export default function SkillGapPage() {
                     <FormField control={form.control} name="skillsText" render={({ field }) => <FormItem>
                       <FormLabel className="gap-field-label" htmlFor="current-skills">{t('Skills you have practised')}</FormLabel>
                       <FormControl><Textarea {...field} id="current-skills" rows={6} placeholder={t('e.g. Python, SQL; troubleshooting')} className="gap-textarea" data-testid="textarea-current-skills" /></FormControl>
-                      <div className="gap-input-hint">{t('Separate skill names with commas, semicolons, or line breaks.')}</div><FormMessage />
+                      <div className="gap-input-hint">{t('Separate skill names with commas, semicolons, or line breaks.')}</div>{form.formState.errors.skillsText?.message && <p className="gap-field-error" role="alert" data-testid="error-skills-text">{t(form.formState.errors.skillsText.message)}</p>}
                     </FormItem>} />
                     {inputIssue && <p className="gap-storage-alert" role="alert" data-testid="status-skill-input-validation">{inputIssue}</p>}
                     <button className="gap-profile-button" type="button" onClick={useProfile} data-profile-key={PROFILE_KEY} data-testid="button-use-my-profile"><ShieldCheck size={15} /> {t('Use my profile')}</button>
@@ -287,7 +324,7 @@ export default function SkillGapPage() {
                   <p className="gap-self-report-note"><Info size={14} /> {t('Saved profile skills are self-reported, not verified. Your profile is not changed.')}</p>
                     <div className="gap-years-field"><FormField control={form.control} name="yearsText" render={({ field }) => <FormItem>
                       <FormLabel className="gap-field-label" htmlFor="relevant-years">{t('Relevant experience years')} <span>({t('optional')})</span></FormLabel>
-                      <FormControl><Input {...field} id="relevant-years" type="number" min="0" max="80" step="0.5" data-testid="input-relevant-years" /></FormControl><FormMessage />
+                      <FormControl><Input {...field} id="relevant-years" type="number" min="0" max="80" step="0.5" data-testid="input-relevant-years" /></FormControl>{form.formState.errors.yearsText?.message && <p className="gap-field-error" role="alert" data-testid="error-relevant-years">{t(form.formState.errors.yearsText.message)}</p>}
                     </FormItem>} /><p>{t('Used only for a separate conservative context check; it never changes skill coverage.')}</p></div>
                   </form></Form>
                   <div className="gap-step-actions"><button className="gap-back-action" type="button" onClick={() => setActiveStep(1)} data-testid="button-back-goal"><ArrowLeft size={15} /> {t('Back')}</button><button className="gap-primary-action" type="button" disabled={!selectedJob || analyze.isPending || Boolean(inputIssue) || Boolean(form.formState.errors.yearsText)} onClick={() => runAnalysis()} data-testid="button-analyze-skills">{analyze.isPending ? <><LoaderCircle className="gap-spinner" size={16} /> {t('Comparing…')}</> : <>{t('Compare listed skills')} <ArrowRight size={16} /></>}</button></div>
@@ -296,14 +333,15 @@ export default function SkillGapPage() {
 
                 {activeStep === 3 && result && <section className="gap-wizard-card panel" aria-labelledby="review-title" data-testid="step-review-gaps">
                   <div className="gap-step-overline"><span>{t('STEP 03')}</span><span>{t('Coverage is not a score of you')}</span></div><h2 id="review-title">{t('Review the listed requirements')}</h2>
-                  <div className="gap-result-hero" data-testid="coverage-result"><div><small>{t('LISTING SKILL COVERAGE')}</small><strong data-testid="text-coverage-percent">{result.coveragePercent === null ? '—' : `${result.coveragePercent}%`}</strong><span>{t('{matched} matched · {other} not matched', { matched: result.matchedCount, other: Math.max(0, result.requiredCount - result.matchedCount) })}</span></div><div className="gap-coverage-ring" aria-hidden="true"><span>{result.coveragePercent === null ? '—' : `${result.coveragePercent}%`}</span></div></div>
+                  <div className="gap-result-hero" data-testid="coverage-result"><div><small>{t('LISTING SKILL COVERAGE')}</small><strong data-testid="text-coverage-percent">{result.coveragePercent === null ? '—' : `${fmt(result.coveragePercent)}%`}</strong><span>{t('{matched} matched · {other} not matched', { matched: fmt(result.matchedCount), other: fmt(Math.max(0, result.requiredCount - result.matchedCount)) })}</span></div><div className="gap-coverage-ring" aria-hidden="true"><span>{result.coveragePercent === null ? '—' : `${fmt(result.coveragePercent)}%`}</span></div></div>
                   <div className="gap-coverage-formula" data-testid="text-coverage-formula"><span>{t('EXACT MATCH FORMULA')}</span><code>{exactFormula}</code></div>
-                  <div className="gap-count-line" data-testid="text-requirement-count"><span>{t('Distinct requirements')}</span><b>{t('{matched} matched / {required} total', { matched: result.matchedCount, required: result.requiredCount })}</b></div>
+                  <div className="gap-count-line" data-testid="text-requirement-count"><span>{t('Distinct requirements')}</span><b>{t('{matched} matched / {required} total', { matched: fmt(result.matchedCount), required: fmt(result.requiredCount) })}</b></div>
                   <p className="gap-coverage-note"><Info size={14} /> {t('Only listed technical and soft skills are counted. Aliases follow the supplied comparison; education, experience, and salary are context only.')}</p>
 
-                  <div className="gap-experience-card" data-testid="experience-context"><div className="gap-context-icon"><Clock3 size={16} /></div><div><small>{t('EXPERIENCE · SEPARATE CONTEXT')}</small><p><b>{t('Listing:')}</b> {result.selectedJob.experience || t('Not stated')} <span>·</span> <b>{t('Your stated years:')}</b> {years === '' ? t('Not provided') : t('{years} years', { years })}</p>{experienceFit && <p className="gap-experience-message">{experienceSummary}</p>}</div></div>
+                  <div className="gap-experience-card" data-testid="experience-context"><div className="gap-context-icon"><Clock3 size={16} /></div><div><small>{t('EXPERIENCE · SEPARATE CONTEXT')}</small><p><b>{t('Listing:')}</b> {result.selectedJob.experience || t('Not stated')} <span>·</span> <b>{t('Your stated years:')}</b> {years === '' ? t('Not provided') : t('{years} years', { years: fmt(years) })}</p>{experienceFit && <p className="gap-experience-message">{experienceSummary}</p>}</div></div>
 
-                  <section className="gap-assessment-groups" aria-label={t('Self-assessed requirement groups')}>
+                  {result.requiredCount === 0 && <div className="gap-state gap-no-requirements" role="status" data-testid="status-no-requirements-result"><AlertCircle size={18} /><div><strong>{t('No usable skill requirements')}</strong><p>{t('This record does not list any technical or soft skills, so no coverage, gaps or learning tasks can be produced. Nothing has been inferred.')}</p><button type="button" onClick={() => setActiveStep(1)} data-testid="button-choose-another-listing">{t('Choose another listing')}</button></div></div>}
+                  {result.requiredCount > 0 && <section className="gap-assessment-groups" aria-label={t('Self-assessed requirement groups')}>
                     {(['in-profile', 'practice', 'unrecorded'] as const).map((status) => {
                        const items = requirements.filter((item) => (planState.assessments[skillGapRequirementKey(item.category, item.skill)] ?? baselineAssessments[skillGapRequirementKey(item.category, item.skill)] ?? 'unrecorded') === status);
                       return <div className={`gap-assessment-group group-${status}`} key={status} data-testid={`assessment-group-${status}`}>
@@ -311,24 +349,24 @@ export default function SkillGapPage() {
                         {items.length ? <ul>{items.map((item) => {
                           const key = skillGapRequirementKey(item.category, item.skill);
                           return <li key={key} data-testid={`requirement-${item.category}-${item.skill.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
-                            <div className="gap-requirement-copy"><strong>{item.skill}</strong><span>{t(item.category === 'soft' ? 'Soft skill requirement' : 'Technical requirement')}</span>{item.matchedBy && <small>{t('Matched by “{skill}”', { skill: item.matchedBy })}</small>}</div>
+                            <div className="gap-requirement-copy"><strong><SkillName name={item.skill} language={language} t={t} /></strong><span>{t(item.category === 'soft' ? 'Soft skill requirement' : 'Professional / technical requirement')}</span>{item.matchedBy && <small>{t('Matched by “{skill}”', { skill: localizeSkill(item.matchedBy, language).label })}</small>}</div>
                              <button type="button" className="gap-practice-toggle" onClick={() => setAssessment(item.category, item.skill, status === 'practice' ? (baselineAssessments[key] ?? 'unrecorded') : 'practice')} data-testid={`button-practice-${item.category}-${item.skill.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>{t(status === 'practice' ? 'Undo practice' : 'Practise this')}</button>
                           </li>;
                         })}</ul> : <p className="gap-empty-group">{t(status === 'in-profile' ? 'No listed requirements were found in your skill list.' : status === 'practice' ? 'Choose any listed requirement to add it to your practice plan.' : 'No other requirements remain unrecorded.')}</p>}
                       </div>;
                     })}
-                  </section>
+                  </section>}
                   <details className="gap-evidence-details" data-testid="listing-evidence"><summary><BookOpen size={15} /> {t('Listing and source evidence')}</summary>
-                     <div className="gap-evidence-body"><p><b>{result.selectedJob.title}</b> · {result.selectedJob.company} · {t('Record')} {result.selectedJob.id}</p><p><b>{t('Technical skills:')}</b> {result.selectedJob.technicalSkills.length ? result.selectedJob.technicalSkills.join(' · ') : t('None listed in this record')}</p><p><b>{t('Soft skills:')}</b> {result.selectedJob.softSkills.length ? result.selectedJob.softSkills.join(' · ') : t('None listed in this record')}</p>{hasListedEducation(result.selectedJob) && <p><b>{t('Education:')}</b> {result.selectedJob.education}</p>}<p><b>{t('Experience:')}</b> {result.selectedJob.experience || t('Not stated')}{hasDisclosedSalary(result.selectedJob) && <> · <b>{t('Salary · context only:')}</b> {salaryContext(result.selectedJob, t('Not disclosed'))}</>}</p><p><b>{t('Source:')}</b> {result.selectedJob.source || t('Not specified')} {result.selectedJob.sourceUrl && <a href={result.selectedJob.sourceUrl} target="_blank" rel="noreferrer noopener" data-testid="link-evidence-source">{t('View supplied source')} <ExternalLink size={13} /></a>}</p><p><b>{t('Input skills not matched:')}</b> {result.unmatchedInputSkills.length ? result.unmatchedInputSkills.join(' · ') : t('None')}</p><p className="gap-unmatched-note">{t('Unmatched input skills are not counted as listed requirements and do not change coverage.')}</p></div>
+                     <div className="gap-evidence-body"><p><b>{result.selectedJob.title}</b> · {result.selectedJob.company} · {t('Record')} {result.selectedJob.id}</p><p className="gap-original-label"><span>{t('ORIGINAL LISTING TEXT')}</span> {t('Shown exactly as supplied; not translated.')}</p><p lang="en" data-testid="text-evidence-technical"><b lang={language === 'BM' ? 'ms' : language === 'CN' ? 'zh-CN' : 'en'}>{t('Professional / technical requirements:')}</b> {(result.selectedJob.technicalSkills ?? []).length ? result.selectedJob.technicalSkills.join(' · ') : t('None listed in this record')}</p><p><b>{t('Soft skills:')}</b> {(result.selectedJob.softSkills ?? []).length ? result.selectedJob.softSkills.join(' · ') : t('None listed in this record')}</p>{hasListedEducation(result.selectedJob) && <p><b>{t('Education:')}</b> {result.selectedJob.education}</p>}<p><b>{t('Experience:')}</b> {result.selectedJob.experience || t('Not stated')}{hasDisclosedSalary(result.selectedJob) && <> · <b>{t('Salary · context only:')}</b> {salaryContext(result.selectedJob, t('Not disclosed'))}</>}</p><p><b>{t('Source:')}</b> {result.selectedJob.source || t('Not specified')} {result.selectedJob.sourceUrl && <a href={result.selectedJob.sourceUrl} target="_blank" rel="noreferrer noopener" data-testid="link-evidence-source">{t('View supplied source')} <ExternalLink size={13} /></a>}</p><p><b>{t('Input skills not matched:')}</b> {result.unmatchedInputSkills.length ? result.unmatchedInputSkills.join(' · ') : t('None')}</p><p className="gap-unmatched-note">{t('Unmatched input skills are not counted as listed requirements and do not change coverage.')}</p></div>
                   </details>
-                  <div className="gap-step-actions"><button className="gap-back-action" type="button" onClick={() => setActiveStep(2)} data-testid="button-back-assess"><ArrowLeft size={15} /> {t('Back to skills')}</button><button className="gap-primary-action" type="button" disabled={analyze.isPending} onClick={() => runAnalysis(true)} data-testid="button-build-roadmap">{analyze.isPending ? <><LoaderCircle className="gap-spinner" size={16} /> {t('Preparing…')}</> : <>{t('Build learning roadmap')} <ArrowRight size={16} /></>}</button></div>
+                  <div className="gap-step-actions"><button className="gap-back-action" type="button" onClick={() => setActiveStep(2)} data-testid="button-back-assess"><ArrowLeft size={15} /> {t('Back to skills')}</button><button className="gap-primary-action" type="button" disabled={analyze.isPending || result.requiredCount === 0} onClick={() => runAnalysis(true)} data-testid="button-build-roadmap">{analyze.isPending ? <><LoaderCircle className="gap-spinner" size={16} /> {t('Preparing…')}</> : <>{t('Build learning roadmap')} <ArrowRight size={16} /></>}</button></div>
                   {analyze.isError && <div className="gap-inline-error" role="alert">{t('Roadmap could not be prepared.')} <button type="button" onClick={() => runAnalysis(true)} data-testid="button-retry-roadmap">{t('Retry')}</button></div>}
                   {storageError && <p className="gap-storage-alert" role="status" data-testid="status-plan-storage">{t(storageError)}</p>}
                 </section>}
 
                 {activeStep === 4 && result && roadmapBuilt && <section className="gap-wizard-card panel" aria-labelledby="roadmap-title" data-testid="step-build-roadmap">
                   <div className="gap-step-overline"><span>{t('STEP 04')}</span><span>{t('Suggested sequence, not a ranking')}</span></div><h2 id="roadmap-title">{t('Build at your own pace')}</h2>
-                  <p className="gap-step-intro">{t('Ordering is a system suggestion based on known prerequisites and source order—not employer priority. Any time shown is an estimate.')}</p>
+                  <p className="gap-step-intro">{t('Ordering is a system suggestion based on known prerequisites and source order, not employer priority. No study time is assigned unless a provider states one.')}</p>
                   {listedRoadmap.length ? <ol className="gap-roadmap-list" data-testid="roadmap-results">{listedRoadmap.map((step, index) => {
                     const key = skillGapRequirementKey(step.category, step.skill);
                     const recommendation = resourceFor(step.skill);
@@ -337,11 +375,11 @@ export default function SkillGapPage() {
                     const progress = planState.progress[key] ?? 'not-started';
                     return <li key={key} className="gap-roadmap-task" data-testid={`roadmap-step-${index + 1}`}>
                       <div className="gap-task-number">{String(index + 1).padStart(2, '0')}</div><div className="gap-task-content">
-                        <div className="gap-task-head"><div><small>{t(step.category === 'soft' ? 'SOFT SKILL' : 'TECHNICAL SKILL')}</small><h3>{step.skill}</h3></div>{step.estimatedHoursMax > 0 && <span className="gap-effort-estimate"><Clock3 size={13} /> {t('Estimate: {min}–{max} hrs', { min: step.estimatedHoursMin, max: step.estimatedHoursMax })}</span>}</div>
-                        <p className="gap-why"><b>{t('Why it appears:')}</b> {t('The selected listing names “{skill}” as a requirement.', { skill: step.skill })}</p>
-                        <div className="gap-exercise"><b>{t('Try this:')}</b><p>{makeExercise(step.skill, step.category, t)}</p></div>
+                        <div className="gap-task-head"><div><small>{t(step.category === 'soft' ? 'SOFT SKILL' : 'PROFESSIONAL / TECHNICAL')}</small><h3>{localizeSkill(step.skill, language).label}</h3>{localizeSkill(step.skill, language).kind === 'general' && language !== 'EN' && <small className="gap-original-term" lang="en">{t('Listing term: {original}', { original: step.skill.trim() })}</small>}</div></div>
+                        <p className="gap-why"><b>{t('Why it appears:')}</b> {t('The selected listing names “{skill}” as a requirement.', { skill: step.skill.trim() })}</p>
+                        <div className="gap-exercise"><b>{t('Try this:')}</b><p>{makeExercise(localizeSkill(step.skill, language).label, step.category, t)}</p></div>
                         {resource ? <div className={`gap-resource-card ${type === 'catalogue-search' ? 'catalogue' : ''}`} data-testid={`roadmap-resource-${index + 1}`}>
-                          <div><small>{t(type === 'catalogue-search' ? 'PROVIDER-CATALOGUE SEARCH' : type === 'direct' ? 'DIRECT SKILL MATCH' : 'RELATED RESOURCE')}</small><a href={resource.url} target="_blank" rel="noreferrer noopener" data-testid={`link-roadmap-resource-${index + 1}`}>{resource.title} <ExternalLink size={13} /></a><span>{resource.provider} · {resource.duration} · {t(accessLabels[resource.access])}</span><p>{resource.overview}</p><p>{resource.accessNote}</p>{resource.credential && <p>{resource.credential}</p>}{resource.lastVerifiedOn && <small>{t('Verified {date}', { date: resource.lastVerifiedOn })} · <a href={resource.verificationSource} target="_blank" rel="noreferrer noopener">{t('verification source')}</a></small>}{!resource.lastVerifiedOn && <small>{t('Verification date not available')}</small>}{recommendation?.note && <p>{recommendation.note}</p>}</div>
+                          <div><small>{t(type === 'catalogue-search' ? 'PROVIDER-CATALOGUE SEARCH' : type === 'direct' ? 'DIRECT SKILL MATCH' : 'RELATED RESOURCE')}</small><a href={resource.url} target="_blank" rel="noreferrer noopener" data-testid={`link-roadmap-resource-${index + 1}`}>{resource.title} <ExternalLink size={13} /></a><span>{resource.provider}</span><dl className="gap-resource-meta"><div><dt>{t('Duration')}</dt><dd data-testid={`text-resource-duration-${index + 1}`}>{t(resource.duration)}</dd></div><div><dt>{t('Access')}</dt><dd>{t(accessLabels[resource.access])}</dd></div></dl><p data-testid={`text-resource-overview-${index + 1}`}>{t(resource.overview)}</p><p>{t(resource.accessNote)}</p>{resource.credential && <p><b>{t('Credential')}:</b> {t(resource.credential)}</p>}{resource.lastVerifiedOn && <small>{t('Verified {date}', { date: formatIsoDate(resource.lastVerifiedOn, language) })} · <a href={resource.verificationSource} target="_blank" rel="noreferrer noopener">{t('verification source')}</a></small>}{!resource.lastVerifiedOn && <small>{t('Verification date not available')}</small>}{recommendation?.note && <p className="gap-resource-note">{t(recommendation.note)}</p>}</div>
                         </div> : <p className="gap-no-resource" data-testid={`roadmap-no-resource-${index + 1}`}>{t('No suitable provider resource matched this listed skill. Use the practice exercise above.')}</p>}
                         <label className="gap-progress-label" htmlFor={`progress-${index}`}><span>{t('Progress · saved on this device')}</span><select id={`progress-${index}`} value={progress} onChange={(event) => setProgress(step, event.target.value as LearningProgress)} data-testid={`select-roadmap-progress-${index + 1}`}><option value="not-started">{t('Not started')}</option><option value="in-progress">{t('In progress')}</option><option value="completed">{t('Completed')}</option></select></label>
                       </div>

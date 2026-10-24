@@ -592,7 +592,7 @@ components:
       properties:
         sector:
           type: string
-          enum: [software, mechanical]
+          enum: [software, mechanical, data-analytics, accounting-finance, digital-marketing, human-resources]
         jobId:
           type: string
           minLength: 1

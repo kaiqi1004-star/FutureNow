@@ -269,7 +269,7 @@ export const analyzeFutureReadySkillGapBodyPracticeSkillsMax = 100;
 
 
 export const AnalyzeFutureReadySkillGapBody = zod.object({
-  "sector": zod.enum(['software', 'mechanical']),
+  "sector": zod.enum(['software', 'mechanical', 'data-analytics', 'accounting-finance', 'digital-marketing', 'human-resources']),
   "jobId": zod.string().min(1).max(analyzeFutureReadySkillGapBodyJobIdMax),
   "currentSkills": zod.array(zod.string().max(analyzeFutureReadySkillGapBodyCurrentSkillsItemMax)).max(analyzeFutureReadySkillGapBodyCurrentSkillsMax),
   "practiceSkills": zod.array(zod.string().max(analyzeFutureReadySkillGapBodyPracticeSkillsItemMax)).max(analyzeFutureReadySkillGapBodyPracticeSkillsMax).optional().describe('Explicitly selected listed requirements to include in the learning roadmap; does not change coverage.')

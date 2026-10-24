@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { calculateSkillGap } from "../src/lib/skill-gap.ts";
+import { calculateSkillGap, canonicalSkill } from "../src/lib/skill-gap.ts";
+import {
+  AnalyzeFutureReadySkillGapBody,
+  AnalyzeFutureReadySkillGapResponse,
+} from "../../../lib/api-zod/src/generated/api.ts";
 
 const jobs = JSON.parse(
   readFileSync(new URL("../data/jobs.json", import.meta.url), "utf8"),
@@ -189,4 +193,66 @@ test("returns no percentage when a future job record lists no skills", () => {
   assert.equal(result.requiredCount, 0);
   assert.equal(result.coveragePercent, null);
   assert.deepEqual(result.roadmap, []);
+});
+
+test("the six audited categories reconcile and every record supports the full contract", () => {
+  const original = structuredClone(jobs);
+  const counts = jobs.reduce((totals, job) => {
+    totals[job.sector] = (totals[job.sector] ?? 0) + 1;
+    return totals;
+  }, {});
+  assert.deepEqual(counts, {
+    software: 12,
+    mechanical: 12,
+    "digital-marketing": 6,
+    "human-resources": 6,
+    "accounting-finance": 6,
+    "data-analytics": 8,
+  });
+  assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), jobs.length);
+  assert.equal(new Set(jobs.map((job) => job.id)).size, jobs.length);
+
+  for (const job of jobs) {
+    const listedSkills = [...job.technicalSkills, ...job.softSkills];
+    const request = { sector: job.sector, jobId: job.id, currentSkills: [] };
+    assert.equal(AnalyzeFutureReadySkillGapBody.safeParse(request).success, true, job.id);
+    const empty = calculateSkillGap(job, []);
+    assert.deepEqual(AnalyzeFutureReadySkillGapResponse.parse(empty), empty, job.id);
+    assert.deepEqual(empty.selectedJob, job, job.id);
+    assert.equal(empty.requiredCount, new Set(listedSkills.map(canonicalSkill)).size, job.id);
+    assert.equal(empty.matchedCount, 0, job.id);
+    assert.equal(empty.roadmap.length, empty.requiredCount, job.id);
+
+    // The source's explicit at-least-one programming-language requirement
+    // accepts Java, rather than treating the complete alternative phrase as a skill.
+    const all = calculateSkillGap(job, [...listedSkills, "Java"]);
+    assert.equal(all.coveragePercent, 100, job.id);
+    assert.equal(all.missingSkills.length, 0, job.id);
+    assert.equal(all.roadmap.length, 0, job.id);
+    const repeated = calculateSkillGap(job, [...listedSkills, ...listedSkills, "Java", "Java"]);
+    assert.equal(repeated.matchedCount, all.matchedCount, job.id);
+    assert.equal(repeated.requiredCount, all.requiredCount, job.id);
+    assert.equal(repeated.coveragePercent, all.coveragePercent, job.id);
+
+    const practice = calculateSkillGap(job, [...listedSkills, "Java"], [listedSkills[0]]);
+    assert.equal(practice.coveragePercent, all.coveragePercent, job.id);
+    assert.equal(practice.roadmap.length, 1, job.id);
+  }
+  assert.deepEqual(jobs, original);
+  assert.equal(AnalyzeFutureReadySkillGapBody.safeParse({
+    sector: "invented-category", jobId: "J1", currentSkills: [],
+  }).success, false);
+});
+
+test("an absent technical field does not block a soft-only or unavailable comparison", () => {
+  const softOnly = calculateSkillGap(makeJob({
+    sector: "human-resources", technicalSkills: undefined, softSkills: ["Communication"],
+  }), ["Communication"]);
+  assert.equal(softOnly.coveragePercent, 100);
+  const unavailable = calculateSkillGap(makeJob({
+    technicalSkills: undefined, softSkills: undefined,
+  }), []);
+  assert.equal(unavailable.requiredCount, 0);
+  assert.equal(unavailable.coveragePercent, null);
+  assert.deepEqual(unavailable.roadmap, []);
 });

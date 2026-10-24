@@ -1,3 +1,4 @@
+import { skillGapMessages } from './skill-gap-messages.ts';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 export type Language = 'EN' | 'BM' | 'CN';
@@ -1293,8 +1294,10 @@ const messages: Record<string, Message> = {
   'Plan progress was not saved. Browser storage may be blocked or full.': ['Plan progress was not saved. Browser storage may be blocked or full.', 'Kemajuan pelan tidak disimpan. Storan pelayar mungkin disekat atau penuh.', '计划进度未保存。浏览器存储可能被阻止或已满。'],
 };
 
+const catalog: Record<string, Message> = { ...skillGapMessages, ...messages };
+
 const languageIndexes: Record<Language, number> = { EN: 0, BM: 1, CN: 2 };
-export const translationCatalog = messages;
+export const translationCatalog = catalog;
 export const languageLocales: Record<Language, string> = { EN: 'en-MY', BM: 'ms-MY', CN: 'zh-CN' };
 const STORAGE_KEY = 'futurenow.language.v1';
 
@@ -1302,8 +1305,8 @@ type I18nValue = { language: Language; setLanguage: (value: Language) => void; t
 const I18nContext = createContext<I18nValue | null>(null);
 
 export function translateMessage(messageId: string, language: Language, values: Record<string, string | number> = {}) {
-  const localized = messages[messageId]?.[languageIndexes[language]];
-  const english = messages[messageId]?.[0] ?? messageId;
+  const localized = catalog[messageId]?.[languageIndexes[language]];
+  const english = catalog[messageId]?.[0] ?? messageId;
   const message = localized?.trim() ? localized : english;
   return message.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`));
 }

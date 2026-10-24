@@ -206,8 +206,8 @@ function distinctRequirements(job: JobListing): SkillGapSkill[] {
   const requirements: SkillGapSkill[] = [];
 
   for (const [category, skills] of [
-    ["technical", job.technicalSkills],
-    ["soft", job.softSkills],
+    ["technical", job.technicalSkills ?? []],
+    ["soft", job.softSkills ?? []],
   ] as const) {
     for (const skill of skills) {
       const key = canonicalSkill(skill);

@@ -418,6 +418,10 @@ export type SkillGapInputSector = typeof SkillGapInputSector[keyof typeof SkillG
 export const SkillGapInputSector = {
   software: 'software',
   mechanical: 'mechanical',
+  'data-analytics': 'data-analytics',
+  'accounting-finance': 'accounting-finance',
+  'digital-marketing': 'digital-marketing',
+  'human-resources': 'human-resources',
 } as const;
 
 export interface SkillGapInput {
