@@ -13,11 +13,11 @@ export interface RoleMatchInput {
      */
   currentSkills: string[];
   /**
-     * Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.
+     * Optional explicitly self-reported years of relevant work experience. Total work experience is not substituted.
      * @minimum 0
      * @maximum 80
      */
-  experienceYears?: number;
+  relevantExperienceYears?: number;
   /**
      * Optional selected education level from the saved profile. No free-text profile answers are sent.
      * @maxLength 80

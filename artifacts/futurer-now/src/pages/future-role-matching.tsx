@@ -6,7 +6,6 @@ import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Compass, ExternalL
 import { loadProfile, type SavedProfile, type SkillsProfile } from '@/lib/skills-profile';
 import { matchingProfileInput } from '@/lib/matching-profile';
 import { evidenceForMatchedSkill, evidenceHasContent, safeEvidenceUrl } from '@/lib/profile-evidence';
-import { SdgTags, SdgDetail } from '@/components/sdg-assessment';
 import { JobMatchFallback } from '@/components/job-match-fallback';
 import { matchingFailureKind } from '@/lib/job-fallback';
 import { useTranslation } from '@/lib/i18n';
@@ -40,10 +39,35 @@ function readProfile() {
     error: r.error,
     key: JSON.stringify({
       skills: matchingProfileInput(r.saved).currentSkills,
-      years: typeof profile?.basic.years === 'number' ? profile.basic.years : null,
+      relevantYears: typeof profile?.basic.relevantYears === 'number' ? profile.basic.relevantYears : null,
       education: profile?.basic.education || null,
     }),
   };
+}
+
+function sdgGoalGroups(r: RoleMatch) {
+  type Connection = RoleMatch['roleSdg']['connections'][number];
+  const groups = new Map<number, { goalNumber: number; title: string; requirements: Set<string>; connections: Map<string, Connection> }>();
+  const assessments = [
+    r.roleSdg,
+    ...r.matchedSkills.map((skill) => skill.sdg),
+    ...r.skillGaps.map((skill) => skill.sdg),
+  ];
+  for (const assessment of assessments) {
+    for (const connection of assessment.connections) {
+      let group = groups.get(connection.goalNumber);
+      if (!group) {
+        group = { goalNumber: connection.goalNumber, title: connection.title, requirements: new Set(), connections: new Map() };
+        groups.set(connection.goalNumber, group);
+      }
+      group.requirements.add(connection.evidence);
+      const key = `${connection.target}|${connection.ruleId}|${connection.explanation}|${connection.conditions}`;
+      group.connections.set(key, connection);
+    }
+  }
+  return [...groups.values()]
+    .sort((a, b) => a.goalNumber - b.goalNumber)
+    .map((group) => ({ ...group, requirements: [...group.requirements], connections: [...group.connections.values()] }));
 }
 
 export default function FutureRoleMatchingPage() {
@@ -101,7 +125,7 @@ export default function FutureRoleMatchingPage() {
     setDetailId(null); setPage(1); setCategory('all');
     match.mutate({ data: {
       currentSkills: skills,
-      experienceYears: typeof p?.basic.years === 'number' ? p.basic.years : undefined,
+      relevantExperienceYears: typeof p?.basic.relevantYears === 'number' ? p.basic.relevantYears : undefined,
       educationLevel: p?.basic.education || undefined,
     } });
   };
@@ -110,7 +134,7 @@ export default function FutureRoleMatchingPage() {
     <div className="rm-head">
       <div><div className="rm-eyebrow">{t('Module 02 · Future-Role Matching')}</div><h1>{t('Which supplied roles fit your skills?')}</h1>
         <p>{t('FutureNow compares your selected skills with real supplied job records and considers available experience and education information. Results estimate profile-to-role suitability; they are not hiring predictions, job security signals, or measures of national demand.')}</p></div>
-      <div className="rm-privacy" data-testid="text-privacy-disclosure"><Lock size={16} /><span>{t('Matching uses only your selected skills, stated years of experience and education level. Your other profile answers stay in this browser.')}</span></div>
+      <div className="rm-privacy" data-testid="text-privacy-disclosure"><Lock size={16} /><span>{t('Matching uses specific skill names, optional relevant work years and education level. Total work years and other profile answers stay in this browser.')}</span></div>
     </div>
 
     {detail && data ? <Detail r={detail} rank={rankOf(detail)} profile={p} headRef={detailHead} onBack={() => { returnFocus.current = detail.job.id; setDetailId(null); }} /> : <>
@@ -119,14 +143,15 @@ export default function FutureRoleMatchingPage() {
           <button type="button" className="rm-btn" onClick={refresh} data-testid="button-refresh-profile"><RefreshCw size={14} />{t('Reload saved profile')}</button></div>
         {state.error ? <div className="rm-note is-warn" role="alert" data-testid="status-profile-error"><AlertTriangle size={16} /><p>{t(state.error)} <Link href="/skills-profile" data-testid="link-profile-fix">{t('Open Skills Profile')}</Link></p></div>
           : !saved ? <div className="rm-empty" data-testid="status-no-profile"><UserRound size={26} /><h3>{t('No saved profile yet')}</h3><p className="rm-muted">{t('Save at least one skill in your Skills Profile, then come back. No skills are assumed for you.')}</p><Link href="/skills-profile" className="rm-btn rm-btn-primary" data-testid="link-build-profile">{t('Build your skills profile')}</Link></div>
-          : !skills.length ? <div className="rm-empty" data-testid="status-no-skills"><UserRound size={26} /><h3>{t('Your profile has no skills yet')}</h3><p className="rm-muted">{t('Add at least one skill to your saved profile to generate matches.')}</p><Link href="/skills-profile" className="rm-btn rm-btn-primary" data-testid="link-add-skills">{t('Add skills')}</Link></div>
+          : !skills.length ? <div className="rm-empty" data-testid="status-no-skills"><UserRound size={26} /><h3>{t(saved.profile.skills.length ? 'Only broad areas are selected' : 'Your profile has no skills yet')}</h3><p className="rm-muted">{t(saved.profile.skills.length ? 'Broad Technical Areas help you explore. Add a specific skill you have before generating matches; broad areas do not count as skills.' : 'Add at least one specific skill to your saved profile to generate matches.')}</p><Link href="/skills-profile" className="rm-btn rm-btn-primary" data-testid="link-add-skills">{t('Add skills')}</Link></div>
           : <>
             {incomplete > 0 && <div className="rm-note" data-testid="status-incomplete-profile"><Info size={16} /><p>{t('This is a {status} profile with {count} required {answerLabel} still missing ({fields}). Matching works with your skills, but', { status: t(input.isDraft ? 'draft' : 'saved'), count: incomplete, answerLabel: t(incomplete === 1 ? 'answer' : 'answers'), fields: input.missingFields.join(' ') })} <Link href="/skills-profile">{t('completing your profile')}</Link> {t('keeps your context accurate.')}</p></div>}
             <div className="rm-profile">
               <div><p className="rm-muted">{t('{count} skill {label} will be sent. Proficiency is shown for your reference and is not weighted.', { count: skills.length, label: t(skills.length === 1 ? 'name' : 'names') })}</p>
                 <div className="rm-chips" data-testid="list-profile-skills">{saved.profile.skills.map((s) => <span key={s.id} className="rm-chip"><span>{s.name}</span><small>{t(s.proficiency)}</small></span>)}</div></div>
-               <div className="rm-context"><h3>{t('Profile context')}</h3><p className="rm-muted">{t('Years and education are used for the separate suitability estimate. Interests, direction, evidence, readiness, and proficiency do not affect scores.')}</p><dl>
-                <dt>{t('Experience')}</dt><dd>{p?.basic.years === '' ? t('Not provided') : `${p?.basic.years} ${t('years')}`}</dd>
+               <div className="rm-context"><h3>{t('Profile context')}</h3><p className="rm-muted">{t('Relevant years and education are compared separately; total work years, interests, direction, evidence, readiness, and proficiency do not affect the score.')}</p><dl>
+                <dt>{t('Total work experience')}</dt><dd>{typeof p?.basic.years === 'number' ? `${p.basic.years} ${t('years')} · ${t('context only')}` : t('Not provided')}</dd>
+                <dt>{t('Relevant work experience')}</dt><dd>{typeof p?.basic.relevantYears === 'number' ? `${p.basic.relevantYears} ${t('years')}` : t('Not provided')}</dd>
                 <dt>{t('Education')}</dt><dd>{p?.basic.education ? t(p.basic.education) : t('Not provided')}</dd>
                 <dt>{t('Direction')}</dt><dd>{p?.basic.direction || t('Not provided')}</dd>
                 <dt>{t('Interests')}</dt><dd>{p?.interests.industries.map((industry) => t(industry)).join(', ') || t('Not provided')}</dd>
@@ -153,7 +178,7 @@ export default function FutureRoleMatchingPage() {
              <span className="rm-eyebrow">{t('How matching works')}</span>
              <span className="rm-method-preview">
                <span><b>{t('Skills')}:</b> {t('Compares the skills in your saved profile with each role’s listed requirements.')}</span>
-               <span><b>{t('Experience and education')}:</b> {t('Uses stated requirements and clearly labelled estimates based on role seniority.')}</span>
+                <span><b>{t('Experience and education')}:</b> {t('Uses relevant years only for clear source minimums; education is a separate level threshold.')}</span>
                <span><b>{t('Ranking')}:</b> {t('Prioritises career-stage compatibility, then overall suitability; skill coverage stays separate.')}</span>
                <span className="rm-muted">{t('Results are estimates based on available information, not hiring predictions. A skill not found in your profile is not proof that you lack it.')}</span>
              </span>
@@ -162,11 +187,11 @@ export default function FutureRoleMatchingPage() {
              <p className="rm-muted">{t('These results compare your saved profile with {count} supplied records using {skills} selected skills.', { count: data.totalJobs, skills: data.inputSkillCount })}</p>
              <details className="rm-scoring-details" data-testid="details-scoring-details">
                <summary>{t('View scoring details')}</summary>
-               <p><b>{t('Weights')}:</b> {t('Skills')} {data.weights.skillCoverage}%, {t('experience suitability')} {data.weights.experienceSuitability}%, {t('education suitability')} {data.weights.educationSuitability}%.</p>
+                <p><b>{t('Base weights')}:</b> {t('Industry-Specific Skills')} {data.weights.industrySpecificSkills}%, {t('Technical Skills')} {data.weights.technicalSkills}%, {t('Digital Skills')} {data.weights.digitalSkills}%, {t('Soft Skills & Languages')} {data.weights.softSkills}%, {t('Experience')} {data.weights.experience}%. {t('Evidence and Broad Technical Areas are 0%.')}</p>
                <p>{t('Unavailable dimensions are excluded and the remaining weights are proportionally redistributed; missing information is not treated as a pass or failure.')}</p>
-               <p>{t('Internal experience guidelines when the source gives no comparable years: internship/entry 0, mid/senior 2, lead 3, manager 4. These are estimates, not employer requirements.')}</p>
-               <p>{t('Tier 1 requires at least 50% total skill coverage and 50% technical coverage where applicable, with compatible experience and education. Tier 2 marks limited skill evidence, stretch or unresolved information. Tier 3 marks a clear mandatory requirement gap. The skill thresholds are internal guidance, not employer criteria.')}</p>
-               <p>{t('Experience scores compare stated total years with a comparable source threshold, or a labelled title guideline: min(100, stated years ÷ threshold × 100). A zero-year guideline scores 100, not verified relevant experience. Conditional or incomparable requirements are excluded. Education compares recognised levels on the documented scale, not fields of study or equivalency.')}</p>
+                <p>{t('Applicable categories use effective weights renormalised to 100%. Education is not part of the numeric score. Experience uses only explicitly relevant years and a clear source minimum; title seniority and total years are never substituted.')}</p>
+                <p>{t('Tier 1 requires at least 50% total skill coverage and 50% technical coverage where applicable, with no known mandatory experience or education gap. Tier 2 marks limited skill evidence or unresolved information. Tier 3 marks a clear stated threshold gap. These are product heuristics, not employer criteria.')}</p>
+                <p>{t('Education compares recognised qualification levels only; it does not confirm field-of-study, equivalency, or full eligibility. The original job wording remains available on each detail page.')}</p>
                <p className="rm-muted"><b>{t('Skill coverage')}:</b> <code data-testid="text-formula">{t(data.formula)}</code></p>
                <p className="rm-muted"><b>{t('Overall score')}:</b> {t(data.overallFormula)}</p>
              </details>
@@ -185,7 +210,7 @@ export default function FutureRoleMatchingPage() {
                 <div className="rm-overall">
                   <strong data-testid={`text-match-score-${r.job.id}`}>{r.overallScore === null ? 'n/a' : `${r.overallScore}%`}</strong>
                   <small>{t('estimated profile-to-role suitability')}</small>
-                  <div className="rm-bar" aria-hidden="true"><span style={{ transform: `scaleX(${(r.overallScore ?? 0) / 100})` }} /></div>
+                  {r.overallScore !== null && <div className="rm-bar" role="img" aria-label={t('Overall suitability estimate {score} percent', { score: r.overallScore })}><span style={{ width: `${Math.max(0, Math.min(100, r.overallScore))}%` }} /></div>}
                 </div>
                 <div className="rm-coverage" data-testid={`text-match-count-${r.job.id}`}>
                   <strong>{r.requiredCount ? t('{matched} of {required} listed skills matched', { matched: r.matchedCount, required: r.requiredCount }) : t('No listed skill requirements')}</strong>
@@ -214,30 +239,56 @@ export default function FutureRoleMatchingPage() {
 function Detail({ r, rank, profile, headRef, onBack }: { r: RoleMatch; rank: number; profile?: SkillsProfile; headRef: RefObject<HTMLHeadingElement | null>; onBack: () => void }) {
   const { t } = useTranslation();
   const j = r.job;
-  const skillSdgGroups = [...r.matchedSkills, ...r.skillGaps].filter((skill) => skill.sdg.status === 'mapped').reduce<Array<{ skills: string[]; assessment: RoleMatch['roleSdg']; key: string }>>((groups, skill) => {
-    // Identical contextual rules are explained once, with every source skill retained.
-    const key = JSON.stringify(skill.sdg.connections.map(({ evidence, ...connection }) => connection));
-    const group = groups.find((item) => item.key === key);
-    if (group) group.skills.push(skill.skill);
-    else groups.push({ key, skills: [skill.skill], assessment: skill.sdg });
-    return groups;
-  }, []);
-  const statusLabel: Record<string, string> = {
-    meets: 'Meets stated threshold',
-    gap: 'Potential requirement gap',
-    uncertain: 'Needs manual comparison',
-    not_provided: 'Not provided in profile',
-    not_stated: 'Not stated in source',
-    not_required: 'No experience requirement stated',
-    unavailable: 'Not comparable from available information',
-  };
+  const groups = sdgGoalGroups(r);
   const coverage = r.skillCoverage === null
     ? t('Not calculable')
     : `${r.matchedCount} / ${r.requiredCount} (${r.skillCoverage}%)`;
-  const FitFact = ({ title, fit }: { title: string; fit: RoleMatch['experienceFit'] | RoleMatch['educationFit'] }) => (
+  const experienceLabels: Record<string, string> = {
+    meets: 'Meets stated threshold',
+    gap: 'Below stated threshold',
+    uncertain: 'Not specified / unclear',
+    not_provided: 'Not provided',
+    not_stated: 'Not specified',
+    not_required: 'No prior experience required',
+    unavailable: 'Not comparable',
+  };
+  const educationStatus = r.educationFit.status === 'meets'
+    ? 'Meets stated threshold'
+    : r.educationFit.status === 'gap'
+      ? 'Below stated threshold'
+      : 'Not specified / unclear';
+  const coverageLabel = (item: RoleMatch['scoreBreakdown'][number]) => {
+    if (item.status === 'scored') {
+      if (item.category === 'experience') return `${item.coverage}%`;
+      return `${item.matchedCount} / ${item.requiredCount} (${item.coverage}%)`;
+    }
+    return item.status === 'not-applicable' ? t('Not applicable')
+      : item.status === 'not-specified' ? t('Not specified')
+        : item.status === 'unknown' ? t('Unknown')
+          : item.status === 'not-scorable' ? t('Not scorable')
+            : t('Excluded');
+  };
+  const categoryLabel: Record<RoleMatch['scoreBreakdown'][number]['category'], string> = {
+    'industry-specific': 'Industry-Specific Skills',
+    technical: 'Technical Skills',
+    digital: 'Digital Skills',
+    soft: 'Soft Skills & Languages',
+    experience: 'Experience',
+    evidence: 'Evidence',
+    'broad-technical-areas': 'Broad Technical Areas',
+  };
+  const scoreStatusLabel: Record<RoleMatch['scoreBreakdown'][number]['status'], string> = {
+    scored: 'Scored',
+    'not-applicable': 'Not applicable',
+    'not-specified': 'Not specified',
+    unknown: 'Unknown',
+    'not-scorable': 'Not scorable',
+    excluded: 'Excluded from scoring',
+  };
+  const FitFact = ({ title, fit, statusText }: { title: string; fit: RoleMatch['experienceFit'] | RoleMatch['educationFit']; statusText: string }) => (
     <div className="rm-fact" data-state={fit.status}>
       <span>{t(title)}</span>
-      <strong>{t(statusLabel[fit.status] ?? 'Unavailable')}</strong>
+      <strong>{t(statusText)}</strong>
       <p>{t(fit.summary)}</p>
       <small>{t(fit.reason)}</small>
     </div>
@@ -247,65 +298,105 @@ function Detail({ r, rank, profile, headRef, onBack }: { r: RoleMatch; rank: num
     <div className="rm-card" style={{ marginTop: 14 }}>
       <div className="rm-eyebrow">{t('Rank')} #{rank} · {t(categoryLabels[j.sector])}</div>
       <h2 id="rm-detail-h" ref={headRef} tabIndex={-1} data-testid="text-detail-title">{j.title}</h2>
-      <div className="rm-meta" data-testid="text-detail-company">{j.company} · {j.industry}</div>
+      <div className="rm-meta" data-testid="text-detail-company">{j.company} · {t('Source platform')}: {j.source || t('Not supplied')}</div>
       <div className="rm-detail-grid">
-        <div className="rm-fact"><span>{t('Estimated overall match score')}</span><strong data-testid="text-detail-score">{r.overallScore === null ? t('Not calculable') : `${r.overallScore}%`}</strong><small>{t('Estimate of profile-to-role suitability; not a probability of hiring.')}</small></div>
+        <div className="rm-fact">
+          <span>{t('Estimated overall match score')}</span>
+          <strong data-testid="text-detail-score">{r.overallScore === null ? t('Not calculable') : `${r.overallScore}%`}</strong>
+          {r.overallScore !== null && <div className="rm-bar" role="img" aria-label={t('Overall suitability estimate {score} percent', { score: r.overallScore })}><span data-testid="bar-detail-overall" style={{ width: `${Math.max(0, Math.min(100, r.overallScore))}%` }} /></div>}
+          <small>{t('Estimate of profile-to-role suitability; not a probability of hiring.')}</small>
+        </div>
         <div className="rm-fact"><span>{t('Skill coverage')}</span><strong data-testid="text-detail-coverage">{coverage}</strong><small>{t('Distinct listed requirements found in your saved profile.')}</small></div>
-        <div className="rm-fact"><span>{t('Technical skill coverage')}</span><strong>{r.technicalCoverage === null ? t('Not enough information') : `${r.matchedTechnicalCount} / ${r.requiredTechnicalCount} (${r.technicalCoverage}%)`}</strong><small>{t('Technical gaps remain visible even when general soft skills match.')}</small></div>
-        <div className="rm-fact"><span>{t('Career-stage compatibility')}</span><strong data-testid="text-detail-tier">{t(r.compatibilityLabel)}</strong>{r.compatibilityReasons.map((reason) => <small key={reason}>{t(reason)}</small>)}</div>
-        <FitFact title="Experience suitability" fit={r.experienceFit} />
-        <FitFact title="Education suitability" fit={r.educationFit} />
+        <div className="rm-fact"><span>{t('Technical skill coverage')}</span><strong>{r.technicalCoverage === null ? t('Not enough information') : `${r.matchedTechnicalCount} / ${r.requiredTechnicalCount} (${r.technicalCoverage}%)`}</strong><small>{t('Technical skill coverage remains separate from other category coverage.')}</small></div>
+        <div className="rm-fact"><span>{t('Career-stage compatibility')}</span><strong data-testid="text-detail-tier">{t(r.compatibilityLabel)}</strong></div>
+        <FitFact title="Relevant experience comparison" fit={r.experienceFit} statusText={experienceLabels[r.experienceFit.status] ?? 'Not comparable'} />
+        <FitFact title="Education threshold" fit={r.educationFit} statusText={educationStatus} />
       </div>
-      <div className="rm-detail-source" data-testid="section-original-job-information">
-        <h3>{t('Original job information')}</h3>
-        <dl>
-          <dt>{t('Company')}</dt><dd>{j.company}</dd>
-          <dt>{t('Industry (source)')}</dt><dd>{j.industry || t('Not specified')}</dd>
-          <dt>{t('Career category')}</dt><dd>{t(categoryLabels[j.sector])}</dd>
-          <dt>{t('Experience (original source wording)')}</dt><dd data-testid="text-detail-experience-source">{j.experience || t('Not specified')}</dd>
-          <dt>{t('Education (original source wording)')}</dt><dd data-testid="text-detail-education-source">{j.education || t('Not specified')}</dd>
-          <dt>{t('Salary (original)')}</dt><dd data-testid="text-detail-salary">{salaryLabel(j, t)}</dd>
-          {j.location && <><dt>{t('Location (source)')}</dt><dd>{j.location}</dd></>}
-          {j.postingDate && <><dt>{t('Posting date (source)')}</dt><dd>{j.postingDate}</dd></>}
-          <dt>{t('Source platform')}</dt><dd>{j.source || t('Not supplied')}{j.sourceUrl && <> · <a href={j.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="link-detail-source">{t('View source listing')} <ExternalLink size={13} /></a></>}</dd>
-        </dl>
-      </div>
+      <div className="rm-detail-source"><span>{t('Salary')}:</span> <strong>{salaryLabel(j, t)}</strong></div>
+      <section className="rm-why" data-testid="section-why-result">
+        <h3>{t('Why this result?')}</h3>
+        <p>{t(r.compatibilityReasons[0] ?? 'The score uses only the applicable categories shown in the breakdown.')}</p>
+        {r.overallScore === null && <p>{t('No reliable numerical estimate is available because no scoring category could be calculated from the supplied record.')}</p>}
+        <small>{t('Education is checked separately and does not add points to this score.')}</small>
+      </section>
+      <details className="rm-breakdown" data-testid="details-score-breakdown">
+        <summary>{t('View score breakdown')}</summary>
+        <p className="rm-muted">{t('Base weights are the configured model. Effective weights are renormalised for this role; contributions add up to the overall score.')}</p>
+        <div className="rm-table-scroll">
+          <table>
+            <thead><tr><th>{t('Category')}</th><th>{t('Coverage / match')}</th><th>{t('Base weight')}</th><th>{t('Effective weight')}</th><th>{t('Contribution')}</th><th>{t('Status')}</th></tr></thead>
+            <tbody>{r.scoreBreakdown.map((item) => <tr key={item.category} data-score-status={item.status}>
+              <th scope="row">{t(categoryLabel[item.category])}</th>
+              <td>{coverageLabel(item)}</td>
+              <td>{item.baseWeight}%</td>
+              <td>{item.effectiveWeight === null ? '—' : `${item.effectiveWeight}%`}</td>
+              <td>{item.contribution === null ? '—' : `${item.contribution} pp`}</td>
+              <td><span>{t(scoreStatusLabel[item.status])}</span><small>{t(item.explanation)}</small></td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </details>
+      <details className="rm-original-source" data-testid="section-original-job-information">
+        <summary>{t('Original Job Details & Source')}</summary>
+        <div className="rm-detail-source">
+          <dl>
+            <dt>{t('Company')}</dt><dd>{j.company}</dd>
+            <dt>{t('Industry (source)')}</dt><dd>{j.industry || t('Not specified')}</dd>
+            <dt>{t('Career category')}</dt><dd>{t(categoryLabels[j.sector])}</dd>
+            <dt>{t('Experience (original source wording)')}</dt><dd data-testid="text-detail-experience-source">{j.experience || t('Not specified')}</dd>
+            <dt>{t('Education (original source wording)')}</dt><dd data-testid="text-detail-education-source">{j.education || t('Not specified')}</dd>
+            <dt>{t('Salary (original)')}</dt><dd data-testid="text-detail-salary">{salaryLabel(j, t)}</dd>
+            {j.location && <><dt>{t('Location (source)')}</dt><dd>{j.location}</dd></>}
+            {j.postingDate && <><dt>{t('Posting date (source)')}</dt><dd>{j.postingDate}</dd></>}
+            <dt>{t('Source platform')}</dt><dd>{j.source || t('Not supplied')}{j.sourceUrl && <> · <a href={j.sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="link-detail-source">{t('View source listing')} <ExternalLink size={13} /></a></>}</dd>
+          </dl>
+        </div>
+      </details>
     </div>
-      <div className="rm-two">
-       <div className="rm-card"><h3>{t('Matched skills ({count})', { count: r.matchedSkills.length })}</h3><p className="rm-muted">{t('Listed requirements that match a skill name in your profile.')}</p>
-         {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => {
-           const evidence = evidenceForMatchedSkill(profile, s.matchedBy);
-           return <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(s.category)} {t('skill')} · {t(s.matchType === 'exact' ? 'Exact name match' : s.matchType === 'source-alternative' ? 'Source-listed alternative' : 'Configured equivalent name')}{s.matchedBy ? ` · ${t('matched by your "{skill}"', { skill: s.matchedBy })}` : ''}</div>
-             {evidence.length > 0 && <div className="rm-linked-evidence" data-testid={`evidence-for-${slug(s.skill)}`}>
-               <strong>{t('User-provided evidence — not independently verified')}</strong>
-               <ul>{evidence.map((item) => {
-                 const url = safeEvidenceUrl(item.reference);
-                 return <li key={item.id}>
-                   <b>{item.title || t(item.kind)}</b><span>{t(item.kind)}</span>
-                   {item.description && <p>{item.description}</p>}
-                   {item.outcome && <p><b>{t('Outcome')}:</b> {item.outcome}</p>}
-                   {item.timing && <small>{item.timing}</small>}
-                   {item.reference && <small>{url ? <a href={url} target="_blank" rel="noopener noreferrer">{t('Open reference')} <ExternalLink size={11} /></a> : `${t('Reference')}: ${item.reference}`}</small>}
-                 </li>;
-               })}</ul>
-               <small>{t('This evidence does not change the suitability score.')}</small>
-             </div>}
-           </li>;
-         })}</ul> : <p className="rm-muted">{t('No listed skills matched.')}</p>}</div>
-      <div className="rm-card"><h3>{t('Skills not found in your saved profile ({count})', { count: r.skillGaps.length })}</h3><p className="rm-muted">{t('This does not mean you definitely lack them; you may simply not have listed them.')}</p>
-        {r.skillGaps.length ? <ul className="rm-skill-table">{r.skillGaps.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-gap-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(s.category)} {t('skill')}</div></li>)}</ul> : <p className="rm-muted">{t('No gaps against listed skills.')}</p>}</div>
-    </div>
-    {r.titleSignals.length > 0 && <section className="rm-card" data-testid="section-title-signals"><h3>{t('Separate title-based signals')}</h3>{r.titleSignals.map((signal) => <p key={signal.profileSkill}><strong>{signal.profileSkill}</strong> · {signal.sourceText}<br />{t(signal.explanation)}</p>)}</section>}
-    {r.relatedSkills.length > 0 && <section className="rm-card" data-testid="section-related-skills"><h3>{t('Related skills — not confirmed matches')}</h3><p className="rm-muted">{t('These connections add nothing to coverage or overall suitability. The listed requirements remain gaps.')}</p><ul>{r.relatedSkills.map((skill) => <li key={`${skill.profileSkill}:${skill.requirement}`}>{skill.profileSkill} → {skill.requirement}</li>)}</ul></section>}
-    {r.roleSdg.status === 'mapped' && <section className="rm-card" aria-labelledby="rm-role-sdg-h" data-testid="section-role-sdg">
-      <div className="rm-toolbar"><h3 id="rm-role-sdg-h">{t('Supported role-level SDG mapping')}</h3><SdgTags a={r.roleSdg} id={`detail-role-${j.id}`} /></div>
-      <p className="rm-muted">{t('These potential role connections summarise the listed-skill evidence below. They do not establish an actual SDG outcome. Individual mapping details explain conditions and source context.')}</p>
-      <ul>{r.roleSdg.connections.map((connection) => <li key={`${connection.ruleId}:${connection.target}`}>SDG {connection.goalNumber} · {connection.target}: {connection.evidence}</li>)}</ul>
-    </section>}
-    {skillSdgGroups.length > 0 && <section className="rm-card" aria-labelledby="rm-skill-sdg-h" data-testid="section-skill-sdgs">
-      <h3 id="rm-skill-sdg-h">{t('Supported individual skill SDG mappings')}</h3>
-      <p className="rm-muted">{t('Only source-supported mapped goals are shown. Open a mapping for its explanation, conditions, source context, and official UN reference.')}</p>
-      {skillSdgGroups.map((group, index) => <div className="rm-sdg-skill" key={group.key}><strong>{group.skills.join(', ')}</strong><SdgTags a={group.assessment} id={`detail-group-${index}`} /><SdgDetail a={group.assessment} id={`detail-group-${index}`} collapsed /></div>)}
+    <details className="rm-card rm-collapsed-list" data-testid="details-matched-skills">
+      <summary>{t('Matched Skills ({count})', { count: r.matchedSkills.length })}</summary>
+      <p className="rm-muted">{t('Exact names, approved equivalents, or an alternative explicitly listed by the source.')}</p>
+      {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => {
+        const evidence = evidenceForMatchedSkill(profile, s.matchedBy);
+        return <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(categoryLabel[s.scoreCategory])} · {t(s.matchType === 'exact' ? 'Exact name match' : s.matchType === 'source-alternative' ? 'Source-listed alternative' : 'Configured equivalent name')}{s.matchedBy ? ` · ${t('matched by your "{skill}"', { skill: s.matchedBy })}` : ''}</div>
+          {evidence.length > 0 && <div className="rm-linked-evidence" data-testid={`evidence-for-${slug(s.skill)}`}>
+            <strong>{t('User-provided evidence — not independently verified')}</strong>
+            <ul>{evidence.map((item) => {
+              const url = safeEvidenceUrl(item.reference);
+              return <li key={item.id}>
+                <b>{item.title || t(item.kind)}</b><span>{t(item.kind)}</span>
+                {item.description && <p>{item.description}</p>}
+                {item.outcome && <p><b>{t('Outcome')}:</b> {item.outcome}</p>}
+                {item.timing && <small>{item.timing}</small>}
+                {item.reference && <small>{url ? <a href={url} target="_blank" rel="noopener noreferrer">{t('Open reference')} <ExternalLink size={11} /></a> : `${t('Reference')}: ${item.reference}`}</small>}
+              </li>;
+            })}</ul>
+            <small>{t('This evidence does not change the suitability score.')}</small>
+          </div>}
+        </li>;
+      })}</ul> : <p className="rm-muted">{t('No listed skills matched.')}</p>}
+    </details>
+    <details className="rm-card rm-collapsed-list" data-testid="details-missing-skills">
+      <summary>{t('Missing Skills ({count})', { count: r.skillGaps.length })}</summary>
+      <p className="rm-muted">{t('A missing skill in your profile does not prove you lack it; it may simply not be listed.')}</p>
+      {r.skillGaps.length ? <ul className="rm-skill-table">{r.skillGaps.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-gap-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(categoryLabel[s.scoreCategory])} · {t(s.category)} {t('source requirement')}</div></li>)}</ul> : <p className="rm-muted">{t('No gaps against listed skills.')}</p>}
+    </details>
+    {r.titleSignals.length > 0 && <details className="rm-card" data-testid="section-title-signals"><summary>{t('Separate title-based signals')}</summary>{r.titleSignals.map((signal) => <p key={signal.profileSkill}><strong>{signal.profileSkill}</strong> · {signal.sourceText}<br />{t(signal.explanation)}</p>)}</details>}
+    {r.relatedSkills.length > 0 && <details className="rm-card" data-testid="section-related-skills"><summary>{t('Related skills — not confirmed matches')}</summary><p className="rm-muted">{t('These connections add nothing to coverage or overall suitability. The listed requirements remain gaps.')}</p><ul>{r.relatedSkills.map((skill) => <li key={`${skill.profileSkill}:${skill.requirement}`}>{skill.profileSkill} → {skill.requirement}</li>)}</ul></details>}
+    {groups.length > 0 && <section className="rm-card rm-sdg-groups" aria-label={t('SDG Connections')} data-testid="section-sdg-connections">
+      <h3>{t('SDG Connections')}</h3>
+      <p className="rm-muted">{t('Potential relevance only. A mapping does not show a demonstrated outcome or verified impact.')}</p>
+      {groups.map((group) => <article className="rm-sdg-goal" key={group.goalNumber} data-testid={`sdg-goal-${group.goalNumber}`}>
+        <h4>SDG {group.goalNumber} · {group.title}</h4>
+        <p><strong>{t('Related listed requirements')}:</strong> {group.requirements.join(', ')}</p>
+        <details><summary>{t('View explanation')}</summary>
+          {group.connections.map((connection, index) => <div key={`${connection.ruleId}-${connection.target}-${index}`}>
+            <p><b>{t('Target')} {connection.target}:</b> {connection.explanation}</p>
+            <p>{t('Conditions')} {connection.conditions}</p>
+            <small><a href={connection.url} target="_blank" rel="noopener noreferrer">{t('UN Sustainable Development Goal reference')} <ExternalLink size={11} /></a></small>
+          </div>)}
+        </details>
+      </article>)}
     </section>}
     <section className="rm-card" data-testid="section-next-steps">
       <h3>{t('Suggested next steps')}</h3><p data-testid="text-detail-improvement">{t(r.improvement)}</p>

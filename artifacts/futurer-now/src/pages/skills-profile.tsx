@@ -6,7 +6,7 @@ import {
   sectionNames, skillOptions, statuses, transferableStrengths, validateProfile, validateSection,
   type EvidenceItem, type ProfileMessage, type ProfileSkill, type SavedProfile, type SkillsProfile,
 } from '@/lib/skills-profile';
-import { skillGroups } from '@/lib/skill-catalogue';
+import { isBroadTechnicalArea, skillGroups } from '@/lib/skill-catalogue';
 import { evidenceHasContent, safeEvidenceUrl } from '@/lib/profile-evidence';
 import { languageLocales, useTranslation } from '@/lib/i18n';
 import './skills-profile.css';
@@ -26,6 +26,15 @@ const scaleLabels = ['Very low', 'Low', 'Moderate', 'High', 'Very high'];
 const uid = () => `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 const savedTime = (iso: string, locale: string) => new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 const toNum = (v: string): number | '' => (v.trim() === '' ? '' : Number(v));
+const displayedSkillCategory = (skill: ProfileSkill) =>
+  isBroadTechnicalArea(skill.name) ? 'Broad Technical Areas' : skill.category;
+const relevantExperienceLevel = (years: number | '') => {
+  if (years === '') return '';
+  if (years === 0) return 'Level 0 · 0 years';
+  if (years < 2) return 'Level 1 · More than 0 but less than 2 years';
+  if (years < 5) return 'Level 2 · At least 2 but less than 5 years';
+  return 'Level 3 · 5 years or more';
+};
 
 function Field({ id, label, error, hint, optional, children }: { id: string; label: string; error?: string; hint?: string; optional?: boolean; children: ReactNode }) {
   const { t } = useTranslation();
@@ -114,11 +123,23 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
     <label className="sp-label" htmlFor="search-skill-library">{t('Search the skill library')}</label>
     <input id="search-skill-library" className="sp-input" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search skills, tools or groups')} data-testid="input-search-skills" />
     <p className="sp-muted">{t('Broad areas do not imply specific tools. Select only skills you have; nothing is added automatically.')}</p>
-    {skillGroups.filter((group) => `${group.label} ${group.skills.join(' ')} ${group.skills.map((skill) => t(skill)).join(' ')}`.toLowerCase().includes(search.toLowerCase())).map((group) => {
-      const options = group.skills.filter((skill) => !search || `${skill} ${t(skill)} ${group.label}`.toLowerCase().includes(search.toLowerCase()));
-      const chips = <div className="sp-chips">{options.map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, group.category)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{t(o)}</button>; })}</div>;
-      return group.broad ? <fieldset key={group.label} className="sp-field"><legend className="sp-label">{t(group.label)} <span className="sp-optional">{t(group.category)}</span></legend>{chips}</fieldset>
-        : <details key={group.label} className="sp-field" open={search ? true : undefined}><summary className="sp-label">{t(group.label)} ({options.length}) <span className="sp-optional">{t(group.category)}</span></summary>{chips}</details>;
+    {categories.map((category) => {
+      const groups = skillGroups.filter((group) =>
+        group.category === category
+        && `${category} ${group.label} ${group.skills.join(' ')} ${group.skills.map((skill) => t(skill)).join(' ')}`.toLowerCase().includes(search.toLowerCase()),
+      );
+      if (!groups.length) return null;
+      return <section className="sp-category-library" key={category} data-testid={`skill-category-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
+        <h3 className="sp-label">{t(category)}</h3>
+        {category === 'Broad Technical Areas' && <p className="sp-hint">{t('These broad areas are for exploration only. They do not prove specific skills and never add score points.')}</p>}
+        {groups.map((group) => {
+          const options = group.skills.filter((skill) => !search || `${skill} ${t(skill)} ${group.label} ${category}`.toLowerCase().includes(search.toLowerCase()));
+          const chips = <div className="sp-chips">{options.map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, group.category)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{t(o)}</button>; })}</div>;
+          return group.broad
+            ? <fieldset key={group.label} className="sp-field"><legend className="sp-label">{t(group.label)}</legend>{chips}</fieldset>
+            : <details key={group.label} className="sp-field" open={search ? true : undefined}><summary className="sp-label">{t(group.label)} ({options.length})</summary>{chips}</details>;
+        })}
+      </section>;
     })}
     <div className="sp-custom-skill">
        <div className="sp-label">{t('Add a custom skill')}<span className="sp-optional">{t('Including industry-specific')}</span></div>
@@ -139,7 +160,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
                {editing === s.id ? <span className="sp-edit-inline"><label className="sr-only" htmlFor={`edit-${s.id}`}>{t('Rename')} {s.name}</label><input id={`edit-${s.id}`} autoFocus className="sp-input" value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(s.id); } if (e.key === 'Escape') setEditing(null); }} data-testid={`input-edit-skill-${s.id}`} />
                  <button type="button" className="sp-icon" aria-label={t('Save skill name')} onClick={() => saveEdit(s.id)} data-testid={`button-save-skill-${s.id}`}><Check size={15} /></button>
                  <button type="button" className="sp-icon" aria-label={t('Cancel rename')} onClick={() => setEditing(null)}><X size={15} /></button></span>
-                 : <><strong>{s.name}</strong><small>{t(s.category)}{s.custom ? ` · ${t('custom')}` : ''}</small></>}
+                : <><strong>{s.name}</strong><small>{t(displayedSkillCategory(s))}{s.custom ? ` · ${t('custom')}` : ''}</small></>}
             </div>
              <label className="sr-only" htmlFor={`prof-${s.id}`}>{t('Proficiency for')} {s.name}</label>
              <select id={`prof-${s.id}`} className="sp-input sp-prof" value={s.proficiency} onChange={(e) => onChange(skills.map((x) => (x.id === s.id ? { ...x, proficiency: e.target.value as ProfileSkill['proficiency'] } : x)))} data-testid={`select-proficiency-${s.id}`}>{proficiencies.map((p) => <option key={p} value={p}>{t(p)}</option>)}</select>
@@ -268,11 +289,12 @@ function ProfileSummary({ saved, onEdit }: { saved: SavedProfile; onEdit: (step:
          <SummaryRow label="Current status" value={p.basic.status} displayValue={p.basic.status ? t(p.basic.status) : undefined} />
          <SummaryRow label="Field of study or occupation" value={p.basic.field} />
          <SummaryRow label="Years of work experience" value={p.basic.years === '' ? '' : String(p.basic.years)} />
+         <SummaryRow label="Relevant work experience" value={p.basic.relevantYears === undefined || p.basic.relevantYears === '' ? '' : String(p.basic.relevantYears)} displayValue={p.basic.relevantYears === undefined || p.basic.relevantYears === '' ? undefined : `${p.basic.relevantYears} ${t('years')} · ${t(relevantExperienceLevel(p.basic.relevantYears))}`} />
          <SummaryRow label="Highest education" value={p.basic.education} displayValue={p.basic.education ? t(p.basic.education) : undefined} />
          <SummaryRow label="Preferred career direction" value={p.basic.direction} />
        </Section>
        <Section i={1}>{categories.map((c) => {
-         const skillsInCategory = p.skills.filter((s) => s.category === c);
+         const skillsInCategory = p.skills.filter((s) => displayedSkillCategory(s) === c);
          const labels = skillsInCategory.map((s) => `${!s.custom && skillOptions[s.category].includes(s.name) ? t(s.name) : s.name} (${t(s.proficiency)})`);
          return <SummaryRow key={c} label={c} value={skillsInCategory.map((s) => s.name)} displayValue={labels.join(', ')} />;
        })}</Section>
@@ -424,6 +446,7 @@ export default function SkillsProfilePage() {
               <Field id="basic-education" label="Highest education level" error={e['basic.education']}><select id="basic-education" className="sp-input" value={b.education} aria-invalid={!!e['basic.education']} aria-describedby={describedBy('basic-education', e['basic.education'])} onChange={(ev) => set('basic', { education: ev.target.value as typeof b.education })} data-testid="select-education"><option value="">{t('Select level')}</option>{educationLevels.map((s) => <option key={s} value={s}>{t(s)}</option>)}</select></Field>
               <Field id="basic-field" label="Field of study or current occupation" error={e['basic.field']}><input id="basic-field" className="sp-input" value={b.field} maxLength={300} aria-invalid={!!e['basic.field']} aria-describedby={describedBy('basic-field', e['basic.field'])} onChange={(ev) => set('basic', { field: ev.target.value })} placeholder={t('e.g. Mechanical engineering')} data-testid="input-field" /></Field>
               <Field id="basic-years" label="Years of work experience" hint="Use 0 if you have not worked yet. Decimals allowed." error={e['basic.years']}><input id="basic-years" type="number" min={0} max={80} step={0.5} inputMode="decimal" className="sp-input" value={b.years} aria-invalid={!!e['basic.years']} aria-describedby={describedBy('basic-years', e['basic.years'], true)} onChange={(ev) => set('basic', { years: toNum(ev.target.value) })} data-testid="input-years" /></Field>
+              <Field id="basic-relevant-years" label="Years of relevant work experience" hint="Optional. Use only years of work experience relevant to the roles you want to compare; do not repeat total experience unless all of it is relevant." optional error={e['basic.relevantYears']}><input id="basic-relevant-years" type="number" min={0} max={80} step={0.5} inputMode="decimal" className="sp-input" value={b.relevantYears ?? ''} aria-invalid={!!e['basic.relevantYears']} aria-describedby={describedBy('basic-relevant-years', e['basic.relevantYears'], true)} onChange={(ev) => set('basic', { relevantYears: toNum(ev.target.value) })} data-testid="input-relevant-years" />{b.relevantYears !== undefined && b.relevantYears !== '' && <small className="sp-hint" data-testid="text-relevant-experience-level">{t(relevantExperienceLevel(b.relevantYears))}</small>}</Field>
               <div className="sp-span"><Field id="basic-direction" label="Preferred career direction" hint="A role, sector or general direction. It is fine to be unsure; describe what you are considering." error={e['basic.direction']}><textarea id="basic-direction" className="sp-input sp-textarea" rows={3} value={b.direction} aria-invalid={!!e['basic.direction']} aria-describedby={describedBy('basic-direction', e['basic.direction'], true)} onChange={(ev) => set('basic', { direction: ev.target.value })} data-testid="input-direction" /></Field></div>
             </div>}
             {step === 1 && <SkillsEditor skills={profile.skills} onChange={(s) => setProfile((p) => ({ ...p, skills: s }))} error={e.skills} />}

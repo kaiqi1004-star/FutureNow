@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Original source array category; retained independently from the primary scoring category.
+ */
 export type RoleMatchSkillCategory = typeof RoleMatchSkillCategory[keyof typeof RoleMatchSkillCategory];
 
 

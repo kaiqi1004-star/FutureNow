@@ -1,38 +1,73 @@
 import type {
   CareerLevel,
   CompatibilityTier,
-  EducationRequirementBasis,
-  EducationRequirementType,
-  ExperienceRequirementBasis,
-  ExperienceRequirementType,
+  JobListing,
   MatchDimensionStatus,
   MatchWeights,
   RoleEducationFit,
   RoleExperienceFit,
+  ScoreBreakdownItem,
+  ScoreCategory,
 } from "@workspace/api-zod";
+import { canonicalSkill } from "./skill-gap.ts";
 
 export const MATCH_WEIGHTS: MatchWeights = {
-  skillCoverage: 60,
-  experienceSuitability: 25,
-  educationSuitability: 15,
+  industrySpecificSkills: 40,
+  technicalSkills: 30,
+  digitalSkills: 12.5,
+  softSkills: 12.5,
+  experience: 5,
+  evidence: 0,
+  broadTechnicalAreas: 0,
 };
 
-// Product guidance only, not validated employer/hiring cutoffs. Does not change
-// numeric scores; prevents weak technical evidence receiving the strongest label.
 export const ALIGNMENT_SKILL_THRESHOLDS = { total: 50, technical: 50 } as const;
 
-/** Internal comparison guidelines only; these are not employer requirements. */
-export const ROLE_EXPERIENCE_GUIDELINES: Partial<Record<CareerLevel, number>> = {
-  internship: 0,
-  entry: 0,
-  mid: 2,
-  senior: 2,
-  lead: 3,
-  manager: 4,
-};
-
 export const OVERALL_MATCH_FORMULA =
-  "Weighted average of available skill coverage (60%), experience suitability (25%), and education suitability (15%). Unavailable dimensions are excluded and the remaining weights are proportionally renormalized; result is rounded to 1 decimal place.";
+  "Weighted average of applicable industry-specific skills (40%), technical skills (30%), digital skills (12.5%), soft skills (12.5%), and explicitly relevant experience (5%). Unavailable or inapplicable categories are excluded and remaining base weights are normalised for each role. Education, evidence, and broad technical areas do not contribute.";
+
+const digitalSkillKeys = new Set([
+  "excel",
+  "microsoft excel",
+  "microsoft office",
+  "microsoft word",
+  "google sheets",
+  "gantt charts",
+]);
+
+const broadAreaKeys = new Set([
+  "programming",
+  "web development",
+  "database management",
+  "data analysis",
+  "ai tools",
+  "cloud computing",
+  "cybersecurity",
+  "engineering-related skills",
+  "other technical skills",
+]);
+
+export function isBroadTechnicalArea(value: string): boolean {
+  return broadAreaKeys.has(canonicalSkill(value));
+}
+
+export type RequirementSourceCategory = "technical" | "soft";
+export type SkillScoreCategory = "industry-specific" | "technical" | "digital" | "soft";
+export type ScoredSkillCategory = Exclude<ScoreCategory, "experience" | "evidence" | "broad-technical-areas">;
+
+/** One primary category per source requirement; source wording is never changed. */
+export function scoreCategoryForRequirement(
+  job: JobListing,
+  sourceCategory: RequirementSourceCategory,
+  requirement: string,
+): SkillScoreCategory {
+  if (sourceCategory === "soft") return "soft";
+  if (digitalSkillKeys.has(canonicalSkill(requirement))) return "digital";
+  if (["mechanical", "digital-marketing", "human-resources", "accounting-finance"].includes(job.sector)) {
+    return "industry-specific";
+  }
+  return "technical";
+}
 
 const normalizeText = (value: string) =>
   value.normalize("NFKC").replace(/[’‘]/g, "'").replace(/\s+/g, " ").trim();
@@ -48,230 +83,112 @@ export function classifyCareerLevel(title: string): CareerLevel {
   return "unspecified";
 }
 
-function parseMinimumYears(text: string): number | null {
-  const matches = [...text.matchAll(/(\d+(?:\.\d+)?)\s*(?:[-–—]\s*(\d+(?:\.\d+)?))?\s*\+?\s*years?\b/gi)];
-  if (matches.length !== 1) return null;
-  const lower = Number(matches[0][1]);
-  return Number.isFinite(lower) && lower >= 0 ? lower : null;
+function clearMinimumYears(text: string): number | null {
+  const normalized = normalizeText(text).toLowerCase();
+  const matches = [...normalized.matchAll(/(\d+(?:\.\d+)?)\s*(?:[-–—]\s*(\d+(?:\.\d+)?))?\s*\+?\s*years?\b/gi)];
+  if (matches.length !== 1 || matches[0][2] !== undefined) return null;
+  const match = matches[0];
+  const years = Number(match[1]);
+  if (!Number.isFinite(years) || years < 0) return null;
+  const before = normalized.slice(0, match.index);
+  const after = normalized.slice((match.index ?? 0) + match[0].length);
+  if (/\b(prefer(?:red|ably)|ideally)\b/.test(before)
+    || /\b(?:preferred|preferably|an advantage|advantageous)\b/.test(after)) return null;
+  const explicitMinimum = /\b(?:minimum|at least|no less than|required|must have|mandatory)\b/.test(before)
+    || /^\s*(?:of\s+)?(?:relevant\s+)?(?:work\s+)?experience\s+(?:is\s+)?required\b/.test(after);
+  return explicitMinimum ? years : null;
 }
 
-function preferredNumericRequirement(text: string): boolean {
-  return /\bprefer(?:red|ably)\s+\d+(?:\.\d+)?\s*(?:[-–—]\s*\d+(?:\.\d+)?)?\s*\+?\s*years?\b/i.test(text)
-    || /\b\d+(?:\.\d+)?\s*(?:[-–—]\s*\d+(?:\.\d+)?)?\s*\+?\s*years?\s+(?:of\s+[^.;,]{1,35}\s+)?(?:experience\s+)?preferred\b/i.test(text)
-    || /\bexperience\s+preferred\b/i.test(text);
-}
-
-function experienceIsExplicitlyNotRequired(text: string): boolean {
-  return /\b(no|not required|not explicitly required)\s+(?:prior\s+|previous\s+)?experience\b/i.test(text)
-    || /\bprior experience\s+(?:is\s+)?not required\b/i.test(text)
-    || /\bexperience\s+(?:is\s+)?not explicitly required\b/i.test(text)
-    || /\bexperience\s+is\s+not required\b/i.test(text);
-}
-
-function experienceHasAlternativePath(text: string): boolean {
-  return /\balternatively\b|\bas an alternative\b|\bmay be considered\b|\bdepending on qualifications\b|\bor\s+(?:(?:at least|more than|minimum)\s+)?\d+(?:\.\d+)?\s*years?\b/i.test(text);
-}
-
-function inferredExperience(
-  level: CareerLevel,
+function experienceType(
   sourceText: string,
-  userYears: number | null,
-): RoleExperienceFit {
-  const guideline = ROLE_EXPERIENCE_GUIDELINES[level];
-  if (guideline === undefined) {
-    return {
-      roleLevel: level,
-      requirementType: "unavailable",
-      sourceText,
-      basis: "unavailable",
-      sourceMinimumYears: null,
-      guidelineYears: null,
-      userYears,
-      suitabilityScore: null,
-      status: "unavailable",
-      summary: "No source requirement or supported title-based guideline is available.",
-      reason: "The supplied title does not establish a career level, and the listing gives no comparable experience requirement.",
-    };
-  }
-
-  if (userYears === null) {
-    return {
-      roleLevel: level,
-      requirementType: "inferred",
-      sourceText,
-      basis: "title_guideline",
-      sourceMinimumYears: null,
-      guidelineYears: guideline,
-      userYears: null,
-      suitabilityScore: null,
-      status: "not_provided",
-      summary: `Estimated experience guideline: ${guideline}+ years, inferred from role seniority; not explicitly stated by the employer.`,
-      reason: "Add your stated years of experience to compare this internal guideline. It is not an employer requirement.",
-    };
-  }
-
-  const suitabilityScore = guideline === 0
-    ? 100
-    : Math.round(Math.min(100, (userYears / guideline) * 100) * 10) / 10;
-  const status: MatchDimensionStatus = userYears >= guideline ? "meets" : "gap";
-  return {
-    roleLevel: level,
-    requirementType: "inferred",
-    sourceText,
-    basis: "title_guideline",
-    sourceMinimumYears: null,
-    guidelineYears: guideline,
-    userYears,
-    suitabilityScore,
-    status,
-    summary: `Estimated experience guideline: ${guideline}+ years, inferred from role seniority; not explicitly stated by the employer.`,
-    reason: status === "gap"
-      ? `Your stated ${userYears} years is below the internal ${guideline}-year guideline inferred from the title. This is not a confirmed employer requirement.`
-      : `Your stated ${userYears} years meets the internal guideline inferred from the title; this does not establish eligibility.`,
-  };
+): RoleExperienceFit["requirementType"] {
+  const normalized = normalizeText(sourceText).toLowerCase();
+  if (!normalized || /\bnot specified|not stated|not provided|not explicitly specified\b/.test(normalized)) return "unavailable";
+  if (/\b(?:prior|previous|work|relevant)?\s*experience\s+(?:is\s+)?not required\b/.test(normalized)
+    || /\bno\s+(?:prior|previous|work|relevant)?\s*experience\s+(?:is\s+)?required\b/.test(normalized)) return "explicit_none";
+  if (/\bprefer(?:red|ably)\b|\ban advantage\b|\badvantageous\b/.test(normalized)) return "preferred";
+  if (/\balternatively\b|\bas an alternative\b|\bmay be considered\b|\bcurrently pursuing\b/.test(normalized)) return "conditional";
+  if (/\b(?:less than|up to|at most|maximum of|no more than|under)\b/.test(normalized)) return "conditional";
+  if (/\d+(?:\.\d+)?\s*[-–—]\s*\d+(?:\.\d+)?\s*\+?\s*years?\b/i.test(normalized)) return "source_range";
+  if (clearMinimumYears(normalized) !== null) return "mandatory";
+  if (/\bexperience\b|\bproven\b|\bexpertise\b|\binternship\b/i.test(normalized)) return "qualitative";
+  return "unavailable";
 }
 
 export function assessExperienceFit(
   title: string,
-  sourceTextValue: string,
-  userYearsValue?: number,
+  sourceText: string,
+  relevantYearsValue?: number,
 ): RoleExperienceFit {
-  const sourceText = sourceTextValue;
-  const titleLevel = classifyCareerLevel(title);
-  const freshGraduateSignal = /\bfresh graduates?\s+(?:(?:are|is)\s+)?encouraged to apply\b/i.test(sourceText);
-  const level = titleLevel === "unspecified" && freshGraduateSignal ? "entry" : titleLevel;
-  const userYears = typeof userYearsValue === "number" && Number.isFinite(userYearsValue) && userYearsValue >= 0
-    ? userYearsValue
+  const level = classifyCareerLevel(title);
+  const userYears = typeof relevantYearsValue === "number" && Number.isFinite(relevantYearsValue) && relevantYearsValue >= 0
+    ? relevantYearsValue
     : null;
-  const normalized = normalizeText(sourceText).toLowerCase();
+  const requirementType = experienceType(sourceText);
+  const sourceMinimumYears = requirementType === "mandatory" ? clearMinimumYears(sourceText) : null;
+  const shared = {
+    roleLevel: level,
+    requirementType,
+    sourceText,
+    basis: requirementType === "unavailable" ? "unavailable" as const : "source" as const,
+    sourceMinimumYears,
+    guidelineYears: null,
+    userYears,
+  };
 
-  if (experienceIsExplicitlyNotRequired(normalized)) {
+  if (requirementType === "explicit_none") {
     return {
-      roleLevel: level,
-      requirementType: "explicit_none",
-      sourceText,
-      basis: "source",
-      sourceMinimumYears: null,
-      guidelineYears: null,
-      userYears,
+      ...shared,
       suitabilityScore: 100,
       status: "not_required",
-      summary: "The source indicates that prior experience is not required.",
-      reason: "No experience requirement is identified in the source wording.",
+      summary: "The source explicitly says prior experience is not required.",
+      reason: "No relevant-experience minimum is applied; the original source wording remains available.",
     };
   }
 
-  const numericMinimum = parseMinimumYears(normalized);
-  if (experienceHasAlternativePath(normalized)) {
-    return {
-      roleLevel: level,
-      requirementType: "conditional",
-      sourceText,
-      basis: "source",
-      sourceMinimumYears: null,
-      guidelineYears: null,
-      userYears,
-      suitabilityScore: null,
-      status: "uncertain",
-      summary: "The listing describes conditional or alternative experience paths.",
-      reason: "The source has more than one experience pathway; this matcher does not reduce them to one mandatory threshold.",
-    };
-  }
-
-  if (/\b(?:less than|up to|at most|maximum of|no more than|under)\b/i.test(normalized)) {
-    return {
-      roleLevel: level,
-      requirementType: "conditional",
-      sourceText,
-      basis: "source",
-      sourceMinimumYears: null,
-      guidelineYears: null,
-      userYears,
-      suitabilityScore: null,
-      status: "uncertain",
-      summary: "The source wording is not a comparable minimum-years requirement.",
-      reason: "An upper bound or other non-minimum phrase is not treated as a mandatory minimum.",
-    };
-  }
-
-  if (numericMinimum !== null) {
-    const isPreferred = preferredNumericRequirement(normalized);
-    const isMandatory = !isPreferred
-      && /\b(minimum|at least|no less than|required|must have|mandatory)\b/i.test(normalized);
-    const requirementType: ExperienceRequirementType = isPreferred
-      ? "preferred"
-      : isMandatory ? "mandatory" : "source_range";
+  if (requirementType === "mandatory" && sourceMinimumYears !== null) {
     if (userYears === null) {
       return {
-        roleLevel: level,
-        requirementType,
-        sourceText,
-        basis: "source",
-        sourceMinimumYears: numericMinimum,
-        guidelineYears: null,
-        userYears: null,
+        ...shared,
         suitabilityScore: null,
         status: "not_provided",
-        summary: `${isPreferred ? "Preferred" : "Source-stated"} experience threshold: ${numericMinimum}+ years.`,
-        reason: "Add your stated years of experience to compare this source wording. Total years do not verify relevant-domain experience.",
+        summary: `The source states a minimum of ${sourceMinimumYears} years.`,
+        reason: "Relevant work experience was not provided. Total work experience is not substituted.",
       };
     }
-
-    const suitabilityScore = numericMinimum === 0
+    const suitabilityScore = sourceMinimumYears === 0
       ? 100
-      : Math.round(Math.min(100, (userYears / numericMinimum) * 100) * 10) / 10;
-    const status: MatchDimensionStatus = userYears >= numericMinimum ? "meets" : "gap";
+      : Math.round(Math.min(userYears / sourceMinimumYears, 1) * 1000) / 10;
+    const status: MatchDimensionStatus = userYears >= sourceMinimumYears ? "meets" : "gap";
     return {
-      roleLevel: level,
-      requirementType,
-      sourceText,
-      basis: "source",
-      sourceMinimumYears: numericMinimum,
-      guidelineYears: null,
-      userYears,
+      ...shared,
       suitabilityScore,
       status,
-      summary: `${isPreferred ? "Preferred" : "Source-stated"} threshold: ${numericMinimum}+ years; this comparison uses total years the user reported.`,
+      summary: `Source-stated minimum: ${sourceMinimumYears} years; profile reports ${userYears} relevant years.`,
       reason: status === "gap"
-        ? `Your stated ${userYears} years is below the source's ${numericMinimum}-year lower threshold. Only a clearly mandatory minimum creates Tier 3.`
-        : `Your stated ${userYears} years meets the source's numeric threshold, but does not verify relevant-domain experience or eligibility.`,
+        ? `Your stated ${userYears} relevant years is below the source's ${sourceMinimumYears}-year minimum. This is a simplified comparison, not a hiring prediction.`
+        : `Your stated relevant years meet this numeric minimum only; employer eligibility is not verified.`,
     };
   }
 
-  if (/\bpreferred\b|\bpreferably\b|\ban advantage\b|\badvantageous\b/i.test(normalized)) {
-    return {
-      roleLevel: level,
-      requirementType: "preferred",
-      sourceText,
-      basis: "source",
-      sourceMinimumYears: null,
-      guidelineYears: null,
-      userYears,
-      suitabilityScore: null,
-      status: "uncertain",
-      summary: "The source describes preferred experience but gives no comparable number of years.",
-      reason: "A preferred qualitative statement is not converted into a numerical requirement.",
-    };
-  }
-
-  if (/\bexperience\b|\bproven\b|\bexpertise\b/i.test(normalized)
-    && !/not explicitly specified|not specified|no specific years stated/i.test(normalized)) {
-    return {
-      roleLevel: level,
-      requirementType: "qualitative",
-      sourceText,
-      basis: "source",
-      sourceMinimumYears: null,
-      guidelineYears: null,
-      userYears,
-      suitabilityScore: null,
-      status: "uncertain",
-      summary: "The source uses qualitative experience wording without a numerical minimum.",
-      reason: "No number is inferred from ambiguous wording; compare this requirement with the original listing.",
-    };
-  }
-
-  return inferredExperience(level, sourceText, userYears);
+  const status: MatchDimensionStatus = requirementType === "unavailable" ? "not_stated" : "uncertain";
+  const summary =
+    requirementType === "source_range" ? "The source gives an experience range; no single numeric minimum is inferred."
+      : requirementType === "preferred" ? "Experience is described as preferred; it is not treated as a mandatory numeric threshold."
+        : requirementType === "conditional" ? "The source describes a conditional, alternative, or upper-bound experience path."
+          : requirementType === "qualitative" ? "The source uses qualitative experience wording without a clear comparable minimum."
+            : "The source does not state a comparable experience requirement.";
+  const reason =
+    requirementType === "unavailable"
+      ? "Not specified in the source. No experience is inferred from the job title or seniority."
+      : "This wording is preserved for review and excluded from numerical scoring because it cannot be compared consistently.";
+  return {
+    ...shared,
+    suitabilityScore: null,
+    status,
+    summary,
+    reason,
+  };
 }
 
 export function educationLevelRank(value?: string | null): number | null {
@@ -298,132 +215,194 @@ function educationRequirementLevel(sourceText: string): number | null {
   return levels.length ? Math.min(...levels) : null;
 }
 
+function hasConditionalEducationPath(experienceText: string): boolean {
+  const text = normalizeText(experienceText).toLowerCase();
+  return /\bcurrently pursuing\b|\bmay be considered\b|\balternatively\b|\bas an alternative\b/.test(text);
+}
+
 export function assessEducationFit(
-  sourceTextValue: string,
+  sourceText: string,
   userEducationValue?: string,
-  experienceTextValue = "",
+  experienceText = "",
 ): RoleEducationFit {
-  const sourceText = sourceTextValue;
   const userEducation = userEducationValue?.trim() || null;
   const userLevel = educationLevelRank(userEducation);
-  const source = normalizeText(sourceText).toLowerCase();
-  const experience = normalizeText(experienceTextValue).toLowerCase();
-  const conditionalPath = /\bcurrently pursuing\b|\bmay be considered\b/i.test(experience)
-    || experienceHasAlternativePath(experience);
-
-  if (conditionalPath) {
-    return {
-      requirementType: "conditional",
-      sourceText,
-      basis: "conditional",
-      minimumLevel: null,
-      userLevel,
-      userEducation,
-      suitabilityScore: null,
-      status: "uncertain",
-      summary: "The listing describes a conditional education or alternative experience pathway.",
-      reason: "The saved profile does not record enrollment or every alternative pathway, so this dimension is not scored as a pass or failure.",
-    };
-  }
-
-  if (!source || /not specified|not stated|not provided|not explicitly specified/i.test(source)) {
-    return {
-      requirementType: "not_stated",
-      sourceText,
-      basis: "unavailable",
-      minimumLevel: null,
-      userLevel,
-      userEducation,
-      suitabilityScore: null,
-      status: "not_stated",
-      summary: "No comparable education requirement is available in the source record.",
-      reason: "Missing source information is not treated as a perfect match or a confirmed gap.",
-    };
-  }
-
+  const source = normalizeText(sourceText);
+  const conditional = hasConditionalEducationPath(experienceText);
   const minimumLevel = educationRequirementLevel(source);
-  if (minimumLevel === null) {
-    return {
-      requirementType: "unrecognized",
-      sourceText,
-      basis: "unavailable",
-      minimumLevel: null,
-      userLevel,
-      userEducation,
-      suitabilityScore: null,
-      status: "unavailable",
-      summary: "The listed education wording cannot be compared safely with the profile choices.",
-      reason: "The source text is retained, but no qualification level is inferred from unrecognized wording.",
-    };
-  }
-
-  if (!userEducation) {
-    return {
-      requirementType: "mandatory",
-      sourceText,
-      basis: "source",
-      minimumLevel,
-      userLevel: null,
-      userEducation: null,
-      suitabilityScore: null,
-      status: "not_provided",
-      summary: `Lowest recognized listed education level: ${["", "Secondary school", "Certificate", "Diploma", "Bachelor's degree", "Master's degree", "Doctorate"][minimumLevel]}.`,
-      reason: "Add the selected education level to compare the listing. A level match does not verify field-of-study or equivalent-qualification details.",
-    };
-  }
-
-  if (userLevel === null) {
-    return {
-      requirementType: "mandatory",
-      sourceText,
-      basis: "source",
-      minimumLevel,
-      userLevel: null,
-      userEducation,
-      suitabilityScore: null,
-      status: "unavailable",
-      summary: "The profile's selected education value cannot be placed in the supported level scale.",
-      reason: "The value is preserved; it is not assumed to be either above or below the source requirement.",
-    };
-  }
-
-  const suitabilityScore = Math.round(Math.min(100, (userLevel / minimumLevel) * 100) * 10) / 10;
-  const status: MatchDimensionStatus = userLevel >= minimumLevel ? "meets" : "gap";
-  const requiredName = ["", "Secondary school", "Certificate", "Diploma", "Bachelor's degree", "Master's degree", "Doctorate"][minimumLevel];
-  return {
-    requirementType: "mandatory",
+  const base = {
     sourceText,
-    basis: "source",
-    minimumLevel,
     userLevel,
     userEducation,
-    suitabilityScore,
+    suitabilityScore: null,
+  };
+
+  if (conditional) {
+    return {
+      ...base,
+      requirementType: "conditional",
+      basis: "conditional",
+      minimumLevel: null,
+      status: "uncertain",
+      summary: "The listing describes an alternative or conditional path.",
+      reason: "The listed level cannot establish whether the alternative path applies. Review the original wording.",
+    };
+  }
+  if (!source || /\bnot specified|not stated|not provided\b/i.test(source)) {
+    return {
+      ...base,
+      requirementType: "not_stated",
+      basis: "unavailable",
+      minimumLevel: null,
+      status: "not_stated",
+      summary: "No education threshold is specified.",
+      reason: "Missing source information is not treated as a pass or failure.",
+    };
+  }
+  if (minimumLevel === null) {
+    return {
+      ...base,
+      requirementType: "unrecognized",
+      basis: "unavailable",
+      minimumLevel: null,
+      status: "unavailable",
+      summary: "The source education wording cannot be compared safely.",
+      reason: "The original text is retained; no qualification level is inferred.",
+    };
+  }
+  if (!userEducation) {
+    return {
+      ...base,
+      requirementType: "mandatory",
+      basis: "source",
+      minimumLevel,
+      status: "not_provided",
+      summary: "Education level not provided.",
+      reason: "A level comparison is unavailable until the profile provides an education level.",
+    };
+  }
+  if (userLevel === null) {
+    return {
+      ...base,
+      requirementType: "mandatory",
+      basis: "source",
+      minimumLevel,
+      status: "unavailable",
+      summary: "The profile education value cannot be placed on the supported level scale.",
+      reason: "No pass or failure is inferred from an unrecognised value.",
+    };
+  }
+  const status: MatchDimensionStatus = userLevel >= minimumLevel ? "meets" : "gap";
+  const levelNames = ["", "Secondary school", "Certificate", "Diploma", "Bachelor's degree", "Master's degree", "Doctorate"];
+  return {
+    ...base,
+    requirementType: "mandatory",
+    basis: "source",
+    minimumLevel,
     status,
-    summary: `Lowest recognized listed education level: ${requiredName}; profile selection: ${userEducation}.`,
+    summary: `Lowest recognised listed level: ${levelNames[minimumLevel]}; profile selection: ${userEducation}.`,
     reason: status === "gap"
-      ? "The selected profile level is below the lowest recognized listed level. This is an estimate; review the original listing for equivalencies and subject requirements."
-      : "The selected profile level meets the recognized minimum level only; field of study, equivalencies, and other employer conditions are not verified.",
+      ? "The selected level is below the recognised stated threshold. This is a level comparison only, not a full eligibility determination."
+      : "The selected level meets the recognised threshold only; field of study, equivalency, and other employer conditions are not verified.",
   };
 }
 
-export function overallMatchScore(
-  skillCoverage: number | null,
-  experienceSuitability: number | null,
-  educationSuitability: number | null,
-): number | null {
-  const dimensions: Array<[number | null, number]> = [
-    [skillCoverage, MATCH_WEIGHTS.skillCoverage],
-    [experienceSuitability, MATCH_WEIGHTS.experienceSuitability],
-    [educationSuitability, MATCH_WEIGHTS.educationSuitability],
-  ];
-  const available = dimensions.filter(
-    (dimension): dimension is [number, number] =>
-      dimension[0] !== null && Number.isFinite(dimension[0]),
-  );
-  if (!available.length) return null;
-  const weightTotal = available.reduce((sum, [, weight]) => sum + weight, 0);
-  const weightedTotal = available.reduce((sum, [score, weight]) => sum + score * weight, 0);
-  return Math.round((weightedTotal / weightTotal) * 10) / 10;
+type SkillCounts = Record<ScoredSkillCategory, { matchedCount: number; requiredCount: number }>;
+const scoredCategories: Array<[ScoredSkillCategory, keyof MatchWeights]> = [
+  ["industry-specific", "industrySpecificSkills"],
+  ["technical", "technicalSkills"],
+  ["digital", "digitalSkills"],
+  ["soft", "softSkills"],
+];
+
+const round1 = (value: number) => Math.round(value * 10) / 10;
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
+export function buildScoreBreakdown(
+  skillCounts: SkillCounts,
+  experience: RoleExperienceFit,
+): { scoreBreakdown: ScoreBreakdownItem[]; overallScore: number | null } {
+  const pending: ScoreBreakdownItem[] = scoredCategories.map(([category, weightKey]) => {
+    const { matchedCount, requiredCount } = skillCounts[category];
+    const baseWeight = MATCH_WEIGHTS[weightKey];
+    if (requiredCount === 0) {
+      return {
+        category, matchedCount: 0, requiredCount: 0, coverage: null,
+        baseWeight, effectiveWeight: null, contribution: null,
+        status: "not-applicable", explanation: "The source lists no distinct requirements in this category.",
+      };
+    }
+    const coverage = round1((matchedCount / requiredCount) * 100);
+    return {
+      category, matchedCount, requiredCount, coverage, baseWeight,
+      effectiveWeight: null, contribution: null, status: "scored",
+      explanation: `${matchedCount} of ${requiredCount} distinct source-listed requirements were matched by name.`,
+    };
+  });
+
+  const experienceBaseWeight = MATCH_WEIGHTS.experience;
+  if (experience.suitabilityScore === null) {
+    const status = experience.status === "not_provided" ? "unknown"
+      : experience.status === "not_stated" ? "not-specified"
+        : "not-scorable";
+    pending.push({
+      category: "experience",
+      matchedCount: 0,
+      requiredCount: 0,
+      coverage: null,
+      baseWeight: experienceBaseWeight,
+      effectiveWeight: null,
+      contribution: null,
+      status,
+      explanation: experience.reason,
+    });
+  } else {
+    pending.push({
+      category: "experience",
+      matchedCount: 0,
+      requiredCount: 0,
+      coverage: experience.suitabilityScore,
+      baseWeight: experienceBaseWeight,
+      effectiveWeight: null,
+      contribution: null,
+      status: "scored",
+      explanation: experience.reason,
+    });
+  }
+  pending.push({
+    category: "evidence", matchedCount: 0, requiredCount: 0, coverage: null,
+    baseWeight: MATCH_WEIGHTS.evidence, effectiveWeight: 0, contribution: 0,
+    status: "excluded", explanation: "Optional self-reported evidence is context only and is not scored.",
+  });
+  pending.push({
+    category: "broad-technical-areas", matchedCount: 0, requiredCount: 0, coverage: null,
+    baseWeight: MATCH_WEIGHTS.broadTechnicalAreas, effectiveWeight: 0, contribution: 0,
+    status: "excluded", explanation: "Broad areas help organise exploration; they do not establish specific skills.",
+  });
+
+  const active = pending.filter((item) => item.status === "scored");
+  const baseTotal = active.reduce((sum, item) => sum + item.baseWeight, 0);
+  if (baseTotal === 0) return { scoreBreakdown: pending, overallScore: null };
+
+  let contributionTotal = 0;
+  const scoreBreakdown = pending.map((item) => {
+    if (item.status !== "scored") return item;
+    const effectiveWeight = item.baseWeight / baseTotal * 100;
+    const contribution = (item.coverage ?? 0) * effectiveWeight / 100;
+    contributionTotal += contribution;
+    return {
+      ...item,
+      effectiveWeight: round2(effectiveWeight),
+      contribution: round2(contribution),
+    };
+  });
+  return { scoreBreakdown, overallScore: round1(contributionTotal) };
+}
+
+export function overallMatchScore(scoreBreakdown: ScoreBreakdownItem[]): number | null {
+  const active = scoreBreakdown.filter((item) => item.status === "scored" && item.contribution !== null);
+  if (!active.length) return null;
+  return round1(active.reduce((sum, item) => sum + item.contribution!, 0));
 }
 
 export function compatibilityFor(
@@ -442,15 +421,14 @@ export function compatibilityFor(
   const unresolved: Array<RoleExperienceFit | RoleEducationFit> = [experience, education].filter(
     (fit) => ["uncertain", "not_provided", "not_stated", "unavailable"].includes(fit.status),
   );
-  const nonMandatoryGap = [experience, education].some(
-    (fit) => fit.status === "gap",
-  );
-  const insufficientSkills = skillCoverage === null || skillCoverage < ALIGNMENT_SKILL_THRESHOLDS.total
+  const nonMandatoryGap = [experience, education].some((fit) => fit.status === "gap");
+  const insufficientSkills = skillCoverage === null
+    || skillCoverage < ALIGNMENT_SKILL_THRESHOLDS.total
     || (technicalCoverage !== null && technicalCoverage < ALIGNMENT_SKILL_THRESHOLDS.technical);
   if (insufficientSkills) {
     reasons.push(skillCoverage === null
       ? "The source lists no comparable skills, so stronger alignment cannot be established."
-      : "Limited listed-skill evidence: stronger alignment requires at least 50% total coverage and 50% technical coverage when technical skills are listed. These are internal guidance thresholds, not employer criteria.");
+      : "Stronger alignment guidance requires at least 50% total skill coverage and 50% technical coverage where applicable. These are product heuristics, not employer criteria.");
   }
   if (unresolved.length || nonMandatoryGap || insufficientSkills) {
     if (experience.status === "gap" && experience.requirementType !== "mandatory") reasons.push(experience.reason);
@@ -465,6 +443,30 @@ export function compatibilityFor(
   return {
     tier: 1,
     label: "Better-aligned opportunity",
-    reasons: ["At least 50% of total and applicable technical requirements match the self-reported profile, with no identified experience or education gap or unresolved comparison. This does not establish eligibility."],
+    reasons: ["At least 50% of total and applicable technical requirements match, with no identified mandatory experience or education gap. This is not a complete eligibility decision."],
   };
+}
+
+export function applicableBaseWeightTotal(weights: MatchWeights = MATCH_WEIGHTS): number {
+  return weights.industrySpecificSkills + weights.technicalSkills + weights.digitalSkills + weights.softSkills + weights.experience;
+}
+
+export function isEducationThresholdStatus(status: RoleEducationFit["status"]): "meets" | "below" | "unclear" {
+  if (status === "meets") return "meets";
+  if (status === "gap") return "below";
+  return "unclear";
+}
+
+export type MatchScoreCategory = ScoreCategory;
+
+export function scoreCategoryWeight(category: ScoredSkillCategory): number {
+  return MATCH_WEIGHTS[
+    category === "industry-specific" ? "industrySpecificSkills"
+      : category === "technical" ? "technicalSkills"
+        : category === "digital" ? "digitalSkills" : "softSkills"
+  ];
+}
+
+export function supportedJobForScoring(job: JobListing): JobListing {
+  return job;
 }

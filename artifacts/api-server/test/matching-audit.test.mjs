@@ -8,7 +8,7 @@ import { resolveDataDirectory } from "../src/lib/data-directory.ts";
 
 const jobs = JSON.parse(readFileSync(new URL("../data/jobs.json", import.meta.url), "utf8"));
 const get = (id) => jobs.find((job) => job.id === id);
-const profile = { experienceYears: 0, educationLevel: "Bachelor’s degree" };
+const profile = { relevantExperienceYears: 0, educationLevel: "Bachelor’s degree" };
 
 test("data lookup works from workspace root, service directory and bundled module location", () => {
   const cwd = process.cwd();
@@ -34,12 +34,12 @@ test("Mandarin title signal remains separate from listed skills, score and compa
 
 test("exact, configured equivalents, source alternatives, related and custom skills remain distinct", () => {
   const all = matchRoles(jobs, ["Programming", "Database management", "AI tools", "MS Excel", "JavaScript", "My honest custom skill"], profile);
+  assert.equal(all.inputSkillCount, 3, "broad technical areas are excluded from the request skill set");
   assert.equal(skillMatchType("SQL", "Programming"), null);
   assert.equal(skillMatchType("MS Excel", "Microsoft Excel"), "equivalent");
   assert.equal(skillMatchType("JavaScript", "JavaScript"), "exact");
   assert.equal(skillMatchType("Java/Python/C#/JavaScript/TypeScript (at least one)", "Python"), "source-alternative");
   assert.equal(skillMatchType("Python", "Pythn"), null);
-  assert.ok(all.results.some((row) => row.relatedSkills.length));
   for (const row of all.results) {
     assert.ok(row.unmatchedProfileSkills.includes("My honest custom skill"));
     for (const related of row.relatedSkills) {
@@ -56,12 +56,12 @@ test("low total or technical coverage cannot receive strongest alignment label o
     ["Communication", "Teamwork", "Problem-solving", "Adaptability", "Leadership"],
     ["SQL", "Python", "Power BI", "Microsoft Excel", "Git", "JavaScript"],
   ]) {
-    for (const row of matchRoles(jobs, skills, { experienceYears: 10, educationLevel: "Doctorate" }).results) {
+    for (const row of matchRoles(jobs, skills, { relevantExperienceYears: 10, educationLevel: "Doctorate" }).results) {
       if (row.compatibilityTier === 1) {
         assert.ok(row.skillCoverage >= 50);
         assert.ok(row.technicalCoverage === null || row.technicalCoverage >= 50);
       }
-      assert.equal(row.requiredTechnicalCount, row.matchedTechnicalCount + row.skillGaps.filter((skill) => skill.category === "technical").length);
+      assert.equal(row.requiredTechnicalCount, row.matchedTechnicalCount + row.skillGaps.filter((skill) => skill.scoreCategory === "technical").length);
     }
   }
   const full = matchRoles([get("J43")], [...get("J43").technicalSkills, ...get("J43").softSkills], profile).results[0];
@@ -72,7 +72,8 @@ test("low total or technical coverage cannot receive strongest alignment label o
 test("actual source experience states remain distinct, and missing education stays unavailable", () => {
   const result = matchRoles(jobs, ["SQL"], profile).results;
   const row = (id) => result.find((item) => item.job.id === id);
-  assert.equal(row("J2").experienceFit.basis, "title_guideline");
+  assert.equal(row("J2").experienceFit.basis, "unavailable");
+  assert.equal(row("J2").experienceFit.suitabilityScore, null);
   assert.equal(row("J43").experienceFit.requirementType, "explicit_none");
   assert.equal(row("J46").experienceFit.requirementType, "preferred");
   assert.notEqual(row("J46").compatibilityTier, 3);

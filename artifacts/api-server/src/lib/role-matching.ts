@@ -1,74 +1,103 @@
-import type { JobListing, RoleMatchResults } from "@workspace/api-zod";
-import { calculateSkillGap, skillMatchType } from "./skill-gap.ts";
+import type { JobListing, RoleMatchResults, ScoreBreakdownItem } from "@workspace/api-zod";
+import { calculateSkillGap, canonicalSkill, skillMatchType } from "./skill-gap.ts";
 import { relatedRoleSkills, roleTitleSignals } from "./role-skill-context.ts";
 import { mapRoleToSdgs, mapSkillToSdgs, SDG_NOTICE } from "./sdg-mapping.ts";
 import {
   assessEducationFit,
   assessExperienceFit,
+  buildScoreBreakdown,
   compatibilityFor,
+  isBroadTechnicalArea,
   MATCH_WEIGHTS,
   OVERALL_MATCH_FORMULA,
-  overallMatchScore,
-  ROLE_EXPERIENCE_GUIDELINES,
+  scoreCategoryForRequirement,
+  type ScoredSkillCategory,
 } from "./career-fit.ts";
 
 export const MATCH_FORMULA =
-  "Matched distinct source-listed requirements ÷ all distinct source-listed requirements × 100, rounded to 1 decimal place. Each technical or soft-skill requirement has equal weight.";
+  "Matched distinct source-listed requirements ÷ all distinct source-listed requirements × 100, rounded to 1 decimal place. Each requirement is assigned to one primary category; related skills do not count.";
 
 export interface MatchProfileContext {
-  experienceYears?: number;
+  relevantExperienceYears?: number;
   educationLevel?: string;
 }
+
+const scoreCategories: ScoredSkillCategory[] = ["industry-specific", "technical", "digital", "soft"];
+const emptyCounts = () => Object.fromEntries(
+  scoreCategories.map((category) => [category, { matchedCount: 0, requiredCount: 0 }]),
+) as Record<ScoredSkillCategory, { matchedCount: number; requiredCount: number }>;
 
 export function matchRoles(
   jobs: readonly JobListing[],
   currentSkills: string[],
   profile: MatchProfileContext = {},
 ): RoleMatchResults {
-  const inputSkills = [...new Set(currentSkills.map((skill) => skill.trim()).filter(Boolean))];
+  const uniqueSkillMap = new Map<string, string>();
+  for (const value of currentSkills) {
+    const skill = value.trim();
+    const key = canonicalSkill(skill);
+    if (skill && !isBroadTechnicalArea(skill) && !uniqueSkillMap.has(key)) uniqueSkillMap.set(key, skill);
+  }
+  const inputSkills = [...uniqueSkillMap.values()];
+
   const results = jobs.map((job) => {
     const analysis = calculateSkillGap(job, inputSkills);
-    const experienceFit = assessExperienceFit(job.title, job.experience, profile.experienceYears);
-    const educationFit = assessEducationFit(job.education, profile.educationLevel, job.experience);
-    const skillCoverage = analysis.coveragePercent;
-    const matchedTechnicalCount = analysis.matchedSkills.filter((skill) => skill.category === "technical").length;
-    const requiredTechnicalCount = matchedTechnicalCount + analysis.missingSkills.filter((skill) => skill.category === "technical").length;
+    const toRoleSkill = (skill: typeof analysis.matchedSkills[number], matchedBy: string | null) => ({
+      ...skill,
+      scoreCategory: scoreCategoryForRequirement(job, skill.category, skill.skill),
+      matchedBy,
+      matchType: matchedBy ? skillMatchType(skill.skill, matchedBy) : null,
+      sdg: mapSkillToSdgs(skill.skill, job),
+    });
+    const matchedSkills = analysis.matchedSkills.map((skill) => toRoleSkill(skill, skill.matchedBy));
+    const skillGaps = analysis.missingSkills.map((skill) => toRoleSkill(skill, null));
+    const skillCounts = emptyCounts();
+    for (const skill of [...matchedSkills, ...skillGaps]) {
+      skillCounts[skill.scoreCategory].requiredCount++;
+      if (skill.matchedBy) skillCounts[skill.scoreCategory].matchedCount++;
+    }
+
+    const matchedTechnicalCount = skillCounts.technical.matchedCount;
+    const requiredTechnicalCount = skillCounts.technical.requiredCount;
     const technicalCoverage = requiredTechnicalCount
-      ? Math.round(matchedTechnicalCount / requiredTechnicalCount * 1000) / 10
+      ? Math.round((matchedTechnicalCount / requiredTechnicalCount) * 1000) / 10
       : null;
-    const compatibility = compatibilityFor(experienceFit, educationFit, skillCoverage, technicalCoverage);
+    const experienceFit = assessExperienceFit(job.title, job.experience, profile.relevantExperienceYears);
+    const educationFit = assessEducationFit(job.education, profile.educationLevel, job.experience);
+    const { scoreBreakdown, overallScore } = buildScoreBreakdown(skillCounts, experienceFit);
+    const compatibility = compatibilityFor(experienceFit, educationFit, analysis.coveragePercent, technicalCoverage);
+    const reconciledScoreBreakdown: ScoreBreakdownItem[] = scoreBreakdown;
+
     return {
       job,
       matchedCount: analysis.matchedCount,
       requiredCount: analysis.requiredCount,
-      skillCoverage,
+      skillCoverage: analysis.coveragePercent,
       technicalCoverage,
       matchedTechnicalCount,
       requiredTechnicalCount,
       relatedSkills: relatedRoleSkills(job, inputSkills, analysis.missingSkills.map((skill) => skill.skill)),
       titleSignals: roleTitleSignals(job, inputSkills),
-      score: skillCoverage,
-      overallScore: overallMatchScore(
-        skillCoverage,
-        experienceFit.suitabilityScore,
-        educationFit.suitabilityScore,
-      ),
+      score: analysis.coveragePercent,
+      overallScore,
+      scoreBreakdown: reconciledScoreBreakdown,
       compatibilityTier: compatibility.tier,
       compatibilityLabel: compatibility.label,
       compatibilityReasons: compatibility.reasons,
       experienceFit,
       educationFit,
-      matchedSkills: analysis.matchedSkills.map((skill) => ({ ...skill, matchType: skillMatchType(skill.skill, skill.matchedBy!), sdg: mapSkillToSdgs(skill.skill, job) })),
-      skillGaps: analysis.missingSkills.map((skill) => ({ ...skill, matchType: null, sdg: mapSkillToSdgs(skill.skill, job) })),
+      matchedSkills,
+      skillGaps,
       unmatchedProfileSkills: analysis.unmatchedInputSkills,
       roleSdg: mapRoleToSdgs(job),
       improvement: analysis.requiredCount === 0
         ? "The source lists no skills to compare. Review the original listing and ask the employer for requirements."
         : analysis.missingSkills.length
-          ? "Review the skills not found in your saved profile. Add a skill only if you genuinely have it, with an example of using it, or practise it before updating your profile. Verify experience and education separately against the listing."
-          : "All listed skills were found in your self-reported profile. Add honest evidence of using them and review the employer's experience and education requirements; this is not proof of eligibility.",
+          ? "Review the skills not found in your saved profile. Add only skills you genuinely have; a missing profile entry does not prove you lack the skill. Check the original education and experience wording."
+          : "All listed skills were found in your self-reported profile. Review the original education and experience wording; this does not establish eligibility.",
     };
   });
+
   results.sort((a, b) => {
     const aOverall = a.overallScore ?? -1;
     const bOverall = b.overallScore ?? -1;
@@ -79,25 +108,22 @@ export function matchRoles(
       || bCoverage - aCoverage
       || a.job.id.localeCompare(b.job.id, "en", { numeric: true });
   });
+
   return {
     totalJobs: jobs.length,
-    inputSkillCount: new Set(inputSkills.map((skill) => skill.toLowerCase())).size,
+    inputSkillCount: inputSkills.length,
     formula: MATCH_FORMULA,
     overallFormula: OVERALL_MATCH_FORMULA,
     weights: MATCH_WEIGHTS,
     scoringNotes: [
-      "Overall scores are estimates of profile-to-role suitability, not probabilities of hiring, future job security, or national demand.",
-      "Matching reuses the existing conservative skill comparison: case/spacing normalization, documented aliases, and explicit source-listed alternatives. Broad labels do not imply specific tools.",
-      "Skill coverage remains a separate metric: matched distinct source-listed requirements divided by all distinct listed requirements. Only explicitly saved skill names are compared.",
-      "Available dimensions use weights of 60% skill coverage, 25% experience suitability and 15% education suitability. If a dimension is unavailable, its weight is excluded and the remaining weights are proportionally renormalized.",
-      "Experience comparisons use the user's self-reported total years. They do not verify relevant-domain experience, leadership, portfolios or eligibility. Conditional/alternative paths are left unscored instead of being reduced to one threshold.",
-      `When the source gives no comparable experience requirement, internal title guidelines are ${Object.entries(ROLE_EXPERIENCE_GUIDELINES).map(([level, years]) => `${level} ${years}+`).join(", ")} years. These are estimates, not employer requirements.`,
-      "Education comparison maps only recognizable source and profile levels. It does not verify field of study, equivalent qualifications or additional conditions.",
-      "Tier 1 requires at least 50% total skill coverage and 50% technical coverage when applicable, with compatible experience and education and no unresolved comparisons. These internal guidance thresholds are not validated hiring cutoffs. Tier 2 marks limited skills, stretch requirements or unresolved information; Tier 3 requires a clear shortfall against a mandatory source requirement.",
-      "Exact normalized names, explicit equivalent-name aliases and source-stated one-of alternatives count toward skill coverage. Related skills and title signals never change coverage, overall scores or tiers. Self-rated proficiency is not scored.",
-      "A gap means not found in this profile, not that you definitely lack the skill. Profile statements are self-reported, not independently demonstrated.",
-      "Results sort by compatibility tier, then overall score, skill coverage and numeric record ID. Salary, job category, interests, readiness and self-rated proficiency never increase a score.",
-      "Records with no listed skills have unavailable skill coverage. Other available dimensions can still contribute; if every dimension is unavailable, the overall score is not calculated.",
+      "These estimates compare self-reported skill names with supplied requirements; they are not hiring probabilities or validated employment predictions.",
+      "The five positive base weights are Industry-Specific Skills 40%, Technical Skills 30%, Digital Skills 12.5%, Soft Skills 12.5%, and Experience 5%. Evidence and Broad Technical Areas each contribute 0%.",
+      "Each distinct source-listed requirement is assigned once to a primary category. Exact and explicitly configured equivalent/source alternatives can match; related skills remain separate and earn no coverage.",
+      "Applicable categories are renormalised per role. Categories without usable requirements or experience data are excluded rather than treated as a pass or failure.",
+      "Experience is scored only from explicitly reported relevant years and a clear source-stated minimum, or an explicit statement that prior experience is not required. Total years and title seniority are not substituted.",
+      "Education is shown as a separate level-threshold comparison and is not part of the numeric suitability estimate. Meeting a level does not establish full eligibility.",
+      "The stronger-alignment tier uses 50% total and 50% technical skill coverage where applicable, plus no known mandatory experience or education gap. These are product heuristics, not employer criteria.",
+      "Evidence stays in the user's browser and is displayed only beside a skill explicitly linked to a saved entry. It is not sent to the matcher or scored.",
     ],
     sdgNotice: SDG_NOTICE,
     results,

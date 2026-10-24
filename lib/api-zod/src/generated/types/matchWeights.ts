@@ -7,7 +7,11 @@
  */
 
 export interface MatchWeights {
-  skillCoverage: number;
-  experienceSuitability: number;
-  educationSuitability: number;
+  industrySpecificSkills: number;
+  technicalSkills: number;
+  digitalSkills: number;
+  softSkills: number;
+  experience: number;
+  evidence: number;
+  broadTechnicalAreas: number;
 }

@@ -1,9 +1,27 @@
 import { z } from 'zod';
-import { skillGroups } from './skill-catalogue.ts';
+import { skillCategories, skillGroups, type SkillCategory } from './skill-catalogue.ts';
 
 export const PROFILE_KEY = 'futurenow.skills-profile.v1';
 export const proficiencies = ['Beginner', 'Intermediate', 'Advanced', 'Expert'] as const;
-export const categories = ['Technical Skills', 'Digital Skills', 'Soft Skills', 'Industry-Specific Skills'] as const;
+export const categories = skillCategories;
+const storedCategory = z.enum([...categories, 'Soft Skills']).transform((category): SkillCategory =>
+  category === 'Soft Skills' ? 'Soft Skills & Languages' : category as SkillCategory,
+);
+const presetCategories = new Map<string, SkillCategory>();
+for (const group of skillGroups) {
+  for (const name of group.skills) presetCategories.set(name.normalize('NFKC').trim().toLocaleLowerCase('en'), group.category);
+}
+const savedSkillSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(100),
+  category: storedCategory,
+  proficiency: z.enum(proficiencies),
+  custom: z.boolean(),
+}).transform((skill) => {
+  if (skill.custom) return skill;
+  const migratedCategory = presetCategories.get(skill.name.normalize('NFKC').trim().toLocaleLowerCase('en'));
+  return migratedCategory ? { ...skill, category: migratedCategory } : skill;
+});
 export const statuses = ['Student', 'Fresh Graduate', 'Employed', 'Unemployed', 'Career Changer'] as const;
 export const educationLevels = ['Secondary school', 'Certificate', 'Diploma', "Bachelor’s degree", "Master’s degree", 'Doctorate', 'Other', 'Prefer not to say'] as const;
 export const budgets = ['Free only', 'Low-cost', 'Open to paid programmes'] as const;
@@ -31,12 +49,13 @@ const rating = z.union([z.literal(''), z.number().int().min(1).max(5)]);
 export const profileSchema = z.object({
   basic: z.object({
     status: z.union([z.literal(''), z.enum(statuses)]), field: text, years: z.union([z.literal(''), z.number().min(0).max(80)]),
+    // Optional so existing version-1 browser profiles remain valid.
+    relevantYears: z.union([z.literal(''), z.number().min(0).max(80)]).optional(),
     education: z.union([z.literal(''), z.enum(educationLevels)]), direction: text,
   }),
-  skills: z.array(z.object({
-    id: z.string().min(1).max(100), name: z.string().trim().min(1).max(100),
-    category: z.enum(categories), proficiency: z.enum(proficiencies), custom: z.boolean(),
-  })).max(150),
+  // Old "Soft Skills" and broad-preset categories are migrated on read; IDs,
+  // names, proficiency values, and evidence skill references are unchanged.
+  skills: z.array(savedSkillSchema).max(150),
   experience: z.object({
     academic: text, work: text, personal: text, examples: text, certifications: text, achievements: text, skipped: z.boolean(),
     // Optional for backward compatibility with profiles saved before structured evidence existed.
@@ -64,7 +83,7 @@ const identityTranslate: TranslateMessage = (messageId, values = {}) =>
 export const sectionNames = ['Basic information', 'Current skills', 'Experience & evidence', 'Interests & preferences', 'Learning readiness'];
 export function emptyProfile(): SkillsProfile {
   return {
-    basic: { status: '', field: '', years: '', education: '', direction: '' }, skills: [],
+    basic: { status: '', field: '', years: '', relevantYears: '', education: '', direction: '' }, skills: [],
     experience: { academic: '', work: '', personal: '', examples: '', certifications: '', achievements: '', skipped: false, evidenceItems: [] },
     interests: { industries: [], activities: [], priorities: [], willingness: '', weeklyHours: '', budget: '' },
     readiness: { technology: '', problemApproach: '', adaptability: '', realisticHours: '' },
@@ -78,8 +97,9 @@ export function validateSection(p: SkillsProfile, section: number, translate: Tr
     }
   };
   if (section === 0) {
-    Object.entries(p.basic).forEach(([key, value]) => require(`basic.${key}`, value, ({ status: 'Current status', field: 'Field of study or occupation', years: 'Years of work experience', education: 'Highest education level', direction: 'Preferred career direction' } as Record<string, string>)[key]));
+    Object.entries(p.basic).filter(([key]) => key !== 'relevantYears').forEach(([key, value]) => require(`basic.${key}`, value, ({ status: 'Current status', field: 'Field of study or occupation', years: 'Years of work experience', education: 'Highest education level', direction: 'Preferred career direction' } as Record<string, string>)[key]));
     if (p.basic.years !== '' && (!Number.isFinite(p.basic.years) || p.basic.years < 0 || p.basic.years > 80)) errors['basic.years'] = translate('Enter years between 0 and 80.');
+    if (p.basic.relevantYears !== undefined && p.basic.relevantYears !== '' && (!Number.isFinite(p.basic.relevantYears) || p.basic.relevantYears < 0 || p.basic.relevantYears > 80)) errors['basic.relevantYears'] = translate('Enter years between 0 and 80.');
   }
   if (section === 1) {
     require('skills', p.skills, 'At least one skill');
@@ -106,7 +126,7 @@ export type TransferableStrength = {
   source: ProfileMessage;
 };
 export function transferableStrengths(p: SkillsProfile): TransferableStrength[] {
-  const strengths: TransferableStrength[] = p.skills.filter(s => s.category === 'Soft Skills').map(s => {
+  const strengths: TransferableStrength[] = p.skills.filter(s => s.category === 'Soft Skills & Languages').map(s => {
     const isPreset = !s.custom && skillOptions[s.category].includes(s.name);
     return {
       name: s.name,

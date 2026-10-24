@@ -7,11 +7,15 @@
  */
 import type { RoleMatchSkillCategory } from './roleMatchSkillCategory';
 import type { RoleMatchSkillMatchType } from './roleMatchSkillMatchType';
+import type { RoleMatchSkillScoreCategory } from './roleMatchSkillScoreCategory';
 import type { SdgAssessment } from './sdgAssessment';
 
 export interface RoleMatchSkill {
   skill: string;
+  /** Original source array category; retained independently from the primary scoring category. */
   category: RoleMatchSkillCategory;
+  /** One primary scoring category assigned from the source role context. */
+  scoreCategory: RoleMatchSkillScoreCategory;
   /** @nullable */
   matchedBy: string | null;
   /** @nullable */

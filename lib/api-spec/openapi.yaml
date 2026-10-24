@@ -178,6 +178,7 @@ components:
   schemas:
     RoleMatchInput:
       type: object
+      additionalProperties: false
       properties:
         currentSkills:
           type: array
@@ -185,11 +186,11 @@ components:
           items:
             type: string
             maxLength: 100
-        experienceYears:
+        relevantExperienceYears:
           type: number
           minimum: 0
           maximum: 80
-          description: Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.
+          description: Optional explicitly self-reported years of relevant work experience. Total work experience is not substituted.
         educationLevel:
           type: string
           maxLength: 80
@@ -247,6 +248,11 @@ components:
         category:
           type: string
           enum: [technical, soft]
+          description: Original source array category; retained independently from the primary scoring category.
+        scoreCategory:
+          type: string
+          enum: [industry-specific, technical, digital, soft]
+          description: One primary scoring category assigned from the source role context.
         matchedBy:
           type: ["string", "null"]
         matchType:
@@ -254,7 +260,7 @@ components:
           enum: [exact, equivalent, source-alternative, null]
         sdg:
           $ref: "#/components/schemas/SdgAssessment"
-      required: [skill, category, matchedBy, matchType, sdg]
+      required: [skill, category, scoreCategory, matchedBy, matchType, sdg]
     RelatedRoleSkill:
       type: object
       properties:
@@ -343,19 +349,55 @@ components:
         reason:
           type: string
       required: [requirementType, sourceText, basis, minimumLevel, userLevel, userEducation, suitabilityScore, status, summary, reason]
+    ScoreCategory:
+      type: string
+      enum: [industry-specific, technical, digital, soft, experience, evidence, broad-technical-areas]
+    ScoreBreakdownStatus:
+      type: string
+      enum: [scored, not-applicable, not-specified, unknown, not-scorable, excluded]
+    ScoreBreakdownItem:
+      type: object
+      properties:
+        category:
+          $ref: "#/components/schemas/ScoreCategory"
+        matchedCount:
+          type: integer
+        requiredCount:
+          type: integer
+        coverage:
+          type: ["number", "null"]
+        baseWeight:
+          type: number
+        effectiveWeight:
+          type: ["number", "null"]
+        contribution:
+          type: ["number", "null"]
+        status:
+          $ref: "#/components/schemas/ScoreBreakdownStatus"
+        explanation:
+          type: string
+      required: [category, matchedCount, requiredCount, coverage, baseWeight, effectiveWeight, contribution, status, explanation]
     CompatibilityTier:
       type: integer
       enum: [1, 2, 3]
     MatchWeights:
       type: object
       properties:
-        skillCoverage:
+        industrySpecificSkills:
           type: number
-        experienceSuitability:
+        technicalSkills:
           type: number
-        educationSuitability:
+        digitalSkills:
           type: number
-      required: [skillCoverage, experienceSuitability, educationSuitability]
+        softSkills:
+          type: number
+        experience:
+          type: number
+        evidence:
+          type: number
+        broadTechnicalAreas:
+          type: number
+      required: [industrySpecificSkills, technicalSkills, digitalSkills, softSkills, experience, evidence, broadTechnicalAreas]
     RoleMatch:
       type: object
       properties:
@@ -386,6 +428,10 @@ components:
           description: Backward-compatible alias for skillCoverage.
         overallScore:
           type: ["number", "null"]
+        scoreBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreBreakdownItem"
         compatibilityTier:
           $ref: "#/components/schemas/CompatibilityTier"
         compatibilityLabel:
@@ -414,7 +460,7 @@ components:
           $ref: "#/components/schemas/SdgAssessment"
         improvement:
           type: string
-      required: [job, matchedCount, requiredCount, skillCoverage, technicalCoverage, matchedTechnicalCount, requiredTechnicalCount, relatedSkills, titleSignals, score, overallScore, compatibilityTier, compatibilityLabel, compatibilityReasons, experienceFit, educationFit, matchedSkills, skillGaps, unmatchedProfileSkills, roleSdg, improvement]
+      required: [job, matchedCount, requiredCount, skillCoverage, technicalCoverage, matchedTechnicalCount, requiredTechnicalCount, relatedSkills, titleSignals, score, overallScore, scoreBreakdown, compatibilityTier, compatibilityLabel, compatibilityReasons, experienceFit, educationFit, matchedSkills, skillGaps, unmatchedProfileSkills, roleSdg, improvement]
     RoleMatchResults:
       type: object
       properties:

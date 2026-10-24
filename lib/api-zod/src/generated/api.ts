@@ -74,8 +74,8 @@ export const matchFutureReadyRolesBodyCurrentSkillsItemMax = 100;
 
 export const matchFutureReadyRolesBodyCurrentSkillsMax = 150;
 
-export const matchFutureReadyRolesBodyExperienceYearsMin = 0;
-export const matchFutureReadyRolesBodyExperienceYearsMax = 80;
+export const matchFutureReadyRolesBodyRelevantExperienceYearsMin = 0;
+export const matchFutureReadyRolesBodyRelevantExperienceYearsMax = 80;
 
 export const matchFutureReadyRolesBodyEducationLevelMax = 80;
 
@@ -83,7 +83,7 @@ export const matchFutureReadyRolesBodyEducationLevelMax = 80;
 
 export const MatchFutureReadyRolesBody = zod.object({
   "currentSkills": zod.array(zod.string().max(matchFutureReadyRolesBodyCurrentSkillsItemMax)).max(matchFutureReadyRolesBodyCurrentSkillsMax),
-  "experienceYears": zod.number().min(matchFutureReadyRolesBodyExperienceYearsMin).max(matchFutureReadyRolesBodyExperienceYearsMax).optional().describe('Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.'),
+  "relevantExperienceYears": zod.number().min(matchFutureReadyRolesBodyRelevantExperienceYearsMin).max(matchFutureReadyRolesBodyRelevantExperienceYearsMax).optional().describe('Optional explicitly self-reported years of relevant work experience. Total work experience is not substituted.'),
   "educationLevel": zod.string().max(matchFutureReadyRolesBodyEducationLevelMax).optional().describe('Optional selected education level from the saved profile. No free-text profile answers are sent.')
 })
 
@@ -93,9 +93,13 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "formula": zod.string().describe('Skill coverage formula retained for backward compatibility.'),
   "overallFormula": zod.string(),
   "weights": zod.object({
-  "skillCoverage": zod.number(),
-  "experienceSuitability": zod.number(),
-  "educationSuitability": zod.number()
+  "industrySpecificSkills": zod.number(),
+  "technicalSkills": zod.number(),
+  "digitalSkills": zod.number(),
+  "softSkills": zod.number(),
+  "experience": zod.number(),
+  "evidence": zod.number(),
+  "broadTechnicalAreas": zod.number()
 }),
   "scoringNotes": zod.array(zod.string()),
   "sdgNotice": zod.string(),
@@ -135,6 +139,17 @@ export const MatchFutureReadyRolesResponse = zod.object({
 })),
   "score": zod.number().nullable().describe('Backward-compatible alias for skillCoverage.'),
   "overallScore": zod.number().nullable(),
+  "scoreBreakdown": zod.array(zod.object({
+  "category": zod.enum(['industry-specific', 'technical', 'digital', 'soft', 'experience', 'evidence', 'broad-technical-areas']),
+  "matchedCount": zod.number().int(),
+  "requiredCount": zod.number().int(),
+  "coverage": zod.number().nullable(),
+  "baseWeight": zod.number(),
+  "effectiveWeight": zod.number().nullable(),
+  "contribution": zod.number().nullable(),
+  "status": zod.enum(['scored', 'not-applicable', 'not-specified', 'unknown', 'not-scorable', 'excluded']),
+  "explanation": zod.string()
+})),
   "compatibilityTier": zod.union([zod.literal(1),zod.literal(2),zod.literal(3)]),
   "compatibilityLabel": zod.string(),
   "compatibilityReasons": zod.array(zod.string()),
@@ -165,7 +180,8 @@ export const MatchFutureReadyRolesResponse = zod.object({
 }),
   "matchedSkills": zod.array(zod.object({
   "skill": zod.string(),
-  "category": zod.enum(['technical', 'soft']),
+  "category": zod.enum(['technical', 'soft']).describe('Original source array category; retained independently from the primary scoring category.'),
+  "scoreCategory": zod.enum(['industry-specific', 'technical', 'digital', 'soft']).describe('One primary scoring category assigned from the source role context.'),
   "matchedBy": zod.string().nullable(),
   "matchType": zod.union([zod.literal('exact'),zod.literal('equivalent'),zod.literal('source-alternative'),zod.literal(null)]).nullable(),
   "sdg": zod.object({
@@ -189,7 +205,8 @@ export const MatchFutureReadyRolesResponse = zod.object({
 })),
   "skillGaps": zod.array(zod.object({
   "skill": zod.string(),
-  "category": zod.enum(['technical', 'soft']),
+  "category": zod.enum(['technical', 'soft']).describe('Original source array category; retained independently from the primary scoring category.'),
+  "scoreCategory": zod.enum(['industry-specific', 'technical', 'digital', 'soft']).describe('One primary scoring category assigned from the source role context.'),
   "matchedBy": zod.string().nullable(),
   "matchType": zod.union([zod.literal('exact'),zod.literal('equivalent'),zod.literal('source-alternative'),zod.literal(null)]).nullable(),
   "sdg": zod.object({

@@ -12,11 +12,11 @@ export interface RoleMatchInput {
      */
   currentSkills: string[];
   /**
-     * Optional self-reported total years from the saved profile. It does not verify relevant-domain experience.
+     * Optional explicitly self-reported years of relevant work experience. Total work experience is not substituted.
      * @minimum 0
      * @maximum 80
      */
-  experienceYears?: number;
+  relevantExperienceYears?: number;
   /**
      * Optional selected education level from the saved profile. No free-text profile answers are sent.
      * @maxLength 80
@@ -66,11 +66,27 @@ export interface SdgAssessment {
   reviewReason: string | null;
 }
 
+/**
+ * Original source array category; retained independently from the primary scoring category.
+ */
 export type RoleMatchSkillCategory = typeof RoleMatchSkillCategory[keyof typeof RoleMatchSkillCategory];
 
 
 export const RoleMatchSkillCategory = {
   technical: 'technical',
+  soft: 'soft',
+} as const;
+
+/**
+ * One primary scoring category assigned from the source role context.
+ */
+export type RoleMatchSkillScoreCategory = typeof RoleMatchSkillScoreCategory[keyof typeof RoleMatchSkillScoreCategory];
+
+
+export const RoleMatchSkillScoreCategory = {
+  'industry-specific': 'industry-specific',
+  technical: 'technical',
+  digital: 'digital',
   soft: 'soft',
 } as const;
 
@@ -88,7 +104,10 @@ export const RoleMatchSkillMatchType = {
 
 export interface RoleMatchSkill {
   skill: string;
+  /** Original source array category; retained independently from the primary scoring category. */
   category: RoleMatchSkillCategory;
+  /** One primary scoring category assigned from the source role context. */
+  scoreCategory: RoleMatchSkillScoreCategory;
   /** @nullable */
   matchedBy: string | null;
   /** @nullable */
@@ -211,6 +230,46 @@ export interface RoleEducationFit {
   reason: string;
 }
 
+export type ScoreCategory = typeof ScoreCategory[keyof typeof ScoreCategory];
+
+
+export const ScoreCategory = {
+  'industry-specific': 'industry-specific',
+  technical: 'technical',
+  digital: 'digital',
+  soft: 'soft',
+  experience: 'experience',
+  evidence: 'evidence',
+  'broad-technical-areas': 'broad-technical-areas',
+} as const;
+
+export type ScoreBreakdownStatus = typeof ScoreBreakdownStatus[keyof typeof ScoreBreakdownStatus];
+
+
+export const ScoreBreakdownStatus = {
+  scored: 'scored',
+  'not-applicable': 'not-applicable',
+  'not-specified': 'not-specified',
+  unknown: 'unknown',
+  'not-scorable': 'not-scorable',
+  excluded: 'excluded',
+} as const;
+
+export interface ScoreBreakdownItem {
+  category: ScoreCategory;
+  matchedCount: number;
+  requiredCount: number;
+  /** @nullable */
+  coverage: number | null;
+  baseWeight: number;
+  /** @nullable */
+  effectiveWeight: number | null;
+  /** @nullable */
+  contribution: number | null;
+  status: ScoreBreakdownStatus;
+  explanation: string;
+}
+
 export type CompatibilityTier = typeof CompatibilityTier[keyof typeof CompatibilityTier];
 
 
@@ -221,9 +280,13 @@ export const CompatibilityTier = {
 } as const;
 
 export interface MatchWeights {
-  skillCoverage: number;
-  experienceSuitability: number;
-  educationSuitability: number;
+  industrySpecificSkills: number;
+  technicalSkills: number;
+  digitalSkills: number;
+  softSkills: number;
+  experience: number;
+  evidence: number;
+  broadTechnicalAreas: number;
 }
 
 /**
@@ -284,6 +347,7 @@ export interface RoleMatch {
   score: number | null;
   /** @nullable */
   overallScore: number | null;
+  scoreBreakdown: ScoreBreakdownItem[];
   compatibilityTier: CompatibilityTier;
   compatibilityLabel: string;
   compatibilityReasons: string[];

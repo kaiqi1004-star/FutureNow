@@ -12,6 +12,7 @@ import type { RoleEducationFit } from './roleEducationFit';
 import type { RoleExperienceFit } from './roleExperienceFit';
 import type { RoleMatchSkill } from './roleMatchSkill';
 import type { RoleTitleSignal } from './roleTitleSignal';
+import type { ScoreBreakdownItem } from './scoreBreakdownItem';
 import type { SdgAssessment } from './sdgAssessment';
 
 export interface RoleMatch {
@@ -33,6 +34,7 @@ export interface RoleMatch {
   score: number | null;
   /** @nullable */
   overallScore: number | null;
+  scoreBreakdown: ScoreBreakdownItem[];
   compatibilityTier: CompatibilityTier;
   compatibilityLabel: string;
   compatibilityReasons: string[];

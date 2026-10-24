@@ -150,7 +150,7 @@ router.post("/future-ready/role-matches", (req, res): void => {
   }
   try {
     res.json(MatchFutureReadyRolesResponse.parse(matchRoles(jobs, parsed.data.currentSkills, {
-      experienceYears: parsed.data.experienceYears,
+      relevantExperienceYears: parsed.data.relevantExperienceYears,
       educationLevel: parsed.data.educationLevel,
     })));
   } catch (err) {
