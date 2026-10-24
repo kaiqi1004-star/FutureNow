@@ -161,3 +161,40 @@
 @media (max-width: 900px) { .sp-layout, .sp-head, .sp-insight-grid, .sp-sum-grid { grid-template-columns: 1fr; } .sp-steps { position: static; } .sp-steps ol { grid-template-columns: repeat(5, minmax(0, 1fr)); } .sp-step { flex-direction: column; text-align: center; gap: 4px; font-size: 11px; padding: 8px 4px; } .sp-step.is-current { box-shadow: inset 0 -3px 0 var(--sp-green); } }
 @media (max-width: 767px) { .sp-grid, .sp-custom-grid { grid-template-columns: 1fr; } .sp-step-text { display: none; } .sp-scale-row { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; } .sp-scale-opt span { font-size: 9px; } .sp-actions, .sp-actions-right { width: 100%; } .sp-actions-right .sp-btn { flex: 1; justify-content: center; } .sp-sum-row { grid-template-columns: 1fr; gap: 2px; } .sp-skill-row { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { .sp-fade { animation: none; } .sp-bar span, .sp-btn { transition: none; } }
+
+.sp-library-search { display: grid; gap: 8px; }
+.sp-library-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px 12px; padding: 10px 12px; border-radius: 9px; background: var(--sp-mint); font-size: 12px; }
+.sp-library-status strong { color: var(--sp-green); }
+.sp-library-status span, .sp-selected-head span { color: var(--sp-muted); }
+.sp-selected-review { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--sp-line); border-left: 3px solid var(--sp-green); border-radius: 11px; background: var(--sp-card); }
+.sp-selected-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; }
+.sp-selected-head > div { display: grid; gap: 3px; font-size: 13px; }
+.sp-selected-head .sp-link { font-size: 12px; }
+.sp-selected-chips { display: flex; flex-wrap: wrap; gap: 7px; max-height: 130px; overflow: auto; padding: 2px; }
+.sp-selected-chip { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; min-height: 36px; padding: 5px 9px; border: 1px solid var(--sp-line); border-radius: 9px; background: var(--sp-bg); color: var(--sp-ink); text-align: left; cursor: pointer; }
+.sp-selected-chip > span { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; font-size: 12px; font-weight: 600; }
+.sp-selected-chip small { color: var(--sp-muted); font-size: 10px; font-weight: 500; }
+.sp-selected-chip svg { flex: 0 0 auto; color: var(--sp-muted); }
+.sp-selected-chip:hover { border-color: var(--sp-err); background: var(--sp-err-bg); }
+.sp-selected-chip:hover svg { color: var(--sp-err); }
+.sp-selected-chip:focus-visible { outline: 3px solid var(--sp-yellow); outline-offset: 2px; }
+.sp-category-library { border: 1px solid var(--sp-line); border-radius: 11px; padding: 12px 14px; background: var(--sp-card); }
+.sp-category-summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; list-style: none; }
+.sp-category-summary::-webkit-details-marker { display: none; }
+.sp-category-summary::before { content: '›'; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--sp-mint); color: var(--sp-green); font-size: 18px; line-height: 1; transition: transform .15s ease; }
+.sp-category-library[open] > .sp-category-summary::before { transform: rotate(90deg); }
+.sp-category-summary .sp-label { flex: 1; font-size: 14px; }
+.sp-category-meta { display: flex; align-items: center; gap: 5px; color: var(--sp-muted); font-size: 11px; text-align: right; }
+.sp-category-library[open] > .sp-category-summary { margin-bottom: 12px; }
+.sp-category-library > .sp-hint { margin: -3px 0 12px; }
+.sp-skill-group { border-top: 1px solid var(--sp-line); padding-top: 8px; }
+.sp-skill-group > summary { min-height: 30px; cursor: pointer; }
+.sp-skill-group > summary:hover, .sp-category-summary:hover .sp-label { color: var(--sp-green); }
+.sp-skill-group > summary:focus-visible, .sp-category-summary:focus-visible { outline: 3px solid var(--sp-yellow); outline-offset: 3px; border-radius: 4px; }
+@media (max-width: 767px) {
+  .sp-category-library { padding: 10px; }
+  .sp-category-summary { align-items: flex-start; flex-wrap: wrap; }
+  .sp-category-meta { margin-left: 29px; width: 100%; text-align: left; }
+  .sp-selected-head { align-items: flex-start; }
+  .sp-selected-head .sp-link { text-align: left; }
+}

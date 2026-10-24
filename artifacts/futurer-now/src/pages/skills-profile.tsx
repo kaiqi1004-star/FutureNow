@@ -120,26 +120,62 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
     onChange(skills.map((s) => (s.id === id ? { ...s, name: n } : s))); setEditing(null); setMsg(null);
   };
   return <div className="sp-skills">
-    <label className="sp-label" htmlFor="search-skill-library">{t('Search the skill library')}</label>
-    <input id="search-skill-library" className="sp-input" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search skills, tools or groups')} data-testid="input-search-skills" />
-    <p className="sp-muted">{t('Broad areas do not imply specific tools. Select only skills you have; nothing is added automatically.')}</p>
+    <div className="sp-library-search">
+      <label className="sp-label" htmlFor="search-skill-library">{t('Search the skill library')}</label>
+      <input id="search-skill-library" className="sp-input" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search skills, tools or groups')} data-testid="input-search-skills" />
+      <div className="sp-library-status" role="status" aria-live="polite" data-testid="text-selected-skill-count">
+        <strong>{t('Selected: {count}', { count: skills.length })}</strong>
+        <span>{t('Choose only skills you have. Broad areas never add specific skills automatically.')}</span>
+      </div>
+    </div>
+    {skills.length > 0 && <section className="sp-selected-review" aria-label={t('Selected skills')} data-testid="selected-skill-review">
+      <div className="sp-selected-head">
+        <div><strong>{t('Review selected skills')}</strong><span>{t('Remove any skill that does not describe your experience.')}</span></div>
+        <button type="button" className="sp-link" onClick={() => document.getElementById('skills')?.scrollIntoView({ block: 'center' })}>{t('Review proficiency details')}</button>
+      </div>
+      <div className="sp-selected-chips">
+        {skills.map((skill) => {
+          const label = !skill.custom && skillOptions[skill.category].includes(skill.name) ? t(skill.name) : skill.name;
+          return <button
+            type="button"
+            key={skill.id}
+            className="sp-selected-chip"
+            aria-label={t('Remove {skill}', { skill: label })}
+            onClick={() => onChange(skills.filter((item) => item.id !== skill.id))}
+            data-testid={`button-remove-selected-${skill.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+          >
+            <span>{label}<small>{t(displayedSkillCategory(skill))}</small></span><X size={13} aria-hidden="true" />
+          </button>;
+        })}
+      </div>
+    </section>}
     {categories.map((category) => {
+      const categorySkills = skillGroups.filter((group) => group.category === category).flatMap((group) => group.skills);
+      const selectedCount = skills.filter((skill) => displayedSkillCategory(skill) === category).length;
       const groups = skillGroups.filter((group) =>
         group.category === category
         && `${category} ${group.label} ${group.skills.join(' ')} ${group.skills.map((skill) => t(skill)).join(' ')}`.toLowerCase().includes(search.toLowerCase()),
       );
       if (!groups.length) return null;
-      return <section className="sp-category-library" key={category} data-testid={`skill-category-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}>
-        <h3 className="sp-label">{t(category)}</h3>
+      return <details
+        className="sp-category-library"
+        key={category}
+        open={Boolean(search) || category === 'Technical Skills' || category === 'Broad Technical Areas'}
+        data-testid={`skill-category-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+      >
+        <summary className="sp-category-summary">
+          <span className="sp-label">{t(category)}</span>
+          <span className="sp-category-meta">{t('{count} options', { count: categorySkills.length })} · {t('{count} selected', { count: selectedCount })}</span>
+        </summary>
         {category === 'Broad Technical Areas' && <p className="sp-hint">{t('These broad areas are for exploration only. They do not prove specific skills and never add score points.')}</p>}
         {groups.map((group) => {
           const options = group.skills.filter((skill) => !search || `${skill} ${t(skill)} ${group.label} ${category}`.toLowerCase().includes(search.toLowerCase()));
           const chips = <div className="sp-chips">{options.map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, group.category)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{t(o)}</button>; })}</div>;
           return group.broad
             ? <fieldset key={group.label} className="sp-field"><legend className="sp-label">{t(group.label)}</legend>{chips}</fieldset>
-            : <details key={group.label} className="sp-field" open={search ? true : undefined}><summary className="sp-label">{t(group.label)} ({options.length})</summary>{chips}</details>;
+            : <details key={group.label} className="sp-field sp-skill-group" open={Boolean(search) || group.label === 'Programming and software' || group.label === 'Soft skills'}><summary className="sp-label">{t(group.label)} ({options.length})</summary>{chips}</details>;
         })}
-      </section>;
+      </details>;
     })}
     <div className="sp-custom-skill">
        <div className="sp-label">{t('Add a custom skill')}<span className="sp-optional">{t('Including industry-specific')}</span></div>

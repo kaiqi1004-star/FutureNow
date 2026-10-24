@@ -75,6 +75,8 @@ try {
   const response = await responsePromise;
   const payload = await response.json();
   await page.getByTestId('card-match-J45').waitFor();
+  assert.equal(await page.getByRole('heading', { name: 'Which supplied roles fit your skills?' }).count(), 1);
+  assert.equal(await page.getByTestId('text-score-coverage-definition').count(), 1);
 
   const methodDetails = page.getByTestId('details-matching-method');
   assert.equal(await methodDetails.getAttribute('open'), null);
@@ -131,9 +133,61 @@ try {
     'matching must not change the locally saved profile',
   );
 
+  const openRoleCard = async (role) => {
+    const inCategory = payload.results.filter((result) => result.job.sector === role.job.sector);
+    const index = inCategory.findIndex((result) => result.job.id === role.job.id);
+    assert.ok(index >= 0, `role ${role.job.id} should remain in its category results`);
+    await page.getByTestId('select-match-category').selectOption(role.job.sector);
+    for (let pageIndex = 0; pageIndex < Math.floor(index / 6); pageIndex++) {
+      await page.getByTestId('button-matches-next').click();
+    }
+    const card = page.getByTestId(`card-match-${role.job.id}`);
+    await card.waitFor();
+    return card;
+  };
+  const noTechnicalRole = payload.results.find((role) => role.requiredCount > 0 && role.requiredTechnicalCount === 0);
+  const technicalRole = payload.results.find((role) => role.requiredTechnicalCount > 0);
+  assert.ok(noTechnicalRole, 'dataset should include a role with other requirements but no technical requirements');
+  assert.ok(technicalRole, 'dataset should include a role with technical requirements');
+  for (const [role, expectedTechnicalLabel] of [
+    [noTechnicalRole, 'No technical requirements listed'],
+    [technicalRole, null],
+  ]) {
+    const card = await openRoleCard(role);
+    const cardText = await card.innerText();
+    assert.ok(cardText.includes(role.job.source || 'Not supplied'), `card should use the actual source platform for ${role.job.id}`);
+    const rawUrl = role.job.sourceUrl?.trim();
+    let expectedUrl = null;
+    try {
+      const parsed = new URL(rawUrl);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') expectedUrl = rawUrl;
+    } catch {}
+    const sourceLink = card.getByTestId(`link-match-source-${role.job.id}`);
+    assert.equal(await sourceLink.count(), expectedUrl ? 1 : 0, `only a valid original URL should link for ${role.job.id}`);
+    if (expectedUrl) assert.equal(await sourceLink.getAttribute('href'), expectedUrl);
+    await card.getByTestId(`button-view-details-${role.job.id}`).click();
+    await page.getByTestId(`detail-match-${role.job.id}`).waitFor();
+    assert.equal(await page.getByRole('heading', { name: 'Which supplied roles fit your skills?' }).count(), 0, 'detail must not repeat the page introduction');
+    assert.equal(await page.getByTestId('text-privacy-disclosure').count(), 0, 'detail must not repeat the full privacy introduction');
+    const technicalLabel = await page.getByTestId('text-detail-technical-coverage').innerText();
+    if (expectedTechnicalLabel) assert.equal(technicalLabel, expectedTechnicalLabel);
+    else assert.match(technicalLabel, /^\d+ \/ \d+ \(\d+(\.\d+)?%\)$/);
+    const detailLink = page.getByTestId('link-detail-source');
+    assert.equal(await detailLink.count(), expectedUrl ? 1 : 0);
+    if (expectedUrl) assert.equal(await detailLink.getAttribute('href'), expectedUrl);
+    await page.getByTestId('button-back-to-results').click();
+  }
+  const noSkillRequirementsRole = payload.results.find((role) => role.requiredCount === 0);
+  if (noSkillRequirementsRole) {
+    const card = await openRoleCard(noSkillRequirementsRole);
+    assert.ok((await card.innerText()).includes('Not available in this listing'));
+  }
+
+  await page.getByTestId('select-match-category').selectOption('all');
   await page.getByTestId('select-match-category').selectOption('data-analytics');
   await page.getByTestId('button-view-details-J43').click();
   await page.getByTestId('text-detail-title').waitFor();
+  assert.equal(await page.getByRole('heading', { name: 'Which supplied roles fit your skills?' }).count(), 0);
   assert.equal(await page.getByTestId('section-sdg-connections').count(), 0);
   assert.equal(await page.getByText('SDG review needed', { exact: false }).count(), 0);
   assert.equal(await page.getByText('Not assessed', { exact: false }).count(), 0);
@@ -146,9 +200,38 @@ try {
   assert.equal(await page.getByTestId('details-missing-skills').getAttribute('open'), null);
   assert.equal(await page.getByTestId('section-original-job-information').getAttribute('open'), null);
   await page.getByTestId('details-score-breakdown').locator('summary').click();
-  assert.equal(await page.getByTestId('details-score-breakdown').locator('tbody tr').count(), 7);
+  const breakdownRows = page.getByTestId('details-score-breakdown').locator('tbody tr');
+  assert.ok((await breakdownRows.count()) <= 5);
+  const breakdownText = await breakdownRows.allInnerTexts();
+  assert.ok(breakdownText.every((row) => !/Evidence|Broad Technical Areas/.test(row)), 'non-scoring rows must not appear as score contributions');
+  assert.ok(!breakdownText.join(' ').includes('This wording is preserved for review'));
   await page.getByTestId('section-original-job-information').locator('summary').click();
   assert.equal(await page.getByTestId('text-detail-experience-source').innerText(), 'Internship');
+  assert.ok(await page.getByTestId('section-experience-assessment').isVisible());
+  assert.ok(await page.getByTestId('section-education-assessment').isVisible());
+  if (payload.results.find((row) => row.job.id === 'J45').job.sourceUrl) {
+    assert.equal(await page.getByTestId('link-detail-source').getAttribute('href'), payload.results.find((row) => row.job.id === 'J45').job.sourceUrl);
+  }
+  const order = await page.getByTestId('detail-match-J45').evaluate((root) => {
+    const selectors = [
+      '[data-testid="button-back-to-results"]',
+      '[data-testid="text-detail-title"]',
+      '[data-testid="text-detail-score"]',
+      '[data-testid="list-matched-skill-preview"]',
+      '[data-testid="list-skill-gaps-preview"]',
+      '[data-testid="section-experience-assessment"]',
+      '[data-testid="section-original-job-information"]',
+      '[data-testid="details-score-breakdown"]',
+      '[data-testid="section-sdg-connections"]',
+      '[data-testid="section-next-steps"]',
+    ];
+    return selectors.map((selector) => {
+      const element = root.querySelector(selector);
+      return element ? [...root.querySelectorAll('*')].indexOf(element) : -1;
+    });
+  });
+  assert.ok(order.every((position) => position >= 0), `expected all role detail sections in the hierarchy: ${order}`);
+  assert.ok(order.every((position, index) => index === 0 || position > order[index - 1]), `role detail sections should appear in the requested order: ${order}`);
   assert.equal(await page.getByTestId('text-detail-score').innerText(), `${payload.results.find((row) => row.job.id === 'J45').overallScore}%`);
   assert.match(await page.getByTestId('text-detail-coverage').innerText(), /1 \/ 7 \(14\.3%\)/);
   const sdgIds = await page.getByTestId('section-sdg-connections').locator('[data-testid^="sdg-goal-"]').evaluateAll(elements => elements.map(el => el.getAttribute('data-testid')));

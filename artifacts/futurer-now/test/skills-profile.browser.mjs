@@ -22,7 +22,7 @@ page.on('dialog', d => d.accept());
 try {
   await page.goto(`${baseURL}/skills-profile`);
   await check('Required validation and accessible focus', async () => {
-    await page.getByRole('button', { name: 'Next', exact: false }).click();
+    await t('button-next-section').click();
     await t('error-basic-status').waitFor();
     assert.equal(await page.locator('#basic-status').getAttribute('aria-invalid'), 'true');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'basic-status');
@@ -39,7 +39,7 @@ try {
   assert.match(await t('text-relevant-experience-level').innerText(), /Level 3/);
   await t('input-relevant-years').fill('1.5');
   await t('input-direction').fill('Build accessible software');
-  await page.getByRole('button', { name: 'Next', exact: false }).click();
+  await t('button-next-section').click();
   await check('Skill selection, custom creation, rename, proficiency and removal', async () => {
     const categoryIds = await page.locator('[data-testid^="skill-category-"]').evaluateAll(elements => elements.map(el => el.getAttribute('data-testid')));
     assert.deepEqual(categoryIds, [
@@ -50,9 +50,19 @@ try {
       'skill-category-soft-skills-languages',
     ]);
     assert.equal(await page.locator('.sp-chip.is-on').count(), 0, 'opening the catalogue must not auto-select skills');
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 0');
+    await t('input-search-skills').fill('Python');
+    await t('chip-skill-python').waitFor();
+    await t('chip-skill-python').click();
+    assert.equal(await t('chip-skill-python').getAttribute('aria-pressed'), 'true', 'search results should be selectable');
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 1');
+    await t('input-search-skills').fill('');
+    await t('button-remove-selected-python').click();
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 0', 'selected skills should be removable from the review area');
     await t('chip-skill-programming').click();
-    await page.getByTestId('skill-category-soft-skills-languages').locator('details > summary').first().click();
+    await page.getByTestId('skill-category-soft-skills-languages').locator(':scope > summary').click();
     await t('chip-skill-communication').click();
+    assert.equal(await t('text-selected-skill-count').locator('strong').innerText(), 'Selected: 2');
     await t('input-custom-skill').fill('CNC machining');
     await t('select-custom-skill-category').selectOption('Industry-Specific Skills');
     await t('select-custom-skill-proficiency').selectOption('Advanced');
@@ -63,7 +73,7 @@ try {
     await page.getByLabel('Proficiency for CAD modelling').selectOption('Expert');
     await t('input-custom-skill').fill('Temporary skill');
     await t('button-add-custom-skill').click();
-    await page.getByRole('button', { name: 'Remove Temporary skill', exact: true }).click();
+    await page.locator('.sp-skill-row [aria-label="Remove Temporary skill"]').click();
     assert.equal(await page.getByLabel('Proficiency for CAD modelling').inputValue(), 'Expert');
     assert.equal(await page.getByRole('button', { name: 'Remove Temporary skill', exact: true }).count(), 0);
   });
@@ -77,7 +87,7 @@ try {
     await t('button-step-1').click();
     assert.match(await page.locator('.sp-progress').innerText(), /2.*of 5/s);
   });
-  await page.getByRole('button', { name: 'Next', exact: false }).click();
+  await t('button-next-section').click();
   await check('Structured evidence links to a saved skill, persists, and remains optional when skipping', async () => {
     await t('button-add-evidence').click();
     const card = page.locator('.sp-evidence-card').first();
@@ -103,7 +113,7 @@ try {
   await t('radio-interests-willingness-4').check();
   await page.locator('#interests-weeklyHours').fill('5');
   await page.locator('#interests-budget').selectOption('Free only');
-  await page.getByRole('button', { name: 'Next', exact: false }).click();
+  await t('button-next-section').click();
   await t('radio-readiness-technology-4').check();
   await page.locator('#readiness-problemApproach').fill('Break the problem down, research and ask a teammate');
   await t('radio-readiness-adaptability-5').check();

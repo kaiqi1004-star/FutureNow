@@ -1,3 +1,4 @@
 - [FutureNow data boundaries](future-ready-data-boundaries.md) — Keep sampled job records separate from broad national series and never fill missing fields or units by assumption.
 - [Preview test routing](preview-test-routing.md) — Browser tests must enter through the artifact proxy or API calls can receive Vite's HTML fallback.
 - [Strict API request fields](strict-api-request-fields.md) — OpenAPI `additionalProperties: false` does not make generated Zod request validators strict; enforce and test it at the route.
+- [Matching UI scope](matching-ui-scope.md) — Keep score logic, source records, profile privacy, and SDG behavior unchanged during display refinements.

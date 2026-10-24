@@ -172,3 +172,61 @@
   .rm-detail-source dd { margin-bottom: 8px; }
   .rm-breakdown th, .rm-breakdown td { padding: 8px; }
 }
+
+.rm-metric-key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 12px; padding: 10px 12px; border-left: 3px solid var(--rm-green); border-radius: 7px; background: var(--rm-mint); color: var(--rm-muted); font-size: 12px; line-height: 1.45; }
+.rm-metric-key b { color: var(--rm-ink); }
+.rm-gap-preview { display: flex; grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; color: var(--rm-muted); font-size: 11px; line-height: 1.45; }
+.rm-gap-preview b { color: var(--rm-ink); }
+.rm-gap-preview span { overflow-wrap: anywhere; }
+.rm-result-meta { min-width: 0; }
+.rm-result-meta span { overflow-wrap: anywhere; }
+.rm-detail { display: grid; gap: 14px; }
+.rm-detail > .rm-card, .rm-detail > .rm-detail-section, .rm-detail > .rm-detail-heading { margin: 0; }
+.rm-detail > .rm-original-source, .rm-detail > .rm-breakdown { margin: 0; }
+.rm-detail-heading h2 { margin: 8px 0 4px; font-size: clamp(22px, 3vw, 30px); overflow-wrap: anywhere; }
+.rm-detail-heading .rm-meta { margin: 0; }
+.rm-detail-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.rm-detail-metric { display: grid; align-content: start; gap: 5px; min-width: 0; padding: 14px; border: 1px solid var(--rm-line); border-radius: 11px; background: var(--rm-card); }
+.rm-detail-metric-primary { border-top: 3px solid var(--rm-green); }
+.rm-detail-metric > span { color: var(--rm-muted); font-size: 10px; font-weight: 700; letter-spacing: .055em; line-height: 1.4; text-transform: uppercase; }
+.rm-detail-metric > strong { color: var(--rm-green); font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
+.rm-detail-metric > small { color: var(--rm-muted); font-size: 11px; line-height: 1.4; }
+.rm-detail-metric .rm-bar { margin: 3px 0; }
+.rm-detail-section { display: grid; gap: 10px; padding: 18px 20px; border: 1px solid var(--rm-line); border-radius: 14px; background: var(--rm-card); }
+.rm-detail-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.rm-detail-section-head h3 { margin: 0; font-size: 16px; letter-spacing: -.01em; }
+.rm-detail-section-head .rm-muted { margin: 4px 0 0; }
+.rm-skill-preview { display: flex; flex-wrap: wrap; gap: 7px; }
+.rm-skill-preview .rm-chip { background: var(--rm-mint); }
+.rm-skill-preview.is-gap .rm-chip.is-gap { background: var(--rm-peach); }
+.rm-detail-disclosure { padding-top: 9px; border-top: 1px solid var(--rm-line); }
+.rm-detail-disclosure > summary { cursor: pointer; color: var(--rm-green); font-size: 12px; font-weight: 700; }
+.rm-detail-disclosure > summary:focus-visible { outline: 2px solid var(--rm-orange); outline-offset: 3px; }
+.rm-detail-disclosure > .rm-muted { margin: 9px 0; }
+.rm-detail-disclosure .rm-skill-table { margin-top: 10px; }
+.rm-context-disclosure section { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rm-line); }
+.rm-context-disclosure h4 { margin: 0 0 6px; font-size: 13px; }
+.rm-context-disclosure p { margin: 5px 0; }
+.rm-assessment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rm-assessment-card { display: grid; align-content: start; gap: 6px; padding: 14px; border-radius: 10px; background: var(--rm-mint); }
+.rm-assessment-card h4 { margin: 0; font-size: 13px; }
+.rm-assessment-card > strong { color: var(--rm-green); font-size: 15px; line-height: 1.4; }
+.rm-assessment-card p { margin: 0; color: var(--rm-muted); font-size: 12px; line-height: 1.5; }
+.rm-assessment-card p b { color: var(--rm-ink); }
+.rm-assessment-card > small { color: var(--rm-muted); font-size: 11px; line-height: 1.5; }
+.rm-breakdown > p { margin: 10px 0; }
+@media (max-width: 860px) {
+  .rm-detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .rm-fit .rm-gap-preview { grid-column: 1 / -1; grid-row: 3; }
+  .rm-fit .rm-result-meta { grid-column: 1 / -1; grid-row: 4; }
+  .rm-fit .rm-btn { grid-column: 1 / -1; grid-row: 5; }
+  .rm-detail-metrics, .rm-assessment-grid { grid-template-columns: 1fr; }
+  .rm-detail-section { padding: 15px; }
+  .rm-detail-heading { padding: 16px; }
+  .rm-metric-key { display: grid; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sp-selected-chip, .rm-btn { transition: none; }
+}
