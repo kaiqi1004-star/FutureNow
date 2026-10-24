@@ -1,4 +1,5 @@
 import { skillGapMessages } from './skill-gap-messages.ts';
+import { moduleMessages } from './module-messages.ts';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 export type Language = 'EN' | 'BM' | 'CN';
@@ -1294,7 +1295,7 @@ const messages: Record<string, Message> = {
   'Plan progress was not saved. Browser storage may be blocked or full.': ['Plan progress was not saved. Browser storage may be blocked or full.', 'Kemajuan pelan tidak disimpan. Storan pelayar mungkin disekat atau penuh.', '计划进度未保存。浏览器存储可能被阻止或已满。'],
 };
 
-const catalog: Record<string, Message> = { ...skillGapMessages, ...messages };
+const catalog: Record<string, Message> = { ...skillGapMessages, ...messages, ...moduleMessages };
 
 const languageIndexes: Record<Language, number> = { EN: 0, BM: 1, CN: 2 };
 export const translationCatalog = catalog;

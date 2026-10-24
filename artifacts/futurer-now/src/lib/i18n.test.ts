@@ -13,6 +13,22 @@ test('each translation key supplies non-empty English, Bahasa Melayu, and Simpli
   }
 });
 
+test('shared module terminology follows the same BM and Simplified Chinese standard', () => {
+  const terms = [
+    ['Skills Profile', 'Profil Kemahiran', '技能档案'],
+    ['Basic information', 'Maklumat Asas', '基本信息'],
+    ['Current skills', 'Kemahiran Semasa', '现有技能'],
+    ['Industry-Specific Skills', 'Kemahiran Khusus Industri', '行业专属技能'],
+    ['All changes saved', 'Semua Perubahan Telah Disimpan', '所有更改已保存'],
+    ['Scenario Planning', 'Perancangan Senario', '情景规划'],
+    ['Skill Gap Navigator', 'Panduan Jurang Kemahiran', '技能差距导航'],
+  ] as const;
+  for (const [key, bm, cn] of terms) {
+    assert.equal(translateMessage(key, 'BM'), bm);
+    assert.equal(translateMessage(key, 'CN'), cn);
+  }
+});
+
 test('translated templates interpolate user values and unknown messages fall back to their English ID', () => {
   const message = 'You selected {skill} and rated your proficiency as {proficiency}. This is self-reported, not independently verified.';
   const rendered = translateMessage(message, 'BM' satisfies Language, { skill: 'Teamwork', proficiency: 'Asas' });

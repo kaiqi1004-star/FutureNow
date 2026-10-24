@@ -234,3 +234,22 @@
 @media (prefers-reduced-motion: reduce) {
   .sp-selected-chip, .rm-btn { transition: none; }
 }
+
+/* ---- Readability upgrade (Module 02) ---- */
+.rm-page { font-size: 16px; line-height: 1.6; }
+.rm-head h1 { font-size: clamp(28px, 3.4vw, 32px); line-height: 1.2; overflow-wrap: anywhere; }
+.rm-head p, .rm-note, .rm-method, .rm-method-preview, .rm-context dl, .rm-skill-row, .rm-fact, .rm-assessment-card p { font-size: 16px; line-height: 1.6; }
+.rm-card h2, .rm-detail-heading h2 { font-size: 22px; line-height: 1.3; }
+.rm-card h3, .rm-result h3, .rm-detail-section-head h3, .rm-breakdown-head h3, .rm-section-heading { font-size: 18px; line-height: 1.35; }
+.rm-btn, .rm-select { font-size: 16px; min-height: 44px; white-space: normal; }
+.rm-eyebrow, .rm-privacy, .rm-muted, .rm-chip, .rm-score-line small, .rm-assessment-note, .rm-sdg-disclosure summary, .rm-mapping-kind,
+.rm-method code, .rm-label, .rm-meta, .rm-fit small, .rm-sdg, .rm-pager, .rm-fact span, .rm-linked-evidence, .rm-linked-evidence small,
+.rm-linked-evidence span, .rm-sdg-detail, .rm-scoring-details summary, .rm-scoring-details p, .rm-result-meta, .rm-result-reason,
+.rm-coverage, .rm-coverage strong, .rm-fact p, .rm-detail-source dl, .rm-sdg-goal summary, .rm-card > summary, .rm-why p, .rm-why small,
+.rm-sdg-goal p, .rm-metric-key, .rm-gap-preview, .rm-detail-metric > span, .rm-detail-metric > small, .rm-detail-disclosure > summary,
+.rm-context-disclosure h4, .rm-assessment-card h4, .rm-assessment-card > small, .rm-breakdown-head > div > p, .rm-coverage-label,
+.rm-coverage-row-head > strong, .rm-technical-coverage, .rm-original { font-size: 14px; line-height: 1.5; }
+.rm-muted, .rm-meta, .rm-original { color: hsl(var(--foreground) / .76); }
+.rm-original { display: inline-block; font-weight: 400; }
+.rm-coverage-row-head > strong { white-space: normal; }
+.rm-chip, .rm-result h3, .rm-meta, .rm-gap-preview, .rm-skill-row, .rm-detail-source dd { overflow-wrap: anywhere; }

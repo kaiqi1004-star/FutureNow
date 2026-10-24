@@ -201,3 +201,21 @@
   .sp-selected-head { align-items: flex-start; }
   .sp-selected-head .sp-link { text-align: left; }
 }
+
+/* ---- Readability upgrade (Module 01): 32 title / 22 section / 18 card / 16 body+forms / 14 helper ---- */
+.sp-page { font-size: 16px; line-height: 1.6; }
+.sp-head h1 { font-size: clamp(28px, 3.4vw, 32px); line-height: 1.2; overflow-wrap: anywhere; }
+.sp-head p, .sp-banner, .sp-note, .sp-empty, .sp-foot, .sp-summary-head p, .sp-insight li p, .sp-missing li, .sp-sum-row { font-size: 16px; line-height: 1.6; }
+.sp-card-head h2, .sp-summary-head h2 { font-size: 22px; line-height: 1.3; }
+.sp-insight h3, .sp-sum-card h3, .sp-evidence-heading h3 { font-size: 18px; line-height: 1.35; }
+.sp-label, .sp-input, .sp-btn, .sp-prof, .sp-skill-name strong, .sp-insight li strong, .sp-category-summary .sp-label, .sp-legacy-evidence summary { font-size: 16px; }
+.sp-label { line-height: 1.45; }
+.sp-eyebrow, .sp-storage, .sp-progress, .sp-step, .sp-dirty, .sp-hint, .sp-mini, .sp-error, .sp-chip, .sp-count, .sp-skill-name small,
+.sp-source, .sp-small, .sp-sum-card .sp-btn, .sp-evidence-heading p, .sp-evidence-disclosure, .sp-evidence-index, .sp-evidence-skill,
+.sp-evidence-reference, .sp-evidence-summary-list small, .sp-evidence-summary-list span, .sp-library-status, .sp-selected-head > div,
+.sp-selected-head .sp-link, .sp-selected-chip > span, .sp-selected-chip small, .sp-category-meta, .sp-step-text small, .sp-req, .sp-optional,
+.sp-scale-opt span, .sp-step-num, .sp-step-err, .sp-badge { font-size: 14px; line-height: 1.5; }
+.sp-hint, .sp-skill-name small, .sp-source, .sp-category-meta, .sp-evidence-disclosure { color: hsl(var(--foreground) / .78); }
+.sp-btn { white-space: normal; text-align: left; min-height: 44px; height: auto; padding-block: 8px; }
+.sp-chip, .sp-selected-chip, .sp-step-text, .sp-skill-name, .sp-sum-row dd, .sp-category-summary { overflow-wrap: anywhere; white-space: normal; }
+.sp-input { min-height: 44px; }

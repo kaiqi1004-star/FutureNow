@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, CircleAlert, ExternalLink, FileText, HardDrive, Pencil, Plus, Save, SkipForward, Trash2, X } from 'lucide-react';
 import {
-  budgets, categories, educationLevels, emptyProfile, evidenceKinds, loadProfile, missingInformation, proficiencies, saveProfile,
-  sectionNames, skillOptions, statuses, transferableStrengths, validateProfile, validateSection,
+  budgets, categories, educationLevels, emptyProfile, evidenceKinds, isProfileSectionComplete, loadProfile, missingInformation, proficiencies, saveProfile,
+  sectionNames, statuses, transferableStrengths, validateProfile, validateSection,
   type EvidenceItem, type ProfileMessage, type ProfileSkill, type SavedProfile, type SkillsProfile,
 } from '@/lib/skills-profile';
 import { isBroadTechnicalArea, skillGroups } from '@/lib/skill-catalogue';
 import { evidenceHasContent, safeEvidenceUrl } from '@/lib/profile-evidence';
 import { languageLocales, useTranslation } from '@/lib/i18n';
+import { useSkillLabel } from '@/lib/skill-display';
 import './skills-profile.css';
 
 type Errors = Record<string, string>;
@@ -99,6 +100,7 @@ function MultiSelect({ id, label, options, value, onChange, error }: { id: strin
 
 function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onChange: (s: ProfileSkill[]) => void; error?: string }) {
   const { t } = useTranslation();
+  const skillLabel = useSkillLabel();
   const [cat, setCat] = useState<(typeof categories)[number]>('Technical Skills');
   const [name, setName] = useState('');
   const [search, setSearch] = useState('');
@@ -182,7 +184,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
       </div>
       <div className="sp-selected-chips">
         {skills.map((skill) => {
-          const label = !skill.custom && skillOptions[skill.category].includes(skill.name) ? t(skill.name) : skill.name;
+          const label = skillLabel(skill.name, skill.custom);
           return <button
             type="button"
             key={skill.id}
@@ -203,7 +205,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
       const selectedCount = skills.filter((skill) => displayedSkillCategory(skill) === category).length;
       const groups = skillGroups.filter((group) =>
         group.category === category
-        && `${category} ${group.label} ${group.skills.join(' ')} ${group.skills.map((skill) => t(skill)).join(' ')}`.toLowerCase().includes(search.toLowerCase()),
+        && `${category} ${group.label} ${group.skills.join(' ')} ${group.skills.map((skill) => skillLabel(skill)).join(' ')}`.toLowerCase().includes(search.toLowerCase()),
       );
       if (!groups.length && category !== 'Languages') return null;
       return <details
@@ -243,8 +245,8 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
         </fieldset>}
         {groups.map((group) => {
           if (group.label === 'Languages') return null;
-          const options = group.skills.filter((skill) => !search || `${skill} ${t(skill)} ${group.label} ${category}`.toLowerCase().includes(search.toLowerCase()));
-          const chips = <div className="sp-chips">{options.map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, group.category)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{t(o)}</button>; })}</div>;
+          const options = group.skills.filter((skill) => !search || `${skill} ${skillLabel(skill)} ${t(group.label)} ${category}`.toLowerCase().includes(search.toLowerCase()));
+          const chips = <div className="sp-chips">{options.map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, group.category)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{skillLabel(o)}</button>; })}</div>;
           return group.broad
             ? <fieldset key={group.label} className="sp-field"><legend className="sp-label">{t(group.label)}</legend>{chips}</fieldset>
             : <details key={group.label} className="sp-field sp-skill-group" open={Boolean(search) || group.label === 'Programming and software' || group.label === 'Soft skills'}><summary className="sp-label">{t(group.label)} ({options.length})</summary>{chips}</details>;
@@ -263,6 +265,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
     </div>
     <div className={`sp-field ${error ? 'sp-has-error' : ''}`}>
        <div className="sp-label" id="skills-list-label">{t('Your skills and proficiency')} <span className="sp-count">{skills.length}</span></div>
+      <p className="sp-hint" data-testid="text-proficiency-disclosure">{t('Proficiency is self-reported and not independently verified. New skills start at Beginner as an editable starting value, not an assessment. Change it to match your experience.')}</p>
       <div id="skills" tabIndex={-1} aria-describedby={error ? 'skills-error' : undefined}>
          {!skills.length ? <div className="sp-empty">{t('No skills yet. Select from the lists above or add your own. At least one is required.')}</div> :
           <ul className="sp-skill-list" aria-labelledby="skills-list-label">{skills.map((s) => <li key={s.id} className="sp-skill-row" data-testid={`row-skill-${s.id}`}>
@@ -270,13 +273,13 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
                {editing === s.id ? <span className="sp-edit-inline"><label className="sr-only" htmlFor={`edit-${s.id}`}>{t('Rename')} {s.name}</label><input id={`edit-${s.id}`} autoFocus className="sp-input" value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(s.id); } if (e.key === 'Escape') setEditing(null); }} data-testid={`input-edit-skill-${s.id}`} />
                  <button type="button" className="sp-icon" aria-label={t('Save skill name')} onClick={() => saveEdit(s.id)} data-testid={`button-save-skill-${s.id}`}><Check size={15} /></button>
                  <button type="button" className="sp-icon" aria-label={t('Cancel rename')} onClick={() => setEditing(null)}><X size={15} /></button></span>
-                : <><strong>{s.name}</strong><small>{t(displayedSkillCategory(s))}{s.custom ? ` · ${t('custom')}` : ''}</small></>}
+                : <><strong>{skillLabel(s.name, s.custom)}</strong><small>{t(displayedSkillCategory(s))}{s.custom ? ` · ${t('custom')}` : ''}</small></>}
             </div>
-             <label className="sr-only" htmlFor={`prof-${s.id}`}>{t('Proficiency for')} {s.name}</label>
+             <label className="sr-only" htmlFor={`prof-${s.id}`}>{t('Proficiency for')} {skillLabel(s.name, s.custom)}</label>
              <select id={`prof-${s.id}`} className="sp-input sp-prof" value={s.proficiency} onChange={(e) => onChange(skills.map((x) => (x.id === s.id ? { ...x, proficiency: e.target.value as ProfileSkill['proficiency'] } : x)))} data-testid={`select-proficiency-${s.id}`}>{proficiencies.map((p) => <option key={p} value={p}>{t(p)}</option>)}</select>
              {s.custom && <><label className="sr-only" htmlFor={`category-${s.id}`}>{t('Category for')} {s.name}</label><select id={`category-${s.id}`} className="sp-input sp-prof" value={s.category} onChange={(e) => onChange(skills.map((x) => x.id === s.id ? { ...x, category: e.target.value as ProfileSkill['category'] } : x))} data-testid={`select-skill-category-${s.id}`}>{categories.map((category) => <option key={category} value={category}>{t(category)}</option>)}</select></>}
              {s.custom && editing !== s.id && <button type="button" className="sp-icon" aria-label={`${t('Rename')} ${s.name}`} onClick={() => { setEditing(s.id); setEditName(s.name); }} data-testid={`button-edit-skill-${s.id}`}><Pencil size={15} /></button>}
-             <button type="button" className="sp-icon sp-icon-danger" aria-label={`${t('Remove')} ${s.name}`} onClick={() => onChange(skills.filter((x) => x.id !== s.id))} data-testid={`button-remove-skill-${s.id}`}><Trash2 size={15} /></button>
+             <button type="button" className="sp-icon sp-icon-danger" aria-label={`${t('Remove')} ${skillLabel(s.name, s.custom)}`} onClick={() => onChange(skills.filter((x) => x.id !== s.id))} data-testid={`button-remove-skill-${s.id}`}><Trash2 size={15} /></button>
           </li>)}</ul>}
       </div>
       {error && <p className="sp-error" id="skills-error"><CircleAlert size={13} />{t(error)}</p>}
@@ -286,6 +289,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
 
 function EvidenceEditor({ items, skills, onChange }: { items: EvidenceItem[]; skills: ProfileSkill[]; onChange: (items: EvidenceItem[]) => void }) {
   const { t } = useTranslation();
+  const skillLabel = useSkillLabel();
   const add = () => onChange([...items, {
     id: uid(), kind: evidenceKinds[0], title: '', skills: [], description: '', outcome: '', timing: '', reference: '',
   }]);
@@ -328,7 +332,7 @@ function EvidenceEditor({ items, skills, onChange }: { items: EvidenceItem[]; sk
                   const checked = item.skills.some((ref) => ref.skillId === skill.id);
                   return <label key={skill.id} className="sp-evidence-skill">
                     <input type="checkbox" checked={checked} onChange={() => toggleSkill(item, skill)} data-testid={`checkbox-evidence-skill-${item.id}-${skill.id}`} />
-                    <span>{skill.name}</span>
+                    <span>{skillLabel(skill.name, skill.custom)}</span>
                   </label>;
                 })}</div> : <p className="sp-hint">{t('Add skills in the previous section to link them to evidence.')}</p>}
               </fieldset>
@@ -366,6 +370,7 @@ function SummaryRow({ label, value, displayValue }: { label: string; value: stri
 
 function ProfileSummary({ saved, onEdit }: { saved: SavedProfile; onEdit: (step: number) => void }) {
   const { t, language } = useTranslation();
+  const skillLabel = useSkillLabel();
   const p = saved.profile;
   const evidenceItems = p.experience.evidenceItems.filter(evidenceHasContent);
   const strengths = transferableStrengths(p);
@@ -406,7 +411,7 @@ function ProfileSummary({ saved, onEdit }: { saved: SavedProfile; onEdit: (step:
        </Section>
        <Section i={1}>{categories.map((c) => {
          const skillsInCategory = p.skills.filter((s) => displayedSkillCategory(s) === c);
-         const labels = skillsInCategory.map((s) => `${!s.custom && skillOptions[s.category].includes(s.name) ? t(s.name) : s.name} (${t(s.proficiency)})`);
+         const labels = skillsInCategory.map((s) => `${skillLabel(s.name, s.custom)} (${t(s.proficiency)})`);
          return <SummaryRow key={c} label={c} value={skillsInCategory.map((s) => s.name)} displayValue={labels.join(', ')} />;
        })}</Section>
        <Section i={2}>
@@ -421,7 +426,7 @@ function ProfileSummary({ saved, onEdit }: { saved: SavedProfile; onEdit: (step:
             const url = safeEvidenceUrl(item.reference);
             return <li key={item.id} data-testid={`summary-evidence-${item.id}`}>
               <strong>{item.title || t(item.kind)}</strong><small>{t(item.kind)}{item.timing ? ` · ${item.timing}` : ''}</small>
-              {item.skills.length > 0 && <small>{t('Skills used')}: {item.skills.map((skill) => skill.skillName).join(', ')}</small>}
+              {item.skills.length > 0 && <small>{t('Skills used')}: {item.skills.map((ref) => { const own = p.skills.find((sk) => sk.id === ref.skillId); return own ? skillLabel(own.name, own.custom) : ref.skillName; }).join(', ')}</small>}
               {item.description && <p>{item.description}</p>}
               {item.outcome && <p><b>{t('Outcome')}:</b> {item.outcome}</p>}
               {item.reference && <small>{url ? <a href={url} target="_blank" rel="noopener noreferrer">{t('Open reference')} <ExternalLink size={12} /></a> : `${t('Reference')}: ${item.reference}`}</small>}
@@ -456,7 +461,6 @@ export default function SkillsProfilePage() {
   const [mode, setMode] = useState<'form' | 'summary'>(initial.saved?.submitted ? 'summary' : 'form');
   const [errors, setErrors] = useState<Errors>({});
   const [banner, setBanner] = useState<BannerNotice | null>(initial.error ? { kind: 'err', key: initial.error } : null);
-  const [visited, setVisited] = useState<Set<number>>(() => new Set([0]));
   const headingRef = useRef<HTMLHeadingElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
   const focusStepRef = useRef(false);
@@ -485,7 +489,7 @@ export default function SkillsProfilePage() {
     const id = key.replace('.', '-');
     requestAnimationFrame(() => { const el = document.getElementById(id); el?.focus(); el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
   };
-  const goTo = (n: number) => { setErrors({}); setStep(n); setVisited((v) => new Set(v).add(n)); focusStepRef.current = true; };
+  const goTo = (n: number) => { setErrors({}); setStep(n); focusStepRef.current = true; };
   const next = () => {
     const errs = validateSection(profile, step, t);
     if (Object.keys(errs).length) { setErrors(errs); focusFirstError(errs); return; }
@@ -509,7 +513,7 @@ export default function SkillsProfilePage() {
         values: { count: Object.keys(errs).length, answerWord: Object.keys(errs).length === 1 ? 'answer is' : 'answers are', section: sectionNames[first] },
         localizedValues: ['answerWord', 'section'],
       });
-      if (first !== step) { setStep(first); setVisited((v) => new Set(v).add(first)); }
+      if (first !== step) setStep(first);
       requestAnimationFrame(() => focusFirstError(validateSection(profile, first, t)));
       return;
     }
@@ -518,7 +522,7 @@ export default function SkillsProfilePage() {
     else { setBanner({ kind: 'err', key: r.error ?? 'Profile not saved.' }); requestAnimationFrame(() => bannerRef.current?.focus()); }
   };
   const sectionErrorCount = (i: number) => Object.keys(errors).filter((k) => Object.keys(validateSection(profile, i)).includes(k)).length;
-  const done = (i: number) => (i === 2 ? visited.has(2) || profile.experience.skipped || Object.values(profile.experience).some((v) => typeof v === 'string' && v.trim()) : !Object.keys(validateSection(profile, i)).length);
+  const done = (i: number) => isProfileSectionComplete(profile, i);
   const doneCount = sectionNames.filter((_, i) => done(i)).length;
   const errorKeys = Object.keys(errors);
   const currentErrors = errorKeys.length ? validateProfile(profile, t) : {};

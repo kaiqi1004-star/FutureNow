@@ -4,6 +4,19 @@ import { matchingProfileInput } from "./matching-profile.ts";
 import { emptyProfile, saveProfile, loadProfile, type SavedProfile } from "./skills-profile.ts";
 import { skillCategories, skillGroups } from "./skill-catalogue.ts";
 
+test("the preset library has no duplicate skill definitions and its other-technical option is non-scoring", () => {
+  const entries = skillGroups.flatMap((group) => group.skills.map((name) => ({ name, category: group.category })));
+  const keys = entries.map(({ name }) => name.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase());
+  assert.equal(new Set(keys).size, entries.length);
+  const other = entries.filter(({ name }) => name === "Other technical skills");
+  assert.deepEqual(other, [{ name: "Other technical skills", category: "Broad Technical Areas" }]);
+  const p = emptyProfile();
+  p.skills = [{ id: "other-broad", name: "Other technical skills", category: "Technical Skills", proficiency: "Expert", custom: true }];
+  const saved: SavedProfile = { version: 1, profile: p, step: 1, submitted: false, savedAt: "2026-10-24T00:00:00.000Z" };
+  assert.deepEqual(matchingProfileInput(saved).currentSkills, []);
+  assert.deepEqual(p.skills[0], { id: "other-broad", name: "Other technical skills", category: "Technical Skills", proficiency: "Expert", custom: true });
+});
+
 test("Feature 2 reuses the saved Feature 1 envelope without rewriting it", () => {
   const data = new Map<string, string>();
   const storage = { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); } };

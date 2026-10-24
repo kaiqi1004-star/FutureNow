@@ -143,3 +143,26 @@
   .mi-findings { grid-template-columns:1fr 1fr; }.mi-finding { padding:12px 10px; }.mi-finding p { min-height:0; }.mi-research-card { padding:15px; }.mi-research-top { gap:8px 12px; }.mi-not-live { margin-left:0; }.mi-research-card > h3 { font-size:20px; }.mi-footer { align-items:flex-start; flex-wrap:wrap; }.mi-footer p { flex-basis:calc(100% - 50px); }.mi-footer > span { margin-left:47px; }
 }
 @media (prefers-reduced-motion: reduce) { .mi-page, .mi-skeleton, .mi-spin { animation:none; } }
+
+/* ---- Readability upgrade (Module 04): no text under 14px, wrapping instead of clipping ---- */
+.mi-page { font-size: 16px; line-height: 1.6; }
+.mi-hero h1 { font-size: clamp(30px, 3.6vw, 36px); line-height: 1.2; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.mi-hero-copy > p, .mi-section-head p, .mi-interpretation-grid p, .mi-overview-card p, .mi-study-scope p, .mi-finding p { font-size: 16px; line-height: 1.6; }
+.mi-section-head h2, .mi-overview-title h2 { font-size: clamp(22px, 2.4vw, 26px); line-height: 1.3; }
+.mi-chart-head h3, .mi-research-card > h3, .mi-skill-heading h3, .mi-category-block h3, .mi-interpretation h3 { font-size: 18px; line-height: 1.35; }
+.mi-evidence-line, .mi-hero-stamp small, .mi-hero-index span, .mi-overview-label, .mi-overview-card small, .mi-overview-card a,
+.mi-section-overline, .mi-data-meta, .mi-data-meta > span, .mi-metric-label, .mi-comparison-row, .mi-no-comparison, .mi-delta, .mi-chart-head p,
+.mi-window-select, .mi-window-select select, .mi-legend, .mi-tooltip, .mi-chart-notes, .mi-caveat, .mi-snapshot-warning, .mi-research-caveat,
+.mi-interpretation-footnote, .mi-source-details summary, .mi-source-grid small, .mi-snapshot-stat small, .mi-source-grid strong,
+.mi-source-links a, .mi-study-link, .mi-detail-method, .mi-job-source-link a, .mi-notice, .mi-state p, .mi-empty, .mi-sample-count span,
+.mi-snapshot-stat > span, .mi-category-row, .mi-category-rank, .mi-category-row b, .mi-skill-panel li, .mi-skill-number, .mi-skill-panel li b,
+.mi-skill-heading > span, .mi-skills-footnote, .mi-research-top, .mi-finding small, .mi-footer p, .mi-research-badge, .mi-scope-mark { font-size: 14px; line-height: 1.5; }
+.mi-state strong { font-size: 16px; }
+.mi-metric-value { white-space: normal; }
+.mi-delta, .mi-window-select, .mi-research-badge { white-space: normal; }
+.mi-comparison-row { flex-wrap: wrap; gap: 4px 8px; }
+.mi-category-name, .mi-skill-name { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+.mi-category-row { grid-template-columns: 28px minmax(0, 1.4fr) minmax(50px, 1fr) auto; }
+.mi-skill-panel li { grid-template-columns: 28px minmax(0, 1.4fr) minmax(40px, 1fr) auto; }
+.mi-hero-copy > p, .mi-section-head p, .mi-overview-card small, .mi-chart-notes, .mi-detail-method, .mi-finding small, .mi-source-grid small { color: #4f5f58; }
+@media (max-width: 1100px) { .mi-skills-grid { grid-template-columns: 1fr; } }

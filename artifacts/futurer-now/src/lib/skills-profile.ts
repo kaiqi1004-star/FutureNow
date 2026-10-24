@@ -131,6 +131,19 @@ export function validateSection(p: SkillsProfile, section: number, translate: Tr
 export function validateProfile(p: SkillsProfile, translate: TranslateMessage = identityTranslate): ProfileErrors {
   return Object.assign({}, ...sectionNames.map((_, i) => validateSection(p, i, translate)));
 }
+
+/** Presentation-only completion; visiting an optional section is not an answer. */
+export function isProfileSectionComplete(p: SkillsProfile, section: number): boolean {
+  if (section < 0 || section >= sectionNames.length) return false;
+  if (section !== 2) return Object.keys(validateSection(p, section)).length === 0;
+  const experience = p.experience;
+  return experience.skipped
+    || [experience.academic, experience.work, experience.personal, experience.examples,
+      experience.certifications, experience.achievements].some((value) => value.trim().length > 0)
+    || experience.evidenceItems.some((item) =>
+      [item.title, item.description, item.outcome, item.timing, item.reference]
+        .some((value) => value.trim().length > 0));
+}
 export type TransferableStrength = {
   name: string;
   nameIsKey: boolean;

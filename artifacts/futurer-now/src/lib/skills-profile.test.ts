@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { isProfileSectionComplete } from './skills-profile.ts';
 import { test } from 'node:test';
 import { emptyProfile, loadProfile, profileSchema, saveProfile, validateProfile, validateSection, missingInformation, transferableStrengths, PROFILE_KEY, type SkillsProfile } from './skills-profile.ts';
 
@@ -14,6 +15,28 @@ test('required sections validate; experience is optional and zero hours/years ar
   assert.equal(Object.keys(validateSection(emptyProfile(), 0)).length, 5);
   assert.deepEqual(validateSection(emptyProfile(), 2), {});
   assert.deepEqual(validateProfile(complete()), {});
+});
+
+test('section completion follows actual answers, explicit skip, and structured evidence, not navigation', () => {
+  const p = emptyProfile();
+  assert.deepEqual([0, 1, 2, 3, 4].map((section) => isProfileSectionComplete(p, section)), [false, false, false, false, false]);
+  assert.equal(isProfileSectionComplete(p, -1), false);
+  assert.equal(isProfileSectionComplete(p, 5), false);
+  p.experience.evidenceItems = [{
+    id: 'empty-card', kind: 'Academic project', title: '', skills: [],
+    description: '', outcome: '', timing: '', reference: '',
+  }];
+  assert.equal(isProfileSectionComplete(p, 2), false, 'an untouched evidence card is not an answer');
+  p.experience.evidenceItems[0].description = 'Explained the research findings to classmates.';
+  assert.equal(isProfileSectionComplete(p, 2), true);
+  p.experience.evidenceItems = [];
+  p.experience.work = '   ';
+  assert.equal(isProfileSectionComplete(p, 2), false);
+  p.experience.skipped = true;
+  assert.equal(isProfileSectionComplete(p, 2), true);
+  assert.deepEqual(validateSection(emptyProfile(), 2), {}, 'optional-section validation stays unchanged');
+  const filled = complete();
+  assert.deepEqual([0, 1, 3, 4].map((section) => isProfileSectionComplete(filled, section)), [true, true, true, true]);
 });
 test('validation messages use injected translations without changing profile fields', () => {
   const dictionary: Record<string, string> = { 'Current status': 'Status semasa', 'Field of study or occupation': 'Bidang pengajian atau pekerjaan', '{field} is required.': '{field} diperlukan.' };
