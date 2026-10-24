@@ -1,5 +1,6 @@
 import type { JobListing, RoleMatchResults } from "@workspace/api-zod";
-import { calculateSkillGap } from "./skill-gap.ts";
+import { calculateSkillGap, skillMatchType } from "./skill-gap.ts";
+import { relatedRoleSkills, roleTitleSignals } from "./role-skill-context.ts";
 import { mapRoleToSdgs, mapSkillToSdgs, SDG_NOTICE } from "./sdg-mapping.ts";
 import {
   assessEducationFit,
@@ -29,13 +30,23 @@ export function matchRoles(
     const analysis = calculateSkillGap(job, inputSkills);
     const experienceFit = assessExperienceFit(job.title, job.experience, profile.experienceYears);
     const educationFit = assessEducationFit(job.education, profile.educationLevel, job.experience);
-    const compatibility = compatibilityFor(experienceFit, educationFit);
     const skillCoverage = analysis.coveragePercent;
+    const matchedTechnicalCount = analysis.matchedSkills.filter((skill) => skill.category === "technical").length;
+    const requiredTechnicalCount = matchedTechnicalCount + analysis.missingSkills.filter((skill) => skill.category === "technical").length;
+    const technicalCoverage = requiredTechnicalCount
+      ? Math.round(matchedTechnicalCount / requiredTechnicalCount * 1000) / 10
+      : null;
+    const compatibility = compatibilityFor(experienceFit, educationFit, skillCoverage, technicalCoverage);
     return {
       job,
       matchedCount: analysis.matchedCount,
       requiredCount: analysis.requiredCount,
       skillCoverage,
+      technicalCoverage,
+      matchedTechnicalCount,
+      requiredTechnicalCount,
+      relatedSkills: relatedRoleSkills(job, inputSkills, analysis.missingSkills.map((skill) => skill.skill)),
+      titleSignals: roleTitleSignals(job, inputSkills),
       score: skillCoverage,
       overallScore: overallMatchScore(
         skillCoverage,
@@ -47,8 +58,8 @@ export function matchRoles(
       compatibilityReasons: compatibility.reasons,
       experienceFit,
       educationFit,
-      matchedSkills: analysis.matchedSkills.map((skill) => ({ ...skill, sdg: mapSkillToSdgs(skill.skill, job) })),
-      skillGaps: analysis.missingSkills.map((skill) => ({ ...skill, sdg: mapSkillToSdgs(skill.skill, job) })),
+      matchedSkills: analysis.matchedSkills.map((skill) => ({ ...skill, matchType: skillMatchType(skill.skill, skill.matchedBy!), sdg: mapSkillToSdgs(skill.skill, job) })),
+      skillGaps: analysis.missingSkills.map((skill) => ({ ...skill, matchType: null, sdg: mapSkillToSdgs(skill.skill, job) })),
       unmatchedProfileSkills: analysis.unmatchedInputSkills,
       roleSdg: mapRoleToSdgs(job),
       improvement: analysis.requiredCount === 0
@@ -82,7 +93,8 @@ export function matchRoles(
       "Experience comparisons use the user's self-reported total years. They do not verify relevant-domain experience, leadership, portfolios or eligibility. Conditional/alternative paths are left unscored instead of being reduced to one threshold.",
       `When the source gives no comparable experience requirement, internal title guidelines are ${Object.entries(ROLE_EXPERIENCE_GUIDELINES).map(([level, years]) => `${level} ${years}+`).join(", ")} years. These are estimates, not employer requirements.`,
       "Education comparison maps only recognizable source and profile levels. It does not verify field of study, equivalent qualifications or additional conditions.",
-      "Tier 1 means no unmet mandatory requirement was identified; Tier 2 marks a stretch or unresolved information; Tier 3 requires a clear shortfall against a mandatory source requirement.",
+      "Tier 1 requires at least 50% total skill coverage and 50% technical coverage when applicable, with compatible experience and education and no unresolved comparisons. These internal guidance thresholds are not validated hiring cutoffs. Tier 2 marks limited skills, stretch requirements or unresolved information; Tier 3 requires a clear shortfall against a mandatory source requirement.",
+      "Exact normalized names, explicit equivalent-name aliases and source-stated one-of alternatives count toward skill coverage. Related skills and title signals never change coverage, overall scores or tiers. Self-rated proficiency is not scored.",
       "A gap means not found in this profile, not that you definitely lack the skill. Profile statements are self-reported, not independently demonstrated.",
       "Results sort by compatibility tier, then overall score, skill coverage and numeric record ID. Salary, job category, interests, readiness and self-rated proficiency never increase a score.",
       "Records with no listed skills have unavailable skill coverage. Other available dimensions can still contribute; if every dimension is unavailable, the overall score is not calculated.",

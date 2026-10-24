@@ -120,6 +120,19 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "matchedCount": zod.number().int(),
   "requiredCount": zod.number().int(),
   "skillCoverage": zod.number().nullable(),
+  "technicalCoverage": zod.number().nullable(),
+  "matchedTechnicalCount": zod.number().int(),
+  "requiredTechnicalCount": zod.number().int(),
+  "relatedSkills": zod.array(zod.object({
+  "profileSkill": zod.string(),
+  "requirement": zod.string(),
+  "explanation": zod.string()
+})),
+  "titleSignals": zod.array(zod.object({
+  "profileSkill": zod.string(),
+  "sourceText": zod.string(),
+  "explanation": zod.string()
+})),
   "score": zod.number().nullable().describe('Backward-compatible alias for skillCoverage.'),
   "overallScore": zod.number().nullable(),
   "compatibilityTier": zod.union([zod.literal(1),zod.literal(2),zod.literal(3)]),
@@ -154,6 +167,7 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "skill": zod.string(),
   "category": zod.enum(['technical', 'soft']),
   "matchedBy": zod.string().nullable(),
+  "matchType": zod.union([zod.literal('exact'),zod.literal('equivalent'),zod.literal('source-alternative'),zod.literal(null)]).nullable(),
   "sdg": zod.object({
   "status": zod.enum(['mapped', 'review_required', 'not_assessed']),
   "assessmentNote": zod.string(),
@@ -177,6 +191,7 @@ export const MatchFutureReadyRolesResponse = zod.object({
   "skill": zod.string(),
   "category": zod.enum(['technical', 'soft']),
   "matchedBy": zod.string().nullable(),
+  "matchType": zod.union([zod.literal('exact'),zod.literal('equivalent'),zod.literal('source-alternative'),zod.literal(null)]).nullable(),
   "sdg": zod.object({
   "status": zod.enum(['mapped', 'review_required', 'not_assessed']),
   "assessmentNote": zod.string(),

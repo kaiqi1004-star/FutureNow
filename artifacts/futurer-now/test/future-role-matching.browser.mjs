@@ -98,9 +98,13 @@ try {
   assert.equal(requestBody.currentSkills.length, 8);
   assert.equal(payload.results.find((row) => row.job.id === 'J47').skillCoverage, 100);
   assert.equal(payload.results.find((row) => row.job.id === 'J47').compatibilityTier, 3);
-  assert.equal(payload.results.find((row) => row.job.id === 'J45').compatibilityTier, 1);
-  assert.match(await page.getByTestId('text-match-reason-J43').innerText(), /prior experience is not required/i);
-  assert.equal(await page.getByTestId('text-match-reason-J45').count(), 0);
+  assert.equal(payload.results.find((row) => row.job.id === 'J45').compatibilityTier, 2);
+  assert.match(await page.getByTestId('text-match-reason-J43').innerText(), /limited listed-skill evidence/i);
+  assert.match(await page.getByTestId('text-match-reason-J45').innerText(), /limited listed-skill evidence/i);
+  for (const row of payload.results.filter((result) => result.compatibilityTier === 1)) {
+    assert.ok(row.skillCoverage >= 50);
+    assert.ok(row.technicalCoverage === null || row.technicalCoverage >= 50);
+  }
   assert.ok(
     payload.results.findIndex((row) => row.job.id === 'J45')
       < payload.results.findIndex((row) => row.job.id === 'J47'),

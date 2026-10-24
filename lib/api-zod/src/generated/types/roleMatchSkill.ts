@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { RoleMatchSkillCategory } from './roleMatchSkillCategory';
+import type { RoleMatchSkillMatchType } from './roleMatchSkillMatchType';
 import type { SdgAssessment } from './sdgAssessment';
 
 export interface RoleMatchSkill {
@@ -13,5 +14,7 @@ export interface RoleMatchSkill {
   category: RoleMatchSkillCategory;
   /** @nullable */
   matchedBy: string | null;
+  /** @nullable */
+  matchType: RoleMatchSkillMatchType;
   sdg: SdgAssessment;
 }

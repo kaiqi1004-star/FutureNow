@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "cxOWpk_ORxJ1esWfhyIcZ"
+uri = "file://docs/feature-1-2-audit.md"
+type = "text"
+title = "FutureNow — Feature 1 & 2 audit report"
+description = "Findings, scoring formulas, changed files, fallback rules, verification results and remaining limitations."
+logical_id = "82dc3c89-b57f-43fb-872e-36da0bbb0766"
+content_hash = "sha256:e375be8b28ea661ad2b20087f34430a2179f4be3e6f22f209ff9aa9053fd3ad4"
+size = 13415
+mtime_ms = 1792835621325
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:2734d84f-1d42-468d-a310-9c1fd27c18e9/82dc3c89-b57f-43fb-872e-36da0bbb0766/14964309-f76e-4827-b585-ba78d49dcfd4"
+storage_version_token = "1792835631473643"
+content_type = "text/markdown"

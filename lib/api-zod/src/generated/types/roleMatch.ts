@@ -7,9 +7,11 @@
  */
 import type { CompatibilityTier } from './compatibilityTier';
 import type { JobListing } from './jobListing';
+import type { RelatedRoleSkill } from './relatedRoleSkill';
 import type { RoleEducationFit } from './roleEducationFit';
 import type { RoleExperienceFit } from './roleExperienceFit';
 import type { RoleMatchSkill } from './roleMatchSkill';
+import type { RoleTitleSignal } from './roleTitleSignal';
 import type { SdgAssessment } from './sdgAssessment';
 
 export interface RoleMatch {
@@ -18,6 +20,12 @@ export interface RoleMatch {
   requiredCount: number;
   /** @nullable */
   skillCoverage: number | null;
+  /** @nullable */
+  technicalCoverage: number | null;
+  matchedTechnicalCount: number;
+  requiredTechnicalCount: number;
+  relatedSkills: RelatedRoleSkill[];
+  titleSignals: RoleTitleSignal[];
   /**
      * Backward-compatible alias for skillCoverage.
      * @nullable

@@ -17,6 +17,10 @@ export const MATCH_WEIGHTS: MatchWeights = {
   educationSuitability: 15,
 };
 
+// Product guidance only, not validated employer/hiring cutoffs. Does not change
+// numeric scores; prevents weak technical evidence receiving the strongest label.
+export const ALIGNMENT_SKILL_THRESHOLDS = { total: 50, technical: 50 } as const;
+
 /** Internal comparison guidelines only; these are not employer requirements. */
 export const ROLE_EXPERIENCE_GUIDELINES: Partial<Record<CareerLevel, number>> = {
   internship: 0,
@@ -425,6 +429,8 @@ export function overallMatchScore(
 export function compatibilityFor(
   experience: RoleExperienceFit,
   education: RoleEducationFit,
+  skillCoverage: number | null,
+  technicalCoverage: number | null,
 ): { tier: CompatibilityTier; label: string; reasons: string[] } {
   const mandatoryExperienceGap = experience.requirementType === "mandatory" && experience.status === "gap";
   const mandatoryEducationGap = education.requirementType === "mandatory" && education.status === "gap";
@@ -439,7 +445,14 @@ export function compatibilityFor(
   const nonMandatoryGap = [experience, education].some(
     (fit) => fit.status === "gap",
   );
-  if (unresolved.length || nonMandatoryGap) {
+  const insufficientSkills = skillCoverage === null || skillCoverage < ALIGNMENT_SKILL_THRESHOLDS.total
+    || (technicalCoverage !== null && technicalCoverage < ALIGNMENT_SKILL_THRESHOLDS.technical);
+  if (insufficientSkills) {
+    reasons.push(skillCoverage === null
+      ? "The source lists no comparable skills, so stronger alignment cannot be established."
+      : "Limited listed-skill evidence: stronger alignment requires at least 50% total coverage and 50% technical coverage when technical skills are listed. These are internal guidance thresholds, not employer criteria.");
+  }
+  if (unresolved.length || nonMandatoryGap || insufficientSkills) {
     if (experience.status === "gap" && experience.requirementType !== "mandatory") reasons.push(experience.reason);
     if (education.status === "gap" && education.requirementType !== "mandatory") reasons.push(education.reason);
     if (!reasons.length) {
@@ -452,6 +465,6 @@ export function compatibilityFor(
   return {
     tier: 1,
     label: "Better-aligned opportunity",
-    reasons: ["No unmet mandatory experience or education requirement was identified from the available information."],
+    reasons: ["At least 50% of total and applicable technical requirements match the self-reported profile, with no identified experience or education gap or unresolved comparison. This does not establish eligibility."],
   };
 }

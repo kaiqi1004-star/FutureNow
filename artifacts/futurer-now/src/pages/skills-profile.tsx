@@ -6,6 +6,7 @@ import {
   sectionNames, skillOptions, statuses, transferableStrengths, validateProfile, validateSection,
   type ProfileMessage, type ProfileSkill, type SavedProfile, type SkillsProfile,
 } from '@/lib/skills-profile';
+import { skillGroups } from '@/lib/skill-catalogue';
 import { languageLocales, useTranslation } from '@/lib/i18n';
 import './skills-profile.css';
 
@@ -83,6 +84,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
   const { t } = useTranslation();
   const [cat, setCat] = useState<(typeof categories)[number]>('Technical Skills');
   const [name, setName] = useState('');
+  const [search, setSearch] = useState('');
   const [prof, setProf] = useState<(typeof proficiencies)[number]>('Beginner');
   const [editing, setEditing] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -90,6 +92,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
   const has = (n: string, except?: string) => skills.some((s) => s.id !== except && s.name.trim().toLowerCase() === n.trim().toLowerCase());
   const togglePreset = (n: string, c: (typeof categories)[number]) => {
     const found = skills.find((s) => s.name.toLowerCase() === n.toLowerCase());
+    if (!found && skills.length >= 150) return setMsg({ key: 'You can save up to 150 skills. Remove a skill before adding another.' });
     onChange(found ? skills.filter((s) => s.id !== found.id) : [...skills, { id: uid(), name: n, category: c, proficiency: 'Beginner', custom: false }]);
   };
   const addCustom = () => {
@@ -97,6 +100,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
     if (!n) return setMsg({ key: 'Enter a skill name.' });
     if (n.length > 100) return setMsg({ key: 'Skill names must be 100 characters or fewer.' });
     if (has(n)) return setMsg({ key: '{skill} is already in your list.', values: { skill: n } });
+    if (skills.length >= 150) return setMsg({ key: 'You can save up to 150 skills. Remove a skill before adding another.' });
     onChange([...skills, { id: uid(), name: n, category: cat, proficiency: prof, custom: true }]); setName(''); setMsg(null);
   };
   const saveEdit = (id: string) => {
@@ -106,10 +110,15 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
     onChange(skills.map((s) => (s.id === id ? { ...s, name: n } : s))); setEditing(null); setMsg(null);
   };
   return <div className="sp-skills">
-    {categories.filter((c) => skillOptions[c].length).map((c) => <fieldset key={c} className="sp-field">
-       <legend className="sp-label">{t(c)}<span className="sp-optional">{t('Select any')}</span></legend>
-      <div className="sp-chips">{skillOptions[c].map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, c)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{t(o)}</button>; })}</div>
-    </fieldset>)}
+    <label className="sp-label" htmlFor="search-skill-library">{t('Search the skill library')}</label>
+    <input id="search-skill-library" className="sp-input" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('Search skills, tools or groups')} data-testid="input-search-skills" />
+    <p className="sp-muted">{t('Broad areas do not imply specific tools. Select only skills you have; nothing is added automatically.')}</p>
+    {skillGroups.filter((group) => `${group.label} ${group.skills.join(' ')} ${group.skills.map((skill) => t(skill)).join(' ')}`.toLowerCase().includes(search.toLowerCase())).map((group) => {
+      const options = group.skills.filter((skill) => !search || `${skill} ${t(skill)} ${group.label}`.toLowerCase().includes(search.toLowerCase()));
+      const chips = <div className="sp-chips">{options.map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, group.category)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{t(o)}</button>; })}</div>;
+      return group.broad ? <fieldset key={group.label} className="sp-field"><legend className="sp-label">{t(group.label)} <span className="sp-optional">{t(group.category)}</span></legend>{chips}</fieldset>
+        : <details key={group.label} className="sp-field" open={search ? true : undefined}><summary className="sp-label">{t(group.label)} ({options.length}) <span className="sp-optional">{t(group.category)}</span></summary>{chips}</details>;
+    })}
     <div className="sp-custom-skill">
        <div className="sp-label">{t('Add a custom skill')}<span className="sp-optional">{t('Including industry-specific')}</span></div>
       <div className="sp-custom-grid">

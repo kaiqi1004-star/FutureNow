@@ -31,8 +31,8 @@ test("each score and matched/gap contribution reuses the documented distinct-ski
     assert.equal(result.score, expected.coveragePercent);
     assert.equal(result.matchedCount + result.skillGaps.length, result.requiredCount);
     assert.equal(result.matchedCount, result.matchedSkills.length);
-    assert.deepEqual(result.matchedSkills.map(({ sdg, ...skill }) => skill), expected.matchedSkills);
-    assert.deepEqual(result.skillGaps.map(({ sdg, ...skill }) => skill), expected.missingSkills);
+    assert.deepEqual(result.matchedSkills.map(({ sdg, matchType, ...skill }) => skill), expected.matchedSkills);
+    assert.deepEqual(result.skillGaps.map(({ sdg, matchType, ...skill }) => skill), expected.missingSkills);
   }
 });
 
@@ -201,9 +201,9 @@ test("real zero-experience profile gets entry and internship roles before a high
   const inferredSenior = result.results.find((row) => row.job.id === "J49");
 
   assert.equal(intern.experienceFit.roleLevel, "internship");
-  assert.equal(intern.compatibilityTier, 1);
+  assert.equal(intern.compatibilityTier, intern.skillCoverage >= 50 && intern.technicalCoverage >= 50 ? 1 : 2);
   assert.equal(graduate.experienceFit.requirementType, "explicit_none");
-  assert.equal(graduate.compatibilityTier, 1);
+  assert.equal(graduate.compatibilityTier, graduate.skillCoverage >= 50 && graduate.technicalCoverage >= 50 ? 1 : 2);
   assert.equal(explicitSenior.experienceFit.requirementType, "mandatory");
   assert.equal(explicitSenior.experienceFit.sourceMinimumYears, 3);
   assert.equal(explicitSenior.compatibilityTier, 3);

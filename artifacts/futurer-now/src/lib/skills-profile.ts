@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { skillGroups } from './skill-catalogue.ts';
 
 export const PROFILE_KEY = 'futurenow.skills-profile.v1';
 export const proficiencies = ['Beginner', 'Intermediate', 'Advanced', 'Expert'] as const;
@@ -6,12 +7,9 @@ export const categories = ['Technical Skills', 'Digital Skills', 'Soft Skills', 
 export const statuses = ['Student', 'Fresh Graduate', 'Employed', 'Unemployed', 'Career Changer'] as const;
 export const educationLevels = ['Secondary school', 'Certificate', 'Diploma', "Bachelor’s degree", "Master’s degree", 'Doctorate', 'Other', 'Prefer not to say'] as const;
 export const budgets = ['Free only', 'Low-cost', 'Open to paid programmes'] as const;
-export const skillOptions: Record<(typeof categories)[number], string[]> = {
-  'Technical Skills': ['Programming', 'Web development', 'Database management', 'Data analysis', 'AI tools', 'Cloud computing', 'Cybersecurity', 'Engineering-related skills', 'Other technical skills'],
-  'Digital Skills': ['Digital literacy', 'Productivity tools', 'Online collaboration'],
-  'Soft Skills': ['Communication', 'Teamwork', 'Problem-solving', 'Critical thinking', 'Leadership', 'Creativity', 'Adaptability'],
-  'Industry-Specific Skills': [],
-};
+export const skillOptions = Object.fromEntries(categories.map((category) => [
+  category, skillGroups.filter((group) => group.category === category).flatMap((group) => group.skills),
+])) as Record<(typeof categories)[number], string[]>;
 const text = z.string().max(6000);
 const selection = z.array(z.string().trim().min(1).max(200)).max(60);
 const rating = z.union([z.literal(''), z.number().int().min(1).max(5)]);

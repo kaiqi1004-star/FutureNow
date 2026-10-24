@@ -17,9 +17,10 @@ import { buildFutureReadyOverview } from "../lib/job-summary";
 import { labourMarketRepository } from "../lib/labour-market";
 import { calculateSkillGap } from "../lib/skill-gap";
 import { matchRoles } from "../lib/role-matching";
+import { resolveDataDirectory } from "../lib/data-directory";
 
 const router: IRouter = Router();
-const dataDirectory = path.resolve(process.cwd(), "data");
+const dataDirectory = resolveDataDirectory();
 
 type CsvRow = Record<string, string>;
 
@@ -123,20 +124,39 @@ router.get("/future-ready/overview", (_req, res): void => {
   );
 });
 
-router.get("/future-ready/jobs", (_req, res): void => {
-  res.json(GetFutureReadyJobsResponse.parse(loadJobs()));
+router.get("/future-ready/jobs", (req, res): void => {
+  try {
+    res.json(GetFutureReadyJobsResponse.parse(loadJobs()));
+  } catch (err) {
+    req.log.error({ err, code: "JOB_DATA_UNAVAILABLE" }, "Supplied job dataset could not be loaded");
+    res.status(503).json({ error: "The supplied job dataset is temporarily unavailable.", code: "JOB_DATA_UNAVAILABLE" });
+  }
 });
 
 router.post("/future-ready/role-matches", (req, res): void => {
   const parsed = MatchFutureReadyRolesBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Provide up to 150 saved skill names, each no longer than 100 characters." });
+    req.log.warn({ code: "INVALID_MATCH_PROFILE" }, "Matching request validation failed");
+    res.status(400).json({ error: "The saved matching fields could not be validated. Review your skills, experience and education.", code: "INVALID_MATCH_PROFILE" });
     return;
   }
-  res.json(MatchFutureReadyRolesResponse.parse(matchRoles(loadJobs(), parsed.data.currentSkills, {
-    experienceYears: parsed.data.experienceYears,
-    educationLevel: parsed.data.educationLevel,
-  })));
+  let jobs;
+  try {
+    jobs = loadJobs();
+  } catch (err) {
+    req.log.error({ err, code: "JOB_DATA_UNAVAILABLE" }, "Matching source data could not be loaded");
+    res.status(503).json({ error: "The supplied job dataset is temporarily unavailable.", code: "JOB_DATA_UNAVAILABLE" });
+    return;
+  }
+  try {
+    res.json(MatchFutureReadyRolesResponse.parse(matchRoles(jobs, parsed.data.currentSkills, {
+      experienceYears: parsed.data.experienceYears,
+      educationLevel: parsed.data.educationLevel,
+    })));
+  } catch (err) {
+    req.log.error({ err, code: "MATCHING_UNAVAILABLE" }, "Personalised matching failed");
+    res.status(503).json({ error: "Personalised matching is temporarily unavailable.", code: "MATCHING_UNAVAILABLE" });
+  }
 });
 
 router.post("/future-ready/skill-gap", (req, res): void => {

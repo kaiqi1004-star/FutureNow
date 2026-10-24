@@ -5,10 +5,17 @@ import type {
   SkillGapSkill,
 } from "@workspace/api-zod";
 
-const normalizeText = (value: string) =>
+export const normalizeText = (value: string) =>
   value.normalize("NFKC").trim().toLocaleLowerCase("en").replace(/\s+/g, " ");
 
 const aliases: Record<string, string> = {
+  "problem solving": "problem-solving",
+  "ms excel": "excel",
+  "microsoft excel": "excel",
+  "ms word": "microsoft word",
+  "ms office": "microsoft office",
+  organization: "organisation",
+  "data visualisation": "data visualization",
   "html 5": "html",
   html5: "html",
   "css 3": "css",
@@ -26,7 +33,8 @@ const aliases: Record<string, string> = {
   "transact sql": "t-sql",
   "transact-sql": "t-sql",
   "restful api": "rest api",
-  "restful apis": "rest apis",
+  "restful apis": "rest api",
+  "rest apis": "rest api",
   "3d modeling": "3d modelling",
   "test driven development": "test-driven development",
   "test-driven development (tdd)": "test-driven development",
@@ -34,7 +42,7 @@ const aliases: Record<string, string> = {
   "object-oriented programming (oop)": "object-oriented programming",
 };
 
-const canonicalSkill = (skill: string) => {
+export const canonicalSkill = (skill: string) => {
   const normalized = normalizeText(skill);
   return aliases[normalized] ?? normalized;
 };
@@ -221,6 +229,13 @@ function requirementMatches(requirement: string, inputSkill: string): boolean {
   return alternatives
     ? alternatives.includes(inputKey)
     : requirementKey === inputKey;
+}
+
+export function skillMatchType(requirement: string, input: string): "exact" | "equivalent" | "source-alternative" | null {
+  if (!requirementMatches(requirement, input)) return null;
+  if (normalizeText(requirement) === normalizeText(input)) return "exact";
+  if (oneOfRequirementAlternatives[normalizeText(requirement)]) return "source-alternative";
+  return "equivalent";
 }
 
 function orderRoadmap(missing: SkillGapSkill[]): SkillGapSkill[] {

@@ -74,12 +74,38 @@ export const RoleMatchSkillCategory = {
   soft: 'soft',
 } as const;
 
+/**
+ * @nullable
+ */
+export type RoleMatchSkillMatchType = typeof RoleMatchSkillMatchType[keyof typeof RoleMatchSkillMatchType] | null;
+
+
+export const RoleMatchSkillMatchType = {
+  exact: 'exact',
+  equivalent: 'equivalent',
+  'source-alternative': 'source-alternative',
+} as const;
+
 export interface RoleMatchSkill {
   skill: string;
   category: RoleMatchSkillCategory;
   /** @nullable */
   matchedBy: string | null;
+  /** @nullable */
+  matchType: RoleMatchSkillMatchType;
   sdg: SdgAssessment;
+}
+
+export interface RelatedRoleSkill {
+  profileSkill: string;
+  requirement: string;
+  explanation: string;
+}
+
+export interface RoleTitleSignal {
+  profileSkill: string;
+  sourceText: string;
+  explanation: string;
 }
 
 export type CareerLevel = typeof CareerLevel[keyof typeof CareerLevel];
@@ -245,6 +271,12 @@ export interface RoleMatch {
   requiredCount: number;
   /** @nullable */
   skillCoverage: number | null;
+  /** @nullable */
+  technicalCoverage: number | null;
+  matchedTechnicalCount: number;
+  requiredTechnicalCount: number;
+  relatedSkills: RelatedRoleSkill[];
+  titleSignals: RoleTitleSignal[];
   /**
      * Backward-compatible alias for skillCoverage.
      * @nullable

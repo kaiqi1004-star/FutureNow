@@ -37,6 +37,12 @@ SDG connections must use real UN goal numbers and titles, remain conditional and
 
 Experience-fit comparisons must remain separate from the skill score. Preferred requirements, fresh-graduate exceptions, and alternative qualification paths must not become automatic numeric eligibility failures.
 
-**Why:** The user explicitly requested an experience warning without changing skill coverage or ranking. Total stated years cannot establish relevant-domain experience, and source exceptions can make simple thresholds misleading.
+**Why:** The original warning-only scope was expanded by later briefs to overall suitability and career-stage ranking. Total stated years still cannot establish relevant-domain experience, and source exceptions can make simple thresholds misleading.
 
-**How to apply:** Warn about a clear numeric shortfall separately, leave ambiguous requirements for manual comparison, and never treat meeting a numeric minimum as proof of eligibility.
+**How to apply:** Keep source requirements and inferred guidelines separate in suitability/ranking, leave ambiguous requirements for manual comparison, and never treat meeting a numeric minimum as proof of eligibility.
+
+Stronger alignment labels need source-listed technical skill evidence, not just general soft skills, years or education. Label thresholds are product guidance, not empirically validated hiring cutoffs.
+
+**Why:** The user identified that low skill coverage must not be described as good fit. We retained the existing numeric weights rather than inventing a new validated weighting scheme; the label gate addresses that communication problem separately.
+
+**How to apply:** Keep any future threshold/weight changes documented as heuristics unless validation evidence is supplied. Related skills and title signals must stay separate from confirmed requirement coverage.

@@ -16,11 +16,12 @@ test('required sections validate; experience is optional and zero hours/years ar
   assert.deepEqual(validateProfile(complete()), {});
 });
 test('validation messages use injected translations without changing profile fields', () => {
+  const dictionary: Record<string, string> = { 'Current status': 'Status semasa', 'Field of study or occupation': 'Bidang pengajian atau pekerjaan', '{field} is required.': '{field} diperlukan.' };
   const translate = (message: string, values: Record<string, string | number> = {}) =>
-    `BM ${message.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`))}`;
+    (dictionary[message] ?? message).replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`));
   const errors = validateSection(emptyProfile(), 0, translate);
-  assert.equal(errors['basic.status'], 'BM Current status is required.');
-  assert.equal(errors['basic.field'], 'BM Field of study or occupation is required.');
+  assert.equal(errors['basic.status'], 'Status semasa diperlukan.');
+  assert.equal(errors['basic.field'], 'Bidang pengajian atau pekerjaan diperlukan.');
 });
 test('invalid numeric values and duplicate skills rejected', () => {
   const p = complete();

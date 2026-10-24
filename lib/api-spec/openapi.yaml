@@ -249,9 +249,32 @@ components:
           enum: [technical, soft]
         matchedBy:
           type: ["string", "null"]
+        matchType:
+          type: ["string", "null"]
+          enum: [exact, equivalent, source-alternative, null]
         sdg:
           $ref: "#/components/schemas/SdgAssessment"
-      required: [skill, category, matchedBy, sdg]
+      required: [skill, category, matchedBy, matchType, sdg]
+    RelatedRoleSkill:
+      type: object
+      properties:
+        profileSkill:
+          type: string
+        requirement:
+          type: string
+        explanation:
+          type: string
+      required: [profileSkill, requirement, explanation]
+    RoleTitleSignal:
+      type: object
+      properties:
+        profileSkill:
+          type: string
+        sourceText:
+          type: string
+        explanation:
+          type: string
+      required: [profileSkill, sourceText, explanation]
     CareerLevel:
       type: string
       enum: [internship, entry, mid, senior, lead, manager, unspecified]
@@ -344,6 +367,20 @@ components:
           type: integer
         skillCoverage:
           type: ["number", "null"]
+        technicalCoverage:
+          type: ["number", "null"]
+        matchedTechnicalCount:
+          type: integer
+        requiredTechnicalCount:
+          type: integer
+        relatedSkills:
+          type: array
+          items:
+            $ref: "#/components/schemas/RelatedRoleSkill"
+        titleSignals:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleTitleSignal"
         score:
           type: ["number", "null"]
           description: Backward-compatible alias for skillCoverage.
@@ -377,7 +414,7 @@ components:
           $ref: "#/components/schemas/SdgAssessment"
         improvement:
           type: string
-      required: [job, matchedCount, requiredCount, skillCoverage, score, overallScore, compatibilityTier, compatibilityLabel, compatibilityReasons, experienceFit, educationFit, matchedSkills, skillGaps, unmatchedProfileSkills, roleSdg, improvement]
+      required: [job, matchedCount, requiredCount, skillCoverage, technicalCoverage, matchedTechnicalCount, requiredTechnicalCount, relatedSkills, titleSignals, score, overallScore, compatibilityTier, compatibilityLabel, compatibilityReasons, experienceFit, educationFit, matchedSkills, skillGaps, unmatchedProfileSkills, roleSdg, improvement]
     RoleMatchResults:
       type: object
       properties:
