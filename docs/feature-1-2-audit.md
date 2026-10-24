@@ -138,3 +138,29 @@ There is no configured lint script. Existing build warnings remain: sourcemap-lo
 The supplied collection has no blank education field. Missing-education handling is tested with a copy of an actual record whose education is deliberately blanked; it is not represented as an original missing field.
 
 The original failing browser/profile event remains unconfirmed. No live deployment was tested or published. New detailed English messages may fall back to English where the existing Malay/Chinese catalogue lacks a translation. Related-skill and SDG catalogues remain deliberately incomplete rather than inferring unsupported evidence.
+
+## Section 3 evidence follow-up
+
+### Confirmed starting point
+
+Before this follow-up, the profile already had six optional free-text areas for academic work, employment, volunteering/personal work, examples, certifications/training and achievements. They were saved in the existing browser-local version-1 profile. Feature 2 showed only a generic “provided/not provided” indicator; evidence was not part of its API input or score.
+
+### Implemented
+
+- Added an optional structured evidence list with type, project/activity name, explicit links to saved skills, a short description, optional outcome, duration/date, and optional link or certificate reference. Users can add, edit and remove entries; the section remains skippable, with no required evidence, numeric result or external URL.
+- Retained the existing six notes and made them expandable for editing. Existing version-1 profiles without the new list still load, and their original notes remain intact.
+- Entries continue to use the established browser-local storage. The matching request does not receive descriptions, references, evidence or skill-proficiency data.
+- On a role detail, evidence appears below a matched skill only when the user explicitly linked the entry to that saved skill and the matcher returned that exact profile skill as `matchedBy`. Free-text evidence is never mined for new skills. Evidence is labelled user-provided and unverified, and explicitly does not affect the score.
+- Web URLs are linked only for `http:`/`https:` references; other certificate IDs or text remain plain text. No files or private documents are uploaded.
+- Matching weights, ranking, tier thresholds, supplied role records and SDG rules are unchanged in this follow-up.
+
+### Verification
+
+- Targeted profile, match-input and evidence-helper tests: **16 passed, 0 failed**. Coverage includes old-profile compatibility, edit/save/reload, skip behavior, exact explicit skill associations, non-inference from notes, URL safety, and exclusion of evidence from the scoring request.
+- Skills Profile browser test: **13 checks passed**, including a saved-and-reloaded evidence entry, a role detail showing the linked Communication example, request-field inspection, optional skip, mobile navigation, and storage failure handling. No browser page errors.
+- Frontend TypeScript check and production build passed. Existing non-blocking source-map and large-chunk warnings remain.
+- Preview loaded. The 50-role source JSON and API were not modified.
+
+### Limitations
+
+Evidence is stored only in the current browser on the current device, as disclosed in the profile. It does not sync across devices or users. Associations that no longer point to a current profile skill are not shown beside matches. Evidence remains a self-report and is not independently verified.

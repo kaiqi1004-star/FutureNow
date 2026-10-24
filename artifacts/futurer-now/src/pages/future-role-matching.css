@@ -82,6 +82,13 @@
 .rm-skill-table { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .rm-skill-row { padding: 12px; border: 1px solid var(--rm-line); border-radius: 10px; font-size: 13px; }
 .rm-skill-row header { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+.rm-linked-evidence { display: grid; gap: 7px; margin-top: 10px; padding: 10px; border-left: 3px solid var(--rm-green); border-radius: 7px; background: var(--rm-mint); font-size: 12px; }
+.rm-linked-evidence > strong { color: var(--rm-green); }
+.rm-linked-evidence ul { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+.rm-linked-evidence li { display: grid; gap: 3px; }
+.rm-linked-evidence p { margin: 2px 0; line-height: 1.45; }
+.rm-linked-evidence small, .rm-linked-evidence span { color: var(--rm-muted); font-size: 11px; }
+.rm-linked-evidence a { display: inline-flex; align-items: center; gap: 4px; color: var(--rm-green); }
 .rm-sdg-detail { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--rm-yellow); font-size: 12px; line-height: 1.55; color: var(--rm-muted); }
 .rm-sdg-detail.is-review { border-left-color: var(--rm-orange); }
 .rm-sdg-detail a { color: var(--rm-green); font-weight: 600; }

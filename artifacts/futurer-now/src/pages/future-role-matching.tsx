@@ -3,8 +3,9 @@ import { Link } from 'wouter';
 import { useMatchFutureReadyRoles } from '@workspace/api-client-react';
 import type { JobListing, RoleMatch } from '@workspace/api-client-react';
 import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Compass, ExternalLink, Info, Lock, RefreshCw, Sparkles, UserRound } from 'lucide-react';
-import { loadProfile, type SavedProfile } from '@/lib/skills-profile';
+import { loadProfile, type SavedProfile, type SkillsProfile } from '@/lib/skills-profile';
 import { matchingProfileInput } from '@/lib/matching-profile';
+import { evidenceForMatchedSkill, evidenceHasContent, safeEvidenceUrl } from '@/lib/profile-evidence';
 import { SdgTags, SdgDetail } from '@/components/sdg-assessment';
 import { JobMatchFallback } from '@/components/job-match-fallback';
 import { matchingFailureKind } from '@/lib/job-fallback';
@@ -112,7 +113,7 @@ export default function FutureRoleMatchingPage() {
       <div className="rm-privacy" data-testid="text-privacy-disclosure"><Lock size={16} /><span>{t('Matching uses only your selected skills, stated years of experience and education level. Your other profile answers stay in this browser.')}</span></div>
     </div>
 
-    {detail && data ? <Detail r={detail} rank={rankOf(detail)} headRef={detailHead} onBack={() => { returnFocus.current = detail.job.id; setDetailId(null); }} /> : <>
+    {detail && data ? <Detail r={detail} rank={rankOf(detail)} profile={p} headRef={detailHead} onBack={() => { returnFocus.current = detail.job.id; setDetailId(null); }} /> : <>
       <section className="rm-card" aria-labelledby="rm-profile-h">
         <div className="rm-toolbar"><div><div className="rm-eyebrow">{t('Your saved profile')}</div><h2 id="rm-profile-h">{t('Skills used for matching')}</h2></div>
           <button type="button" className="rm-btn" onClick={refresh} data-testid="button-refresh-profile"><RefreshCw size={14} />{t('Reload saved profile')}</button></div>
@@ -129,7 +130,7 @@ export default function FutureRoleMatchingPage() {
                 <dt>{t('Education')}</dt><dd>{p?.basic.education ? t(p.basic.education) : t('Not provided')}</dd>
                 <dt>{t('Direction')}</dt><dd>{p?.basic.direction || t('Not provided')}</dd>
                 <dt>{t('Interests')}</dt><dd>{p?.interests.industries.map((industry) => t(industry)).join(', ') || t('Not provided')}</dd>
-                <dt>{t('Evidence')}</dt><dd>{p && Object.entries(p.experience).some(([k, v]) => k !== 'skipped' && typeof v === 'string' && v.trim()) ? t('Provided in profile') : t('Not provided')}</dd>
+                 <dt>{t('Evidence')}</dt><dd>{p && (Object.entries(p.experience).some(([k, v]) => k !== 'skipped' && k !== 'evidenceItems' && typeof v === 'string' && v.trim()) || p.experience.evidenceItems.some(evidenceHasContent)) ? t('Provided in profile') : t('Not provided')}</dd>
               </dl></div>
             </div>
             <div className="rm-actions"><button type="button" className="rm-btn rm-btn-primary" onClick={generate} disabled={match.isPending} data-testid="button-generate-matches"><Sparkles size={15} />{match.isPending ? t('Matching...') : data ? t('Regenerate matches') : t('Generate matches')}</button><Link href="/skills-profile" className="rm-btn" data-testid="link-edit-profile">{t('Edit profile')}</Link></div>
@@ -210,7 +211,7 @@ export default function FutureRoleMatchingPage() {
   </div>;
 }
 
-function Detail({ r, rank, headRef, onBack }: { r: RoleMatch; rank: number; headRef: RefObject<HTMLHeadingElement | null>; onBack: () => void }) {
+function Detail({ r, rank, profile, headRef, onBack }: { r: RoleMatch; rank: number; profile?: SkillsProfile; headRef: RefObject<HTMLHeadingElement | null>; onBack: () => void }) {
   const { t } = useTranslation();
   const j = r.job;
   const skillSdgGroups = [...r.matchedSkills, ...r.skillGaps].filter((skill) => skill.sdg.status === 'mapped').reduce<Array<{ skills: string[]; assessment: RoleMatch['roleSdg']; key: string }>>((groups, skill) => {
@@ -270,9 +271,27 @@ function Detail({ r, rank, headRef, onBack }: { r: RoleMatch; rank: number; head
         </dl>
       </div>
     </div>
-    <div className="rm-two">
-      <div className="rm-card"><h3>{t('Matched skills ({count})', { count: r.matchedSkills.length })}</h3><p className="rm-muted">{t('Listed requirements that match a skill name in your profile.')}</p>
-        {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(s.category)} {t('skill')} · {t(s.matchType === 'exact' ? 'Exact name match' : s.matchType === 'source-alternative' ? 'Source-listed alternative' : 'Configured equivalent name')}{s.matchedBy ? ` · ${t('matched by your "{skill}"', { skill: s.matchedBy })}` : ''}</div></li>)}</ul> : <p className="rm-muted">{t('No listed skills matched.')}</p>}</div>
+      <div className="rm-two">
+       <div className="rm-card"><h3>{t('Matched skills ({count})', { count: r.matchedSkills.length })}</h3><p className="rm-muted">{t('Listed requirements that match a skill name in your profile.')}</p>
+         {r.matchedSkills.length ? <ul className="rm-skill-table">{r.matchedSkills.map((s) => {
+           const evidence = evidenceForMatchedSkill(profile, s.matchedBy);
+           return <li key={s.skill} className="rm-skill-row" data-testid={`row-matched-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(s.category)} {t('skill')} · {t(s.matchType === 'exact' ? 'Exact name match' : s.matchType === 'source-alternative' ? 'Source-listed alternative' : 'Configured equivalent name')}{s.matchedBy ? ` · ${t('matched by your "{skill}"', { skill: s.matchedBy })}` : ''}</div>
+             {evidence.length > 0 && <div className="rm-linked-evidence" data-testid={`evidence-for-${slug(s.skill)}`}>
+               <strong>{t('User-provided evidence — not independently verified')}</strong>
+               <ul>{evidence.map((item) => {
+                 const url = safeEvidenceUrl(item.reference);
+                 return <li key={item.id}>
+                   <b>{item.title || t(item.kind)}</b><span>{t(item.kind)}</span>
+                   {item.description && <p>{item.description}</p>}
+                   {item.outcome && <p><b>{t('Outcome')}:</b> {item.outcome}</p>}
+                   {item.timing && <small>{item.timing}</small>}
+                   {item.reference && <small>{url ? <a href={url} target="_blank" rel="noopener noreferrer">{t('Open reference')} <ExternalLink size={11} /></a> : `${t('Reference')}: ${item.reference}`}</small>}
+                 </li>;
+               })}</ul>
+               <small>{t('This evidence does not change the suitability score.')}</small>
+             </div>}
+           </li>;
+         })}</ul> : <p className="rm-muted">{t('No listed skills matched.')}</p>}</div>
       <div className="rm-card"><h3>{t('Skills not found in your saved profile ({count})', { count: r.skillGaps.length })}</h3><p className="rm-muted">{t('This does not mean you definitely lack them; you may simply not have listed them.')}</p>
         {r.skillGaps.length ? <ul className="rm-skill-table">{r.skillGaps.map((s) => <li key={s.skill} className="rm-skill-row" data-testid={`row-gap-${slug(s.skill)}`}><header><strong>{s.skill}</strong></header><div className="rm-meta">{t(s.category)} {t('skill')}</div></li>)}</ul> : <p className="rm-muted">{t('No gaps against listed skills.')}</p>}</div>
     </div>

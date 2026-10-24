@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'wouter';
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, CircleAlert, HardDrive, Pencil, Plus, Save, SkipForward, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, CircleAlert, ExternalLink, FileText, HardDrive, Pencil, Plus, Save, SkipForward, Trash2, X } from 'lucide-react';
 import {
-  budgets, categories, educationLevels, emptyProfile, loadProfile, missingInformation, proficiencies, saveProfile,
+  budgets, categories, educationLevels, emptyProfile, evidenceKinds, loadProfile, missingInformation, proficiencies, saveProfile,
   sectionNames, skillOptions, statuses, transferableStrengths, validateProfile, validateSection,
-  type ProfileMessage, type ProfileSkill, type SavedProfile, type SkillsProfile,
+  type EvidenceItem, type ProfileMessage, type ProfileSkill, type SavedProfile, type SkillsProfile,
 } from '@/lib/skills-profile';
 import { skillGroups } from '@/lib/skill-catalogue';
+import { evidenceHasContent, safeEvidenceUrl } from '@/lib/profile-evidence';
 import { languageLocales, useTranslation } from '@/lib/i18n';
 import './skills-profile.css';
 
@@ -151,6 +152,80 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
   </div>;
 }
 
+function EvidenceEditor({ items, skills, onChange }: { items: EvidenceItem[]; skills: ProfileSkill[]; onChange: (items: EvidenceItem[]) => void }) {
+  const { t } = useTranslation();
+  const add = () => onChange([...items, {
+    id: uid(), kind: evidenceKinds[0], title: '', skills: [], description: '', outcome: '', timing: '', reference: '',
+  }]);
+  const update = (id: string, patch: Partial<EvidenceItem>) => onChange(items.map((item) => item.id === id ? { ...item, ...patch } : item));
+  const toggleSkill = (item: EvidenceItem, skill: ProfileSkill) => {
+    const selected = item.skills.some((ref) => ref.skillId === skill.id);
+    const next = selected
+      ? item.skills.filter((ref) => ref.skillId !== skill.id)
+      : [...item.skills, { skillId: skill.id, skillName: skill.name }];
+    update(item.id, { skills: next });
+  };
+  return <section className="sp-evidence-editor" aria-labelledby="evidence-items-heading" data-testid="section-structured-evidence">
+    <div className="sp-evidence-heading">
+      <div><h3 id="evidence-items-heading">{t('Evidence entries')}</h3><p>{t('Add a short example, project, role, course or activity. Every field is optional; leave out anything you do not have.')}</p></div>
+      <button type="button" className="sp-btn sp-btn-primary" onClick={add} disabled={items.length >= 30} data-testid="button-add-evidence"><Plus size={14} />{t('Add evidence')}</button>
+    </div>
+    <p className="sp-evidence-disclosure">{t('Evidence is saved only in this browser. It is user-provided, not independently verified, and never changes match scores.')}</p>
+    {!items.length ? <p className="sp-empty">{t('No evidence added. This section is optional; you can still save and use your profile.')}</p> :
+      <div className="sp-evidence-list">{items.map((item, index) => {
+        const url = item.reference ? safeEvidenceUrl(item.reference) : null;
+        return <article className="sp-evidence-card" key={item.id} data-testid={`card-evidence-${item.id}`}>
+          <div className="sp-evidence-card-head">
+            <span className="sp-evidence-index"><FileText size={14} />{t('Evidence entry')} {index + 1}</span>
+            <button type="button" className="sp-icon sp-icon-danger" aria-label={`${t('Remove')} ${t('Evidence entry')} ${index + 1}`} onClick={() => onChange(items.filter((entry) => entry.id !== item.id))} data-testid={`button-remove-evidence-${item.id}`}><Trash2 size={15} /></button>
+          </div>
+          <div className="sp-grid">
+            <Field id={`evidence-kind-${item.id}`} label="Evidence type" optional>
+              <select id={`evidence-kind-${item.id}`} className="sp-input" value={item.kind} onChange={(event) => update(item.id, { kind: event.target.value as EvidenceItem['kind'] })} data-testid={`select-evidence-kind-${item.id}`}>
+                {evidenceKinds.map((kind) => <option key={kind} value={kind}>{t(kind)}</option>)}
+              </select>
+            </Field>
+            <Field id={`evidence-title-${item.id}`} label="Project, role, course or activity name" optional>
+              <input id={`evidence-title-${item.id}`} className="sp-input" maxLength={200} value={item.title} onChange={(event) => update(item.id, { title: event.target.value })} data-testid={`input-evidence-title-${item.id}`} />
+            </Field>
+            <div className="sp-span">
+              <fieldset className="sp-evidence-skills">
+                <legend className="sp-label">{t('Skills actually used')} <span className="sp-optional">{t('Optional')}</span></legend>
+                <p className="sp-hint">{t('Choose only skills already in your saved skills list. Descriptions do not add skills automatically.')}</p>
+                {skills.length ? <div className="sp-evidence-skill-list">{skills.map((skill) => {
+                  const checked = item.skills.some((ref) => ref.skillId === skill.id);
+                  return <label key={skill.id} className="sp-evidence-skill">
+                    <input type="checkbox" checked={checked} onChange={() => toggleSkill(item, skill)} data-testid={`checkbox-evidence-skill-${item.id}-${skill.id}`} />
+                    <span>{skill.name}</span>
+                  </label>;
+                })}</div> : <p className="sp-hint">{t('Add skills in the previous section to link them to evidence.')}</p>}
+              </fieldset>
+            </div>
+            <div className="sp-span">
+              <Field id={`evidence-description-${item.id}`} label="What you did" optional>
+                <textarea id={`evidence-description-${item.id}`} className="sp-input sp-textarea" rows={3} maxLength={1500} value={item.description} onChange={(event) => update(item.id, { description: event.target.value })} data-testid={`input-evidence-description-${item.id}`} />
+              </Field>
+            </div>
+            <Field id={`evidence-outcome-${item.id}`} label="Outcome or achievement" optional>
+              <textarea id={`evidence-outcome-${item.id}`} className="sp-input sp-textarea" rows={2} maxLength={500} value={item.outcome} onChange={(event) => update(item.id, { outcome: event.target.value })} data-testid={`input-evidence-outcome-${item.id}`} />
+            </Field>
+            <Field id={`evidence-timing-${item.id}`} label="Duration or date" optional>
+              <input id={`evidence-timing-${item.id}`} className="sp-input" maxLength={160} value={item.timing} onChange={(event) => update(item.id, { timing: event.target.value })} placeholder={t('For example, 3 months or 2025')} data-testid={`input-evidence-timing-${item.id}`} />
+            </Field>
+            <div className="sp-span">
+              <Field id={`evidence-reference-${item.id}`} label="Optional link or certificate reference" optional hint="A URL or reference code is optional. Do not upload private documents.">
+                <input id={`evidence-reference-${item.id}`} className="sp-input" maxLength={2048} value={item.reference} onChange={(event) => update(item.id, { reference: event.target.value })} data-testid={`input-evidence-reference-${item.id}`} />
+                {item.reference && <p className="sp-evidence-reference">{url ? <a href={url} target="_blank" rel="noopener noreferrer">{t('Open reference')} <ExternalLink size={12} /></a> : t('Saved as a text reference, not a web link.')}</p>}
+              </Field>
+            </div>
+          </div>
+          {!evidenceHasContent(item) && <p className="sp-hint">{t('This entry is blank so far. You can continue editing or remove it.')}</p>}
+        </article>;
+      })}</div>}
+    {items.length >= 30 && <p className="sp-hint">{t('You can save up to 30 evidence entries.')}</p>}
+  </section>;
+}
+
 function SummaryRow({ label, value, displayValue }: { label: string; value: string | number | string[]; displayValue?: ReactNode }) {
   const { t } = useTranslation();
   const empty = value === '' || value === undefined || (Array.isArray(value) && !value.length);
@@ -160,6 +235,7 @@ function SummaryRow({ label, value, displayValue }: { label: string; value: stri
 function ProfileSummary({ saved, onEdit }: { saved: SavedProfile; onEdit: (step: number) => void }) {
   const { t, language } = useTranslation();
   const p = saved.profile;
+  const evidenceItems = p.experience.evidenceItems.filter(evidenceHasContent);
   const strengths = transferableStrengths(p);
   const missing = missingInformation(p, t);
   const formatMessage = (message: ProfileMessage) => {
@@ -208,6 +284,17 @@ function ProfileSummary({ saved, onEdit }: { saved: SavedProfile; onEdit: (step:
          <SummaryRow label="Practical examples" value={p.experience.examples} />
          <SummaryRow label="Certifications or training" value={p.experience.certifications} />
          <SummaryRow label="Achievements" value={p.experience.achievements} />
+          <SummaryRow label="Structured evidence entries" value={evidenceItems.length || ''} displayValue={evidenceItems.length ? <ul className="sp-evidence-summary-list">{evidenceItems.map((item) => {
+            const url = safeEvidenceUrl(item.reference);
+            return <li key={item.id} data-testid={`summary-evidence-${item.id}`}>
+              <strong>{item.title || t(item.kind)}</strong><small>{t(item.kind)}{item.timing ? ` · ${item.timing}` : ''}</small>
+              {item.skills.length > 0 && <small>{t('Skills used')}: {item.skills.map((skill) => skill.skillName).join(', ')}</small>}
+              {item.description && <p>{item.description}</p>}
+              {item.outcome && <p><b>{t('Outcome')}:</b> {item.outcome}</p>}
+              {item.reference && <small>{url ? <a href={url} target="_blank" rel="noopener noreferrer">{t('Open reference')} <ExternalLink size={12} /></a> : `${t('Reference')}: ${item.reference}`}</small>}
+              <span>{t('User-provided, not independently verified.')}</span>
+            </li>;
+          })}</ul> : undefined} />
        </Section>
        <Section i={3}>
          <SummaryRow label="Industries" value={p.interests.industries} displayValue={p.interests.industries.map((v) => industryOptions.includes(v) ? t(v) : v).join(', ')} />
@@ -343,8 +430,13 @@ export default function SkillsProfilePage() {
             {step === 2 && <div>
               <div className="sp-note sp-note-row"><span>{t('This whole section is optional. Concrete examples make future recommendations easier to explain.')}</span><button type="button" className="sp-btn sp-btn-ghost" onClick={skipExperience} data-testid="button-skip-experience"><SkipForward size={14} />{t('Skip section')}</button></div>
               {x.skipped && <div className="sp-note">{t('Marked as skipped. Anything you type here is still kept.')} <button type="button" className="sp-link" onClick={() => set('experience', { skipped: false })} data-testid="button-unskip-experience">{t('Undo skip')}</button></div>}
-              <div className="sp-grid">{([['academic', 'Academic projects'], ['work', 'Work experience or internships'], ['personal', 'Volunteering or personal projects'], ['examples', 'Practical examples of using your skills'], ['certifications', 'Certifications or training'], ['achievements', 'Achievements or outcomes']] as const).map(([k, l]) =>
-                <Field key={k} id={`experience-${k}`} label={l} optional><textarea id={`experience-${k}`} className="sp-input sp-textarea" rows={3} maxLength={6000} value={x[k]} onChange={(ev) => set('experience', { [k]: ev.target.value })} data-testid={`input-experience-${k}`} /></Field>)}</div>
+              <EvidenceEditor items={x.evidenceItems} skills={profile.skills} onChange={(evidenceItems) => set('experience', { evidenceItems })} />
+              <details className="sp-legacy-evidence">
+                <summary>{t('Existing free-text notes (optional)')}</summary>
+                <p className="sp-hint">{t('Earlier notes are preserved here. You can keep or edit them; they are not used to infer skills or change match scores.')}</p>
+                <div className="sp-grid">{([['academic', 'Academic projects'], ['work', 'Work experience or internships'], ['personal', 'Volunteering or personal projects'], ['examples', 'Practical examples of using your skills'], ['certifications', 'Certifications or training'], ['achievements', 'Achievements or outcomes']] as const).map(([k, l]) =>
+                  <Field key={k} id={`experience-${k}`} label={l} optional><textarea id={`experience-${k}`} className="sp-input sp-textarea" rows={3} maxLength={6000} value={x[k]} onChange={(ev) => set('experience', { [k]: ev.target.value })} data-testid={`input-experience-${k}`} /></Field>)}</div>
+              </details>
             </div>}
             {step === 3 && <div className="sp-stack">
               <MultiSelect id="interests-industries" label="Industries or career fields" options={industryOptions} value={it.industries} onChange={(v) => set('interests', { industries: v })} error={e['interests.industries']} />

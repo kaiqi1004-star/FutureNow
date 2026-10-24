@@ -9,12 +9,18 @@ test("Feature 2 reuses the saved Feature 1 envelope without rewriting it", () =>
   const profile = emptyProfile();
   profile.skills = [{ id: "sql", name: "SQL", category: "Technical Skills", proficiency: "Beginner", custom: true }];
   profile.experience.work = "Expert in Python and leadership"; // Deliberately not scored.
+  profile.experience.evidenceItems = [{
+    id: "evidence", kind: "Academic project", title: "Course project",
+    skills: [{ skillId: "sql", skillName: "SQL" }], description: "Used SQL in coursework.",
+    outcome: "Finished the assignment.", timing: "", reference: "",
+  }];
   profile.interests.industries = ["Engineering"];
   assert.ok(saveProfile(profile, 1, false, storage).saved);
   const saved = loadProfile(storage).saved!;
   const before = JSON.stringify(saved);
   const input = matchingProfileInput(saved);
   assert.deepEqual(input.currentSkills, ["SQL"]);
+  assert.deepEqual(Object.keys(input).sort(), ["currentSkills", "isDraft", "missingFields"]);
   assert.equal(input.isDraft, true);
   assert.ok(input.missingFields.length);
   assert.equal(JSON.stringify(saved), before);

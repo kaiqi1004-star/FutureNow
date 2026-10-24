@@ -42,6 +42,35 @@ test('draft and submitted profiles roundtrip and edits replace previous save', (
   assert.equal(loadProfile(storage).saved?.profile.basic.field, 'Updated field');
   assert.ok(data.has(PROFILE_KEY));
 });
+test('structured evidence is optional, editable, and roundtrips with skill references', () => {
+  const data = new Map<string, string>();
+  const storage = { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => { data.set(k, v); } };
+  const p = complete();
+  p.experience.evidenceItems = [{
+    id: 'evidence-1', kind: 'Academic project', title: 'Course project',
+    skills: [{ skillId: 'skill-1', skillName: 'Communication' }],
+    description: 'Presented a research summary to classmates.', outcome: '', timing: '2025', reference: 'CERT-123',
+  }];
+  assert.equal(saveProfile(p, 2, false, storage).error, null);
+  assert.deepEqual(loadProfile(storage).saved?.profile.experience.evidenceItems, p.experience.evidenceItems);
+  p.experience.evidenceItems[0].outcome = 'Completed the presentation.';
+  p.experience.evidenceItems = p.experience.evidenceItems.filter((item) => item.id !== 'evidence-1');
+  assert.equal(saveProfile(p, 2, false, storage).error, null);
+  assert.deepEqual(loadProfile(storage).saved?.profile.experience.evidenceItems, []);
+});
+test('old version-1 profiles without structured evidence load without losing existing notes', () => {
+  const p = complete();
+  p.experience.academic = 'Legacy project note';
+  const { evidenceItems: _ignored, ...oldExperience } = p.experience;
+  const raw = JSON.stringify({
+    version: 1, profile: { ...p, experience: oldExperience }, step: 2, submitted: false, savedAt: new Date().toISOString(),
+  });
+  const storage = { getItem: () => raw, setItem: () => {} };
+  const loaded = loadProfile(storage);
+  assert.equal(loaded.error, null);
+  assert.equal(loaded.saved?.profile.experience.academic, 'Legacy project note');
+  assert.deepEqual(loaded.saved?.profile.experience.evidenceItems, []);
+});
 test('empty, corrupt, unsupported-version, malformed and blocked reads handled without changing stored data', () => {
   assert.deepEqual(loadProfile({ getItem: () => null, setItem: () => {} }), { saved: null, error: null });
   for (const raw of ['not-json', '{"version":2}', '{"version":1,"profile":{}}']) {

@@ -61,7 +61,22 @@ try {
     assert.match(await page.locator('.sp-progress').innerText(), /2.*of 5/s);
   });
   await page.getByRole('button', { name: 'Next', exact: false }).click();
-  await check('Optional evidence retained when skipping', async () => {
+  await check('Structured evidence links to a saved skill, persists, and remains optional when skipping', async () => {
+    await t('button-add-evidence').click();
+    const card = page.locator('.sp-evidence-card').first();
+    const cardTestId = await card.getAttribute('data-testid');
+    const evidenceId = cardTestId.replace('card-evidence-', '');
+    await t(`input-evidence-title-${evidenceId}`).fill('University data project');
+    await page.getByLabel('Communication', { exact: true }).check();
+    await t(`input-evidence-description-${evidenceId}`).fill('Used Communication while presenting course work.');
+    await t(`input-evidence-reference-${evidenceId}`).fill('CERT-2025-1');
+    await t('button-save-draft').click();
+    await t('status-save-banner').filter({ hasText: 'Draft saved' }).waitFor();
+    await page.reload();
+    assert.equal(await t(`input-evidence-title-${evidenceId}`).inputValue(), 'University data project');
+    assert.equal(await t(`input-evidence-description-${evidenceId}`).inputValue(), 'Used Communication while presenting course work.');
+    assert.equal(await card.locator('input[type="checkbox"]:checked').count(), 1);
+    await page.locator('.sp-legacy-evidence > summary').click();
     await t('input-experience-academic').fill('Built an accessible class project');
     await t('button-skip-experience').click();
   });
@@ -80,11 +95,37 @@ try {
     await t('button-save-profile').click();
     await page.locator('.sp-summary').waitFor();
     const summary = await page.locator('.sp-summary').innerText();
-    for (const text of ['CAD modelling (Expert)', 'Communication', 'Built an accessible class project', 'Source:', '4/5', '5 hours', 'not provided (optional)', 'skipped']) assert.ok(summary.includes(text), `Missing summary text ${text}`);
+     for (const text of ['CAD modelling (Expert)', 'Communication', 'Built an accessible class project', 'University data project', 'Used Communication while presenting course work.', 'CERT-2025-1', 'Source:', '4/5', '5 hours', 'not provided (optional)', 'skipped']) assert.ok(summary.includes(text), `Missing summary text ${text}`);
     assert.ok(!summary.includes('match score'));
   });
+  await check('Only linked matched-skill evidence appears on Feature 2; it is not part of the API scoring input', async () => {
+    await page.goto(`${baseURL}/future-role-matching`);
+    const matchBodies = [];
+    page.on('request', request => {
+      if (request.method() === 'POST' && request.url().includes('/api/future-ready/role-matches')) matchBodies.push(request.postDataJSON());
+    });
+    await t('button-generate-matches').click();
+    await page.locator('[data-testid^="card-match-"]').first().waitFor();
+    const category = page.locator('[data-testid="select-match-category"]');
+    await category.selectOption('data-analytics');
+    let hasJ43 = false;
+    for (let pageNumber = 0; pageNumber < 10; pageNumber++) {
+      if (await t('card-match-J43').count()) { hasJ43 = true; break; }
+      const next = t('button-matches-next');
+      if (await next.isDisabled()) break;
+      await next.click();
+    }
+    assert.ok(hasJ43, 'J43 should remain available in the supplied data');
+    await t('button-view-details-J43').click();
+    await t('evidence-for-communication').waitFor();
+    const linked = await t('evidence-for-communication').innerText();
+    assert.match(linked, /University data project/);
+    assert.match(linked, /not independently verified/i);
+    assert.match(linked, /does not change the suitability score/i);
+    assert.deepEqual(Object.keys(matchBodies[0]).sort(), ['currentSkills', 'educationLevel', 'experienceYears']);
+  });
   await check('Saved summary refresh, edit and resave', async () => {
-    await page.reload();
+    await page.goto(`${baseURL}/skills-profile`);
     await page.locator('.sp-summary').waitFor();
     await t('button-edit-section-0').click();
     await t('input-field').fill('Updated engineering field');

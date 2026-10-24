@@ -7,6 +7,21 @@ export const categories = ['Technical Skills', 'Digital Skills', 'Soft Skills', 
 export const statuses = ['Student', 'Fresh Graduate', 'Employed', 'Unemployed', 'Career Changer'] as const;
 export const educationLevels = ['Secondary school', 'Certificate', 'Diploma', "Bachelor’s degree", "Master’s degree", 'Doctorate', 'Other', 'Prefer not to say'] as const;
 export const budgets = ['Free only', 'Low-cost', 'Open to paid programmes'] as const;
+export const evidenceKinds = ['Academic project', 'Work or internship', 'Volunteering', 'Personal project', 'Practical example', 'Certification or training', 'Achievement', 'Other'] as const;
+const evidenceSkillReference = z.object({
+  skillId: z.string().min(1).max(100),
+  skillName: z.string().trim().min(1).max(100),
+});
+export const evidenceItemSchema = z.object({
+  id: z.string().min(1).max(100),
+  kind: z.enum(evidenceKinds),
+  title: z.string().max(200),
+  skills: z.array(evidenceSkillReference).max(150),
+  description: z.string().max(1500),
+  outcome: z.string().max(500),
+  timing: z.string().max(160),
+  reference: z.string().max(2048),
+});
 export const skillOptions = Object.fromEntries(categories.map((category) => [
   category, skillGroups.filter((group) => group.category === category).flatMap((group) => group.skills),
 ])) as Record<(typeof categories)[number], string[]>;
@@ -24,6 +39,8 @@ export const profileSchema = z.object({
   })).max(150),
   experience: z.object({
     academic: text, work: text, personal: text, examples: text, certifications: text, achievements: text, skipped: z.boolean(),
+    // Optional for backward compatibility with profiles saved before structured evidence existed.
+    evidenceItems: z.array(evidenceItemSchema).max(30).default([]),
   }),
   interests: z.object({
     industries: selection, activities: selection, priorities: selection,
@@ -34,6 +51,7 @@ export const profileSchema = z.object({
 });
 export type SkillsProfile = z.infer<typeof profileSchema>;
 export type ProfileSkill = SkillsProfile['skills'][number];
+export type EvidenceItem = z.infer<typeof evidenceItemSchema>;
 export type ProfileErrors = Record<string, string>;
 export type TranslateMessage = (messageId: string, values?: Record<string, string | number>) => string;
 export type ProfileMessage = {
@@ -47,7 +65,7 @@ export const sectionNames = ['Basic information', 'Current skills', 'Experience 
 export function emptyProfile(): SkillsProfile {
   return {
     basic: { status: '', field: '', years: '', education: '', direction: '' }, skills: [],
-    experience: { academic: '', work: '', personal: '', examples: '', certifications: '', achievements: '', skipped: false },
+    experience: { academic: '', work: '', personal: '', examples: '', certifications: '', achievements: '', skipped: false, evidenceItems: [] },
     interests: { industries: [], activities: [], priorities: [], willingness: '', weeklyHours: '', budget: '' },
     readiness: { technology: '', problemApproach: '', adaptability: '', realisticHours: '' },
   };

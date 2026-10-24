@@ -41,6 +41,12 @@ Experience-fit comparisons must remain separate from the skill score. Preferred 
 
 **How to apply:** Keep source requirements and inferred guidelines separate in suitability/ranking, leave ambiguous requirements for manual comparison, and never treat meeting a numeric minimum as proof of eligibility.
 
+Structured experience evidence is optional, user-provided and stored only in the browser profile. Link it to saved skills explicitly; never infer skills from its text, send it to the matcher, or use it to change scores. Preserve legacy notes and allow skipping.
+
+**Why:** The user asked for experience evidence to explain stated skills without becoming independent verification, a scoring signal or a barrier for users who have no examples.
+
+**How to apply:** Display evidence beside a role match only when it is explicitly associated with the exact saved skill returned by matching. Keep storage local, self-report labels visible, and evidence wholly outside scoring inputs.
+
 Stronger alignment labels need source-listed technical skill evidence, not just general soft skills, years or education. Label thresholds are product guidance, not empirically validated hiring cutoffs.
 
 **Why:** The user identified that low skill coverage must not be described as good fit. We retained the existing numeric weights rather than inventing a new validated weighting scheme; the label gate addresses that communication problem separately.
