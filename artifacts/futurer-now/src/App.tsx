@@ -176,7 +176,7 @@ function Shell({ children }: { children: ReactNode }) {
           <div><div className="brand-name">FutureNow</div><div className="brand-caption">WORKFORCE SKILLS NAVIGATOR</div></div>
           <button className="mobile-close" aria-label="Close navigation" data-testid="button-close-navigation" onClick={() => setMenuOpen(false)}><X size={18} /></button>
         </div>
-        <div className="sidebar-kicker sidebar-kicker-modules">FUTURENOW MODULES</div>
+        <div className="sidebar-kicker sidebar-kicker-modules text-[13px] font-extrabold">Features</div>
         <nav className="primary-nav" aria-label="FutureNow modules">
           {modules.map(({ href, label, icon: Icon, soon }, i) => (
             <Link key={href} href={href} data-testid={`link-module-${href.slice(1)}`} aria-current={path === href ? 'page' : undefined} className={`nav-link ${path === href ? 'nav-active' : ''}`} onClick={() => setMenuOpen(false)}>
