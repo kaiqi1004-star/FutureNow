@@ -43,9 +43,18 @@ try {
   assert.equal(typeof initialData.retrievedAt, "string");
   assert.equal(jobs.length, 50);
 
-  await page.getByRole("heading", { name: "The labour force, month by month." }).waitFor();
+  await page.getByRole("heading", { name: "Understand Malaysia's changing world of work." }).waitFor();
+  await page.getByRole("heading", { name: "Key findings" }).waitFor();
+  assert.equal(await page.locator(".mi-overview-card").count(), 3);
+  assert.match(await page.locator('[data-testid="mi-overview-market"]').innerText(), /Unemployment rate in/);
+  assert.match(await page.locator('[data-testid="mi-overview-records"]').innerText(), /of 50 supplied job records/);
+  assert.match(await page.locator('[data-testid="mi-overview-research"]').innerText(), /2,000/);
+  assert.match(await page.locator('[data-testid="mi-overview-research"]').innerText(), /69%/);
+  assert.equal(await page.locator('details[data-testid="details-official-source"]').evaluate((element) => element.open), false);
+  assert.equal(await page.locator('details[data-testid="details-job-source"]').evaluate((element) => element.open), false);
   assert.equal(await page.locator(".mi-metric").count(), 7);
   assert.match(await page.locator(".mi-metric-u_rate").innerText(), /2\.9/);
+  assert.match(await page.locator(".mi-metric-lf").innerText(), /million people/);
   assert.match(await page.locator(".mi-sample-count").innerText(), /50/);
   assert.match(await page.locator(".mi-date-stat").innerText(), /0\s*\/\s*50/);
   assert.match(await page.locator(".mi-category-list").innerText(), /Mechanical[\s\S]*12/);
@@ -53,14 +62,25 @@ try {
   assert.match(await page.locator(".mi-skill-technical").innerText(), /Excel[\s\S]*9/);
   assert.match(await page.locator(".mi-skill-domain").innerText(), /Payroll[\s\S]*6/);
   assert.doesNotMatch(await page.locator(".mi-skill-technical").innerText(), /Payroll/);
-  assert.match(await page.locator(".mi-research-card").innerText(), /Not a live feed/);
+  assert.match(await page.locator(".mi-research-card").innerText(), /Microsoft/);
   assert.match(await page.locator(".mi-research-card").innerText(), /2,000/);
-  assert.match(await page.locator(".mi-interpretation").innerText(), /What this means/);
+  assert.match(await page.locator(".mi-research-card").innerText(), /23 June 2026/);
+  assert.match(await page.locator(".mi-research-card").innerText(), /knowledge workers in Malaysia/);
+  assert.match(await page.locator(".mi-interpretation").innerText(), /What changed\?/);
   assert.match(await page.locator(".mi-interpretation").innerText(), /4\.6%/);
+  assert.equal(await page.locator(".mi-data-meta").isVisible(), false);
+  assert.match(await page.locator(".mi-chart-head").innerText(), /People, in millions/);
+  assert.match(await page.locator(".mi-chart").getAttribute("aria-label"), /million people/);
+
+  await page.locator('details[data-testid="details-official-source"] > summary').click();
+  assert.match(await page.locator(".mi-source-grid").innerText(), /09 Oct 2026, 12:30/);
+  assert.match(await page.locator(".mi-source-grid").innerText(), /11 Nov 2026, 12:30/);
+  assert.match(await page.locator(".mi-data-meta").innerText(), /Latest Official Data/);
   assert.match(await page.locator(".mi-data-meta").innerText(), /Last successful CSV retrieval/);
   assert.match(await page.locator(".mi-data-meta").innerText(), /API cache/);
   assert.match(await page.locator(".mi-data-meta").innerText(), /MYT/);
-  console.log("PASS: live data, all seven indicators, the 50-record snapshot, and dated research render");
+  assert.match(await page.locator('details[data-testid="details-official-source"] .mi-detail-method').innerText(), /thousand persons/);
+  console.log("PASS: evidence overview, source-specific live data, 50-record snapshot, and dated research render");
 
   const windowSelect = page.getByLabel("Select chart time window");
   await windowSelect.selectOption("all");
@@ -69,9 +89,9 @@ try {
   assert.doesNotMatch(await page.locator(".mi-chart").getAttribute("aria-label"), /Census 2020.*marked/);
   console.log("PASS: chart window and Census reference marker match the selected observations");
 
-  await page.locator(".mi-source-details > summary").click();
-  assert.match(await page.locator(".mi-source-grid").innerText(), /09 Oct 2026, 12:30/);
-  assert.match(await page.locator(".mi-source-grid").innerText(), /11 Nov 2026, 12:30/);
+  await page.locator('details[data-testid="details-job-source"] > summary').click();
+  assert.match(await page.locator(".mi-job-details").innerText(), /Excel groups Excel and Microsoft Excel/);
+  assert.equal(await page.locator('.mi-job-source-link a').getAttribute("href"), "/jobs");
 
   const refreshResponsePromise = page.waitForResponse(
     (response) =>
