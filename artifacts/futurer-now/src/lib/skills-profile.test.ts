@@ -15,6 +15,13 @@ test('required sections validate; experience is optional and zero hours/years ar
   assert.deepEqual(validateSection(emptyProfile(), 2), {});
   assert.deepEqual(validateProfile(complete()), {});
 });
+test('validation messages use injected translations without changing profile fields', () => {
+  const translate = (message: string, values: Record<string, string | number> = {}) =>
+    `BM ${message.replace(/\{(\w+)\}/g, (_, name: string) => String(values[name] ?? `{${name}}`))}`;
+  const errors = validateSection(emptyProfile(), 0, translate);
+  assert.equal(errors['basic.status'], 'BM Current status is required.');
+  assert.equal(errors['basic.field'], 'BM Field of study or occupation is required.');
+});
 test('invalid numeric values and duplicate skills rejected', () => {
   const p = complete();
   p.basic.years = -1; p.interests.weeklyHours = 169; p.readiness.realisticHours = NaN;
@@ -59,8 +66,11 @@ test('strengths trace to exact responses; no inference from free-text achievemen
   const p = complete();
   const strengths = transferableStrengths(p);
   assert.equal(strengths.length, 3);
-  assert.ok(strengths.every(s => s.source && s.explanation));
-  assert.match(strengths[0].explanation, /Advanced/);
+  assert.ok(strengths.every(s => s.source.key && s.explanation.key));
+  assert.equal(strengths[0].explanation.values?.proficiency, 'Advanced');
+  assert.equal(strengths[0].nameIsKey, true);
+  p.skills[0].custom = true;
+  assert.equal(transferableStrengths(p)[0].nameIsKey, false);
   p.skills = []; p.readiness.technology = 2; p.readiness.adaptability = 3;
   p.experience.achievements = 'I am an expert leader';
   assert.deepEqual(transferableStrengths(p), []);

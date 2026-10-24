@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -114,8 +113,8 @@
   --chart-3: 202 40% 47%;
   --chart-4: 17 57% 57%;
   --chart-5: 269 24% 58%;
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Manrope', sans-serif;
+  --app-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --app-font-serif: var(--app-font-sans);
   --app-font-mono: 'DM Mono', monospace;
   --radius: 0.8rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
@@ -306,6 +305,7 @@ button { cursor: pointer; }
 .app-shell { min-height: 100dvh; color: hsl(var(--foreground)); }
 .sidebar { width: 256px; background: #203f3a; color: #f8f4e8; position: fixed; inset: 0 auto 0 0; z-index: 20; display: flex; flex-direction: column; padding: 27px 18px 18px; }
 .brand-lockup { display: flex; align-items: center; gap: 11px; padding: 0 8px; min-height: 43px; }
+.brand-logo { width: 42px; height: 36px; flex: 0 0 auto; border-radius: 6px; background: #fff; object-fit: contain; }
 .brand-mark { width: 31px; height: 31px; display: flex; align-items: end; gap: 3px; padding: 6px; background: #e3bc67; border-radius: 8px; transform: rotate(-4deg); }
 .brand-mark span { display: block; width: 4px; border-radius: 3px; background: #23433d; transform: skewY(-24deg); }
 .brand-mark span:nth-child(1) { height: 8px; }.brand-mark span:nth-child(2) { height: 13px; }.brand-mark span:nth-child(3) { height: 17px; }
@@ -996,8 +996,62 @@ body { font-size: 14px; }
   }
 }
 
-/* FutureNow nature tokens */
-:root { --app-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+/* FutureNow shared interface system */
+:root {
+  --app-font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --app-font-serif: var(--app-font-sans);
+  --type-page-title: 32px;
+  --type-section-title: 22px;
+  --type-subsection-title: 18px;
+  --type-body: 15px;
+  --type-supporting: 13px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --surface-radius: 8px;
+}
+body { font-family: var(--app-font-sans); font-size: var(--type-body); line-height: 1.6; }
+.brand-name, .filter-heading h2, .sample-banner strong { font-family: var(--app-font-sans); }
+.main-shell .page-content h1 { font-family: var(--app-font-sans); font-size: var(--type-page-title) !important; font-weight: 650; line-height: 1.18; letter-spacing: -.035em !important; overflow-wrap: anywhere; }
+.main-shell .page-content h2 { font-family: var(--app-font-sans); font-size: var(--type-section-title) !important; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.main-shell .page-content h3 { font-family: var(--app-font-sans); font-size: var(--type-subsection-title) !important; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.main-shell .page-content p { line-height: 1.6; }
+.page-heading p, .sp-head > div > p, .rm-head > div > p, .pathway-heading p, .mi-hero-copy > p, .sp-hero-copy > p { font-size: var(--type-body); }
+.data-table, .data-table td { font-size: 13px; }
+.data-table th { font-size: 12px; }
+.language-switcher {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 7px;
+  background: hsl(var(--card));
+}
+.language-switcher button {
+  min-width: 31px;
+  min-height: 28px;
+  padding: 3px 6px;
+  border: 0;
+  border-radius: 4px;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  font: 500 13px/1.2 var(--app-font-sans);
+  cursor: pointer;
+}
+.language-switcher button:hover { color: hsl(var(--foreground)); background: var(--elevate-1); }
+.language-switcher button.language-active { color: hsl(var(--primary-foreground)); background: hsl(var(--primary)); }
+.language-switcher button:focus-visible { outline: 3px solid hsl(var(--ring)); outline-offset: 2px; z-index: 1; }
+.nav-link, .primary-nav a, .sidebar-kicker, .field-label, .select-wrap select, .search-field input { font-family: var(--app-font-sans); }
+.nav-link:focus-visible, .topbar button:focus-visible, .topbar a:focus-visible { outline: 3px solid hsl(var(--ring)); outline-offset: 2px; }
+.topbar-actions { gap: 10px; }
+.page-content { min-width: 0; }
+.page-content *, .topbar * { min-width: 0; }
+.page-content h1, .page-content h2, .page-content h3, .page-content p, .page-content label { overflow-wrap: anywhere; }
 :root:not(.dark) { --background: 48 100% 98%; --foreground: 105 9% 13%; --primary: 152 39% 30%; --border: 84 13% 89%; }
 .sidebar { background: #2F6B4F; overflow-y: auto; }
 .dark .sidebar { background: #1A2A20; }
@@ -1010,6 +1064,16 @@ body { font-size: 14px; }
 .nav-soon { margin-left: auto; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 1px 6px; border-radius: 8px; background: rgba(244,162,97,.25); color: #FDE6D2; }
 .nav-active .nav-soon { background: #20251F; color: #F4D35E; }
 @media (max-width: 760px) {
+  :root { --type-page-title: 26px; --type-section-title: 20px; }
+  .topbar { gap: 8px; }
+  .topbar-actions { gap: 6px; }
+  .language-switcher { gap: 0; padding: 2px; }
+  .language-switcher button { min-width: 28px; min-height: 28px; padding: 3px 4px; font-size: 12px; }
+  .breadcrumb { display: none; }
+  .topbar-actions { margin-left: auto; }
+  .topbar-actions .utility-button { width: 30px; min-width: 30px; padding: 0; }
+  .main-shell .page-content h1 { font-size: var(--type-page-title) !important; letter-spacing: -.025em !important; }
+  .main-shell .page-content h2 { font-size: var(--type-section-title) !important; }
   .sidebar:not(.sidebar-open) { visibility: hidden; }
   .sidebar.sidebar-open { visibility: visible; }
 }

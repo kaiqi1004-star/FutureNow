@@ -131,7 +131,7 @@ try {
     await t('button-open-navigation').click();
     await t('button-close-navigation').focus();
     await page.keyboard.press('Shift+Tab');
-    assert.equal(await page.evaluate(() => document.activeElement.getAttribute('data-testid')), 'link-nav-skill-gap-navigator');
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute('data-testid')), 'link-nav-skill-gap');
     await page.keyboard.press('Tab');
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute('data-testid')), 'button-close-navigation');
     await page.keyboard.press('Escape');
