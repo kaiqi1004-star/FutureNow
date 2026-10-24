@@ -116,11 +116,6 @@
 .rm-coverage { display: grid; grid-column: 2; grid-row: 1; gap: 2px; font-size: 11px; line-height: 1.35; }
 .rm-coverage strong { font-size: 11px; font-weight: 600; color: var(--rm-ink); }
 .rm-coverage small { color: var(--rm-muted); }
-.rm-tier { display: inline-flex; grid-column: 3; grid-row: 1; align-items: center; justify-content: center; margin-top: 0; padding: 4px 8px; border: 1px solid var(--rm-line); border-radius: 999px; font-size: 10px; font-weight: 700; line-height: 1.25; text-align: center; }
-.rm-tier-1 { color: var(--rm-green); background: var(--rm-mint); border-color: var(--rm-green); }
-.rm-tier-2 { color: #785d10; background: var(--rm-sun); border-color: var(--rm-yellow); }
-.dark .rm-tier-2 { color: #f5d875; }
-.rm-tier-3 { color: var(--rm-err); background: var(--rm-peach); border-color: var(--rm-orange); }
 .rm-result-reason { grid-column: 1 / -1; grid-row: 2; margin: 0; }
 .rm-result-meta { grid-column: 1 / 3; grid-row: 3; }
 .rm-fit .rm-btn { grid-column: 3; grid-row: 3; justify-self: end; }
@@ -156,7 +151,6 @@
   .rm-fit { grid-template-columns: minmax(0, 1fr) auto; }
   .rm-overall { grid-column: 1; grid-row: 1; }
   .rm-coverage { grid-column: 2; grid-row: 1; }
-  .rm-tier { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
   .rm-result-reason { grid-column: 1 / -1; grid-row: 3; }
   .rm-result-meta { grid-column: 1 / -1; grid-row: 4; }
   .rm-fit .rm-btn { grid-column: 1 / -1; grid-row: 5; justify-self: start; }
@@ -181,7 +175,7 @@
 .rm-detail > .rm-original-source, .rm-detail > .rm-breakdown { margin: 0; }
 .rm-detail-heading h2 { margin: 8px 0 4px; font-size: clamp(22px, 3vw, 30px); overflow-wrap: anywhere; }
 .rm-detail-heading .rm-meta { margin: 0; }
-.rm-detail-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.rm-detail-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
 .rm-detail-metric { display: grid; align-content: start; gap: 5px; min-width: 0; padding: 14px; border: 1px solid var(--rm-line); border-radius: 11px; background: var(--rm-card); }
 .rm-detail-metric-primary { border-top: 3px solid var(--rm-green); }
 .rm-detail-metric > span { color: var(--rm-muted); font-size: 10px; font-weight: 700; letter-spacing: .055em; line-height: 1.4; text-transform: uppercase; }
@@ -203,7 +197,7 @@
 .rm-context-disclosure section { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rm-line); }
 .rm-context-disclosure h4 { margin: 0 0 6px; font-size: 13px; }
 .rm-context-disclosure p { margin: 5px 0; }
-.rm-assessment-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rm-assessment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
 .rm-assessment-card { display: grid; align-content: start; gap: 6px; padding: 14px; border-radius: 10px; background: var(--rm-mint); }
 .rm-assessment-card h4 { margin: 0; font-size: 13px; }
 .rm-assessment-card > strong { color: var(--rm-green); font-size: 15px; line-height: 1.4; }
@@ -214,9 +208,6 @@
 .rm-breakdown-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
 .rm-breakdown-head h3 { margin: 0; font-size: 16px; }
 .rm-breakdown-head > div > p { margin: 5px 0 0; max-width: 620px; font-size: 12px; line-height: 1.5; }
-.rm-breakdown-overall { display: grid; gap: 3px; justify-items: end; flex: 0 0 auto; }
-.rm-breakdown-overall small { color: var(--rm-muted); font-size: 10px; }
-.rm-breakdown-overall strong { color: var(--rm-green); font-size: 20px; line-height: 1.2; }
 .rm-coverage-list { display: grid; gap: 13px; list-style: none; margin: 16px 0 0; padding: 0; }
 .rm-coverage-row { --rm-coverage-color: var(--rm-green); }
 .rm-coverage-row[data-category="technical"] { --rm-coverage-color: #287F9C; }
@@ -228,9 +219,6 @@
 .rm-coverage-row-head > strong { font-size: 12px; white-space: nowrap; }
 .rm-coverage-track { height: 8px; margin-top: 6px; overflow: hidden; border-radius: 8px; background: var(--rm-mint); }
 .rm-coverage-track > span { display: block; height: 100%; border-radius: inherit; background: var(--rm-coverage-color); transition: width .25s ease; }
-.rm-experience-score { --rm-coverage-color: #C36B36; display: grid; gap: 6px; margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--rm-line); }
-.rm-experience-score > small { color: var(--rm-muted); font-size: 11px; line-height: 1.45; }
-.rm-coverage-legend { margin-top: 13px; color: var(--rm-muted); font-size: 11px; line-height: 1.45; }
 @media (max-width: 860px) {
   .rm-detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -36,7 +36,7 @@ test("each score and matched/gap contribution reuses the documented distinct-ski
   }
 });
 
-test("ranking is deterministic by unrounded coverage then numeric record ID, unavailable last", () => {
+test("ranking is deterministic by overall score, then skill coverage and numeric record ID", () => {
   const source = [
     fixture("J10", ["PHP", "SQL"]), fixture("J3", []),
     fixture("J2", ["PHP", "SQL"]), fixture("J1", ["PHP"]),
@@ -231,7 +231,7 @@ test("API contract handles empty skills and rejects oversized or malformed input
   assert.equal(MatchFutureReadyRolesBody.safeParse({ currentSkills: ["x".repeat(101)] }).success, false);
 });
 
-test("real zero-experience profile gets entry and internship roles before a higher-overlap senior role", () => {
+test("real zero-experience profile keeps career context descriptive while ranking by overall score", () => {
   const senior = jobs.find((job) => job.id === "J47");
   const profileSkills = [...senior.technicalSkills, ...senior.softSkills];
   const result = matchRoles(jobs, profileSkills, { relevantExperienceYears: 0, educationLevel: "Bachelor’s degree" });
@@ -250,8 +250,28 @@ test("real zero-experience profile gets entry and internship roles before a high
   assert.equal(unspecifiedSenior.experienceFit.requirementType, "unavailable");
   assert.equal(unspecifiedSenior.experienceFit.guidelineYears, null);
   assert.notEqual(unspecifiedSenior.compatibilityTier, 3);
-  assert.ok(result.results.indexOf(intern) < result.results.indexOf(explicitSenior));
-  assert.ok(result.results.indexOf(graduate) < result.results.indexOf(explicitSenior));
+  assert.notEqual(intern.compatibilityTier, explicitSenior.compatibilityTier);
+  const higherScoreRole = intern.overallScore > explicitSenior.overallScore
+    || (intern.overallScore === explicitSenior.overallScore && intern.skillCoverage >= explicitSenior.skillCoverage)
+    ? intern
+    : explicitSenior;
+  const lowerScoreRole = higherScoreRole === intern ? explicitSenior : intern;
+  assert.ok(result.results.indexOf(higherScoreRole) < result.results.indexOf(lowerScoreRole));
+  for (let index = 1; index < result.results.length; index++) {
+    const previous = result.results[index - 1];
+    const current = result.results[index];
+    const previousScore = previous.overallScore ?? -1;
+    const currentScore = current.overallScore ?? -1;
+    assert.ok(previousScore >= currentScore);
+    if (previousScore === currentScore) {
+      const previousCoverage = previous.skillCoverage ?? -1;
+      const currentCoverage = current.skillCoverage ?? -1;
+      assert.ok(previousCoverage >= currentCoverage);
+      if (previousCoverage === currentCoverage) {
+        assert.ok(previous.job.id.localeCompare(current.job.id, "en", { numeric: true }) <= 0);
+      }
+    }
+  }
   assert.ok(explicitSenior.skillCoverage > intern.skillCoverage);
   assert.equal(explicitSenior.score, explicitSenior.skillCoverage);
 });
@@ -286,15 +306,25 @@ test("missing dimensions are excluded, remain visible, and do not become a confi
   assert.equal(noScore.compatibilityTier, 2);
 });
 
-test("ranking uses compatibility tier, then overall score, then skill coverage and ID deterministically", () => {
-  const source = [
-    { ...fixture("J10", ["PHP", "SQL"]), experience: "Minimum 5 years required" },
-    fixture("J3", ["PHP", "SQL"]),
-    fixture("J2", ["PHP", "SQL"]),
-    fixture("J1", ["PHP"]),
+test("the two Accountant records rank by score even when the lower score has a better compatibility tier", () => {
+  const source = jobs.filter((job) => ["J41", "J42"].includes(job.id));
+  const comparisonSkills = [
+    "Full-set Accounts", "Accounting Software", "Microsoft Excel", "IFRS", "SST", "Integrity",
+    "General Ledger", "Accounts Payable/Receivable", "ERP Systems", "Financial Reporting", "MFRS",
   ];
-  const input = { relevantExperienceYears: 0, educationLevel: "Bachelor’s degree" };
-  const first = matchRoles(source, ["PHP"], input);
-  assert.deepEqual(first.results.map((item) => item.job.id), ["J1", "J2", "J3", "J10"]);
-  assert.deepEqual(matchRoles([...source].reverse(), ["PHP"], input), first);
+  const profile = { relevantExperienceYears: 3.5, educationLevel: "Bachelor’s degree" };
+  const first = matchRoles(source, comparisonSkills, profile);
+  const fullSet = first.results.find((item) => item.job.id === "J41");
+  const exactAutomation = first.results.find((item) => item.job.id === "J42");
+
+  assert.equal(fullSet.overallScore, 66.7);
+  assert.equal(fullSet.skillCoverage, 50);
+  assert.equal(fullSet.experienceFit.status, "meets");
+  assert.equal(fullSet.compatibilityTier, 1);
+  assert.equal(exactAutomation.overallScore, 76.3);
+  assert.equal(exactAutomation.skillCoverage, 60);
+  assert.equal(exactAutomation.experienceFit.status, "uncertain");
+  assert.equal(exactAutomation.compatibilityTier, 2);
+  assert.deepEqual(first.results.map((item) => item.job.id), ["J42", "J41"]);
+  assert.deepEqual(matchRoles([...source].reverse(), comparisonSkills, profile), first);
 });

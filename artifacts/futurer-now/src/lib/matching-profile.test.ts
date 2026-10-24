@@ -37,13 +37,14 @@ test("missing and incomplete saved profiles produce useful prompts without inven
   assert.ok(matchingProfileInput(saved).missingFields.length);
 });
 
-test("the five displayed skill categories stay ordered and broad areas never reach matching", () => {
+test("the six displayed skill categories stay ordered and broad areas never reach matching", () => {
   assert.deepEqual(skillCategories, [
     "Broad Technical Areas",
     "Technical Skills",
     "Industry-Specific Skills",
     "Digital Skills",
-    "Soft Skills & Languages",
+    "Soft Skills",
+    "Languages",
   ]);
   assert.deepEqual([...new Set(skillGroups.map((group) => group.category))], skillCategories);
   const profile = emptyProfile();

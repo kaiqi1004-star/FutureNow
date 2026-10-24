@@ -30,6 +30,7 @@ test('catalogue is grouped, duplicate-free and specific additions are evidenced 
   assert.equal(new Set(names.map((skill) => skill.toLowerCase())).size, names.length);
   const source = jobs.flatMap((job) => [...job.technicalSkills, ...job.softSkills]).map((skill) => skill.toLowerCase());
   const broadDigitalPresets = new Set(['Digital literacy', 'Productivity tools', 'Online collaboration']);
+  const standardLanguageOptions = new Set(['Bahasa Melayu', 'English Communication']);
   for (const group of skillGroups.filter((item) => !item.broad)) {
     for (const skill of group.skills) {
       // These broad digital starters are preserved for exploration; Java and
@@ -37,6 +38,7 @@ test('catalogue is grouped, duplicate-free and specific additions are evidenced 
       assert.ok(
         source.includes(skill.toLowerCase())
         || broadDigitalPresets.has(skill)
+        || standardLanguageOptions.has(skill)
         || (skill === 'Mandarin' && jobs.some((job) => /Mandarin/i.test(job.title)))
         || (['Java', 'TypeScript'].includes(skill) && source.some((text) => text.includes('java/python/c#/javascript/typescript (at least one)'))),
         skill,

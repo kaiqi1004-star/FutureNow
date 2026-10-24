@@ -29,7 +29,7 @@ const toNum = (v: string): number | '' => (v.trim() === '' ? '' : Number(v));
 const displayedSkillCategory = (skill: ProfileSkill) =>
   isBroadTechnicalArea(skill.name) ? 'Broad Technical Areas' : skill.category;
 const languageChoices = [
-  { label: 'Bahasa Melayu', name: 'Bahasa Melayu', aliases: ['Bahasa Melayu'] },
+  { label: 'Malay', name: 'Bahasa Melayu', aliases: ['Bahasa Melayu'] },
   { label: 'English', name: 'English Communication', aliases: ['English', 'English Communication'] },
   { label: 'Mandarin Chinese', name: 'Mandarin', aliases: ['Mandarin', 'Mandarin Chinese'] },
 ] as const;
@@ -113,7 +113,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
   const languageEntries = (aliases: readonly string[]) => {
     const names = new Set(aliases.map(skillNameKey));
     return skills.filter((skill) =>
-      skill.category === 'Soft Skills & Languages' && names.has(skillNameKey(skill.name)),
+      skill.category === 'Languages' && names.has(skillNameKey(skill.name)),
     );
   };
   const toggleLanguage = (choice: (typeof languageChoices)[number]) => {
@@ -128,7 +128,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
       return;
     }
     onChange([...skills, {
-      id: uid(), name: choice.name, category: 'Soft Skills & Languages',
+      id: uid(), name: choice.name, category: 'Languages',
       proficiency: 'Beginner', custom: false,
     }]);
     setLanguageError('');
@@ -140,7 +140,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
     if (has(value)) return setLanguageError('That option already exists. Select it above.');
     if (skills.length >= 150) return setLanguageError('You can save up to 150 skills. Remove a skill before adding another.');
     onChange([...skills, {
-      id: uid(), name: value, category: 'Soft Skills & Languages',
+      id: uid(), name: value, category: 'Languages',
       proficiency: 'Beginner', custom: true,
     }]);
     setOtherLanguageName('');
@@ -175,30 +175,6 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
         <span>{t('Choose only skills you have. Broad areas never add specific skills automatically.')}</span>
       </div>
     </div>
-    <fieldset className="sp-language-skills" data-testid="language-skills">
-      <legend className="sp-label">{t('Language skills')} <span className="sp-optional">{t('Optional')}</span></legend>
-      <p className="sp-hint">{t('Choose languages you use. Existing saved language skills remain in your profile.')}</p>
-      <div className="sp-chips">
-        {languageChoices.map((choice) => {
-          const selected = languageEntries(choice.aliases).length > 0;
-          return <button
-            type="button"
-            key={choice.label}
-            className={`sp-chip ${selected ? 'is-on' : ''}`}
-            aria-pressed={selected}
-            onClick={() => toggleLanguage(choice)}
-            data-testid={`chip-language-${choice.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
-          >{selected && <Check size={13} />}{t(choice.label)}</button>;
-        })}
-        <button type="button" className={`sp-chip ${otherLanguageOpen ? 'is-on' : ''}`} aria-pressed={otherLanguageOpen} onClick={() => { setOtherLanguageOpen((open) => !open); setLanguageError(''); }} data-testid="button-language-other">{t('Other')}</button>
-      </div>
-      {otherLanguageOpen && <div className="sp-inline-add sp-language-other">
-        <label className="sr-only" htmlFor="other-language-name">{t('Other language name')}</label>
-        <input id="other-language-name" className="sp-input" maxLength={100} value={otherLanguageName} onChange={(event) => setOtherLanguageName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addOtherLanguage(); } }} placeholder={t('Enter a language name')} data-testid="input-other-language" />
-        <button type="button" className="sp-btn sp-btn-ghost" onClick={addOtherLanguage} data-testid="button-add-language"><Plus size={14} />{t('Add language')}</button>
-      </div>}
-      {languageError && <p className="sp-error" role="alert" data-testid="error-language-skills"><CircleAlert size={13} />{t(languageError)}</p>}
-    </fieldset>
     {skills.length > 0 && <section className="sp-selected-review" aria-label={t('Selected skills')} data-testid="selected-skill-review">
       <div className="sp-selected-head">
         <div><strong>{t('Review selected skills')}</strong><span>{t('Remove any skill that does not describe your experience.')}</span></div>
@@ -221,17 +197,19 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
       </div>
     </section>}
     {categories.map((category) => {
-      const categorySkills = skillGroups.filter((group) => group.category === category).flatMap((group) => group.skills);
+      const categorySkills = category === 'Languages'
+        ? languageChoices.map((choice) => choice.name)
+        : skillGroups.filter((group) => group.category === category).flatMap((group) => group.skills);
       const selectedCount = skills.filter((skill) => displayedSkillCategory(skill) === category).length;
       const groups = skillGroups.filter((group) =>
         group.category === category
         && `${category} ${group.label} ${group.skills.join(' ')} ${group.skills.map((skill) => t(skill)).join(' ')}`.toLowerCase().includes(search.toLowerCase()),
       );
-      if (!groups.length) return null;
+      if (!groups.length && category !== 'Languages') return null;
       return <details
         className="sp-category-library"
         key={category}
-        open={Boolean(search) || category === 'Technical Skills' || category === 'Broad Technical Areas'}
+        open={Boolean(search) || category === 'Technical Skills' || category === 'Broad Technical Areas' || category === 'Languages'}
         data-testid={`skill-category-${category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
       >
         <summary className="sp-category-summary">
@@ -239,7 +217,32 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
           <span className="sp-category-meta">{t('{count} options', { count: categorySkills.length })} · {t('{count} selected', { count: selectedCount })}</span>
         </summary>
         {category === 'Broad Technical Areas' && <p className="sp-hint">{t('These broad areas are for exploration only. They do not prove specific skills and never add score points.')}</p>}
+        {category === 'Languages' && <fieldset className="sp-language-skills" data-testid="language-skills">
+          <legend className="sp-label">{t('Language skills')} <span className="sp-optional">{t('Optional')}</span></legend>
+          <p className="sp-hint">{t('Choose languages you use. Existing saved language skills remain in your profile.')}</p>
+          <div className="sp-chips">
+            {languageChoices.map((choice) => {
+              const selected = languageEntries(choice.aliases).length > 0;
+              return <button
+                type="button"
+                key={choice.label}
+                className={`sp-chip ${selected ? 'is-on' : ''}`}
+                aria-pressed={selected}
+                onClick={() => toggleLanguage(choice)}
+                data-testid={`chip-language-${choice.label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+              >{selected && <Check size={13} />}{t(choice.label)}</button>;
+            })}
+            <button type="button" className={`sp-chip ${otherLanguageOpen ? 'is-on' : ''}`} aria-pressed={otherLanguageOpen} onClick={() => { setOtherLanguageOpen((open) => !open); setLanguageError(''); }} data-testid="button-language-other">{t('Other')}</button>
+          </div>
+          {otherLanguageOpen && <div className="sp-inline-add sp-language-other">
+            <label className="sr-only" htmlFor="other-language-name">{t('Other language name')}</label>
+            <input id="other-language-name" className="sp-input" maxLength={100} value={otherLanguageName} onChange={(event) => setOtherLanguageName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addOtherLanguage(); } }} placeholder={t('Enter a language name')} data-testid="input-other-language" />
+            <button type="button" className="sp-btn sp-btn-ghost" onClick={addOtherLanguage} data-testid="button-add-language"><Plus size={14} />{t('Add language')}</button>
+          </div>}
+          {languageError && <p className="sp-error" role="alert" data-testid="error-language-skills"><CircleAlert size={13} />{t(languageError)}</p>}
+        </fieldset>}
         {groups.map((group) => {
+          if (group.label === 'Languages') return null;
           const options = group.skills.filter((skill) => !search || `${skill} ${t(skill)} ${group.label} ${category}`.toLowerCase().includes(search.toLowerCase()));
           const chips = <div className="sp-chips">{options.map((o) => { const on = has(o); return <button type="button" key={o} aria-pressed={on} className={`sp-chip ${on ? 'is-on' : ''}`} onClick={() => togglePreset(o, group.category)} data-testid={`chip-skill-${o.toLowerCase().replace(/\W+/g, '-')}`}>{on && <Check size={13} />}{t(o)}</button>; })}</div>;
           return group.broad
@@ -271,6 +274,7 @@ function SkillsEditor({ skills, onChange, error }: { skills: ProfileSkill[]; onC
             </div>
              <label className="sr-only" htmlFor={`prof-${s.id}`}>{t('Proficiency for')} {s.name}</label>
              <select id={`prof-${s.id}`} className="sp-input sp-prof" value={s.proficiency} onChange={(e) => onChange(skills.map((x) => (x.id === s.id ? { ...x, proficiency: e.target.value as ProfileSkill['proficiency'] } : x)))} data-testid={`select-proficiency-${s.id}`}>{proficiencies.map((p) => <option key={p} value={p}>{t(p)}</option>)}</select>
+             {s.custom && <><label className="sr-only" htmlFor={`category-${s.id}`}>{t('Category for')} {s.name}</label><select id={`category-${s.id}`} className="sp-input sp-prof" value={s.category} onChange={(e) => onChange(skills.map((x) => x.id === s.id ? { ...x, category: e.target.value as ProfileSkill['category'] } : x))} data-testid={`select-skill-category-${s.id}`}>{categories.map((category) => <option key={category} value={category}>{t(category)}</option>)}</select></>}
              {s.custom && editing !== s.id && <button type="button" className="sp-icon" aria-label={`${t('Rename')} ${s.name}`} onClick={() => { setEditing(s.id); setEditName(s.name); }} data-testid={`button-edit-skill-${s.id}`}><Pencil size={15} /></button>}
              <button type="button" className="sp-icon sp-icon-danger" aria-label={`${t('Remove')} ${s.name}`} onClick={() => onChange(skills.filter((x) => x.id !== s.id))} data-testid={`button-remove-skill-${s.id}`}><Trash2 size={15} /></button>
           </li>)}</ul>}

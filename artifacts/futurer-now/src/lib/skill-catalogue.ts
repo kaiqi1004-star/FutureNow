@@ -3,7 +3,8 @@ export const skillCategories = [
   'Technical Skills',
   'Industry-Specific Skills',
   'Digital Skills',
-  'Soft Skills & Languages',
+  'Soft Skills',
+  'Languages',
 ] as const;
 
 export type SkillCategory = (typeof skillCategories)[number];
@@ -20,8 +21,8 @@ export const skillGroups = [
   { label: 'Human resources', category: 'Industry-Specific Skills', skills: ['Recruitment', 'Payroll', 'Employment Law', 'Onboarding', 'CV Screening', 'Interviewing', 'HR Software', 'EPF', 'SOCSO', 'EIS', 'Training Coordination'] },
   { label: 'Accounting and finance', category: 'Industry-Specific Skills', skills: ['Full-set Accounts', 'Financial Reporting', 'General Ledger', 'Account Reconciliation', 'Taxation', 'SST', 'E-Invoice', 'Accounting Software', 'ERP Systems', 'MFRS', 'IFRS', 'Cash Flow Management', 'Month-end Closing'] },
   { label: 'Digital productivity', category: 'Digital Skills', skills: ['Digital literacy', 'Productivity tools', 'Online collaboration', 'Microsoft Office', 'Microsoft Word', 'Microsoft Excel', 'Google Sheets', 'Gantt charts'] },
-  { label: 'Soft skills', category: 'Soft Skills & Languages', skills: ['Communication', 'Teamwork', 'Problem-solving', 'Critical thinking', 'Leadership', 'Creativity', 'Adaptability', 'Analytical Thinking', 'Attention to Detail', 'Independent working', 'Time Management', 'Mentoring', 'technical communication', 'Client communication', 'Project Management', 'Organisation', 'Confidentiality', 'Negotiation'] },
-  { label: 'Languages', category: 'Soft Skills & Languages', skills: ['English Communication', 'Mandarin', 'communication in Mandarin and English', 'Japanese-English communication'] },
+  { label: 'Soft skills', category: 'Soft Skills', skills: ['Communication', 'Teamwork', 'Problem-solving', 'Critical thinking', 'Leadership', 'Creativity', 'Adaptability', 'Analytical Thinking', 'Attention to Detail', 'Independent working', 'Time Management', 'Mentoring', 'technical communication', 'Client communication', 'Project Management', 'Organisation', 'Confidentiality', 'Negotiation'] },
+  { label: 'Languages', category: 'Languages', skills: ['Bahasa Melayu', 'English Communication', 'Mandarin', 'communication in Mandarin and English', 'Japanese-English communication'] },
 ] satisfies Array<{ label: string; category: SkillCategory; broad?: boolean; skills: string[] }>;
 
 export const BROAD_TECHNICAL_AREAS = new Set(skillGroups.find((group) => group.broad)?.skills ?? []);

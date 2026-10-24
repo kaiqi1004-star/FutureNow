@@ -4,9 +4,16 @@ import { skillCategories, skillGroups, type SkillCategory } from './skill-catalo
 export const PROFILE_KEY = 'futurenow.skills-profile.v1';
 export const proficiencies = ['Beginner', 'Intermediate', 'Advanced', 'Expert'] as const;
 export const categories = skillCategories;
-const storedCategory = z.enum([...categories, 'Soft Skills']).transform((category): SkillCategory =>
-  category === 'Soft Skills' ? 'Soft Skills & Languages' : category as SkillCategory,
+const storedCategory = z.enum([...categories, 'Soft Skills & Languages']).transform((category): SkillCategory =>
+  category === 'Soft Skills & Languages' ? 'Soft Skills' : category as SkillCategory,
 );
+const legacyLanguageNames = new Set([
+  'arabic', 'bahasa melayu', 'bengali', 'burmese', 'cantonese', 'chinese', 'dutch',
+  'english', 'french', 'german', 'hindi', 'hokkien', 'indonesian', 'italian',
+  'japanese', 'khmer', 'korean', 'mandarin chinese', 'mandarin', 'nepali', 'persian',
+  'portuguese', 'punjabi', 'russian', 'spanish', 'tagalog', 'tamil', 'thai', 'turkish',
+  'urdu', 'vietnamese',
+]);
 const presetCategories = new Map<string, SkillCategory>();
 for (const group of skillGroups) {
   for (const name of group.skills) presetCategories.set(name.normalize('NFKC').trim().toLocaleLowerCase('en'), group.category);
@@ -18,7 +25,12 @@ const savedSkillSchema = z.object({
   proficiency: z.enum(proficiencies),
   custom: z.boolean(),
 }).transform((skill) => {
-  if (skill.custom) return skill;
+  if (skill.custom) {
+    const normalizedName = skill.name.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('en');
+    return skill.category === 'Soft Skills' && legacyLanguageNames.has(normalizedName)
+      ? { ...skill, category: 'Languages' as const }
+      : skill;
+  }
   const migratedCategory = presetCategories.get(skill.name.normalize('NFKC').trim().toLocaleLowerCase('en'));
   return migratedCategory ? { ...skill, category: migratedCategory } : skill;
 });
@@ -53,8 +65,8 @@ export const profileSchema = z.object({
     relevantYears: z.union([z.literal(''), z.number().min(0).max(80)]).optional(),
     education: z.union([z.literal(''), z.enum(educationLevels)]), direction: text,
   }),
-  // Old "Soft Skills" and broad-preset categories are migrated on read; IDs,
-  // names, proficiency values, and evidence skill references are unchanged.
+  // Known values in the legacy combined category are separated on read; ambiguous
+  // custom items stay editable. IDs, names, proficiency and evidence references stay unchanged.
   skills: z.array(savedSkillSchema).max(150),
   experience: z.object({
     academic: text, work: text, personal: text, examples: text, certifications: text, achievements: text, skipped: z.boolean(),
@@ -126,7 +138,7 @@ export type TransferableStrength = {
   source: ProfileMessage;
 };
 export function transferableStrengths(p: SkillsProfile): TransferableStrength[] {
-  const strengths: TransferableStrength[] = p.skills.filter(s => s.category === 'Soft Skills & Languages').map(s => {
+  const strengths: TransferableStrength[] = p.skills.filter(s => s.category === 'Soft Skills').map(s => {
     const isPreset = !s.custom && skillOptions[s.category].includes(s.name);
     return {
       name: s.name,

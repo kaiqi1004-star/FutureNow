@@ -104,13 +104,14 @@ export function matchRoles(
     };
   });
 
+  // Overall suitability is the primary ranking rule. Only exact score ties
+  // use skill coverage, followed by numeric record ID for deterministic order.
   results.sort((a, b) => {
     const aOverall = a.overallScore ?? -1;
     const bOverall = b.overallScore ?? -1;
     const aCoverage = a.skillCoverage ?? -1;
     const bCoverage = b.skillCoverage ?? -1;
-    return a.compatibilityTier - b.compatibilityTier
-      || bOverall - aOverall
+    return bOverall - aOverall
       || bCoverage - aCoverage
       || a.job.id.localeCompare(b.job.id, "en", { numeric: true });
   });

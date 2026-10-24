@@ -5,7 +5,7 @@ import { emptyProfile, loadProfile, profileSchema, saveProfile, validateProfile,
 function complete(): SkillsProfile {
   const p = emptyProfile();
   p.basic = { status: 'Student', field: 'Engineering', years: 0, relevantYears: '', education: 'Diploma', direction: 'Build products' };
-  p.skills = [{ id: 'skill-1', name: 'Communication', category: 'Soft Skills & Languages', proficiency: 'Advanced', custom: false }];
+  p.skills = [{ id: 'skill-1', name: 'Communication', category: 'Soft Skills', proficiency: 'Advanced', custom: false }];
   p.interests = { industries: ['Engineering'], activities: ['Design'], priorities: ['Impact'], willingness: 4, weeklyHours: 0, budget: 'Free only' };
   p.readiness = { technology: 4, problemApproach: 'Research and ask for help', adaptability: 5, realisticHours: 0 };
   return p;
@@ -42,15 +42,17 @@ test('draft and submitted profiles roundtrip and edits replace previous save', (
   assert.equal(loadProfile(storage).saved?.profile.basic.field, 'Updated field');
   assert.ok(data.has(PROFILE_KEY));
 });
-test('legacy version-1 skill categories migrate without changing names, IDs or evidence references', () => {
+test('legacy combined language categories migrate without changing names, IDs or evidence references', () => {
   const base = emptyProfile();
   const parsed = profileSchema.safeParse({
     ...base,
     basic: { ...base.basic, relevantYears: undefined },
     skills: [
-      { id: 'soft-legacy', name: 'Communication', category: 'Soft Skills', proficiency: 'Advanced', custom: false },
+      { id: 'soft-legacy', name: 'Communication', category: 'Soft Skills & Languages', proficiency: 'Advanced', custom: false },
       { id: 'excel-legacy', name: 'Microsoft Excel', category: 'Technical Skills', proficiency: 'Intermediate', custom: false },
-      { id: 'custom-legacy', name: 'My custom skill', category: 'Technical Skills', proficiency: 'Beginner', custom: true },
+      { id: 'custom-legacy', name: 'Korean', category: 'Soft Skills & Languages', proficiency: 'Beginner', custom: true },
+      { id: 'english-legacy', name: 'English Communication', category: 'Soft Skills & Languages', proficiency: 'Intermediate', custom: false },
+      { id: 'mandarin-legacy', name: 'Mandarin', category: 'Soft Skills & Languages', proficiency: 'Advanced', custom: false },
     ],
     experience: {
       ...base.experience,
@@ -65,11 +67,23 @@ test('legacy version-1 skill categories migrate without changing names, IDs or e
   if (!parsed.success) return;
   assert.equal(parsed.data.basic.relevantYears, undefined);
   assert.deepEqual(parsed.data.skills.map(({ id, name, category }) => ({ id, name, category })), [
-    { id: 'soft-legacy', name: 'Communication', category: 'Soft Skills & Languages' },
+    { id: 'soft-legacy', name: 'Communication', category: 'Soft Skills' },
     { id: 'excel-legacy', name: 'Microsoft Excel', category: 'Digital Skills' },
-    { id: 'custom-legacy', name: 'My custom skill', category: 'Technical Skills' },
+    { id: 'custom-legacy', name: 'Korean', category: 'Languages' },
+    { id: 'english-legacy', name: 'English Communication', category: 'Languages' },
+    { id: 'mandarin-legacy', name: 'Mandarin', category: 'Languages' },
   ]);
   assert.deepEqual(parsed.data.experience.evidenceItems[0].skills, [{ skillId: 'soft-legacy', skillName: 'Communication' }]);
+});
+test('language skills remain available to matching but are not classified as transferable soft skills', async () => {
+  const { matchingProfileInput } = await import('./matching-profile.ts');
+  const p = complete();
+  p.skills.push({ id: 'language-1', name: 'Mandarin', category: 'Languages', proficiency: 'Advanced', custom: false });
+  const stored = { version: 1 as const, profile: p, submitted: true, step: 5, savedAt: new Date().toISOString() };
+  assert.deepEqual(matchingProfileInput(stored).currentSkills, ['Communication', 'Mandarin']);
+  const strengths = transferableStrengths(p).map(({ name }) => name);
+  assert.ok(strengths.includes('Communication'));
+  assert.ok(!strengths.includes('Mandarin'));
 });
 test('structured evidence is optional, editable, and roundtrips with skill references', () => {
   const data = new Map<string, string>();
